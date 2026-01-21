@@ -1,17 +1,17 @@
 import Foundation
 import SwiftUI
 
-enum TriState {
+public enum TriState {
     case on
     case off
     case indeterminate
 }
 
-struct TriStateCheckbox: View {
+public struct TriStateCheckbox: View {
     var state: TriState
     var action: () -> Void
 
-    var body: some View {
+    public var body: some View {
         Button(action: action) {
             switch state {
             case .on:

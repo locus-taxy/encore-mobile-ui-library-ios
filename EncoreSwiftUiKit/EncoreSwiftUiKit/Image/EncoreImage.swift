@@ -1,10 +1,10 @@
 import SwiftUI
 
-struct EncoreImage: View {
+public struct EncoreImage: View {
     var iconName: String
     var size: CGFloat
 
-    var body: some View {
+    public var body: some View {
         #if SWIFT_PACKAGE
             let bundle = Bundle.module
         #else
