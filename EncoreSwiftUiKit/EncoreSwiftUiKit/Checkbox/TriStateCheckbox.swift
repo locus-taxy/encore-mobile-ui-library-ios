@@ -8,8 +8,8 @@ public enum TriState {
 }
 
 public struct TriStateCheckbox: View {
-    var state: TriState
-    var action: () -> Void
+    public var state: TriState
+    public var action: () -> Void
 
     public var body: some View {
         Button(action: action) {
