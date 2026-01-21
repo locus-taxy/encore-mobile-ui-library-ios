@@ -1,0 +1,61 @@
+name: EncoreSwiftUiKit
+options:
+  xcodeVersion: 26.2
+  defaultConfig: Release
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: 15.0
+    PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.UiKit
+    MARKETING_VERSION: 1.0.0
+
+settingGroups:
+    signing:
+        DEVELOPMENT_TEAM: N77D4PAB83
+        CODE_SIGN_IDENTITY: Apple Development
+
+targets:
+  EncoreSwiftUiKit:
+    type: framework
+    platform: iOS
+    sources: [EncoreSwiftUiKit]
+    settings:
+      configs:
+        debug:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+          ONLY_ACTIVE_ARCH: YES
+          DEBUG_INFORMATION_FORMAT: dwarf
+        release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS:
+          ONLY_ACTIVE_ARCH: NO
+          DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      groups:
+        - signing
+
+    scheme:
+      testTargets:
+        - EncoreSwiftUiKitTests
+      gatherCoverageData: true
+      coverageTargets:
+        - EncoreSwiftUiKit
+        - EncoreSwiftUiKitTests
+
+  EncoreSwiftUiKitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - EncoreSwiftUiKitTests/
+    dependencies:
+      - package: Swifter
+    settings:
+      GENERATE_INFOPLIST_FILE: YES
+      PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.UiKitTests
+      SWIFT_VERSION: 6.0
+    scheme:
+      testTargets:
+        - EncoreSwiftUiKitTests
+      gatherCoverageData: true
+
+packages:
+  Swifter:
+    url: https://github.com/httpswift/swifter.git
+    version: 1.5.0

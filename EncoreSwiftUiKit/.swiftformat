@@ -1,0 +1,9 @@
+--swiftversion 5.0
+--elseposition same-line
+--enable blankLinesBetweenScopes,blankLinesAroundMark
+--header strip
+--indent 4
+--semicolons never
+--disable redundantSelf,blankLinesAtStartOfScope
+--exclude LocusSDK/Codegen,LocusSDK/Resources
+

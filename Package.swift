@@ -1,0 +1,35 @@
+// swift-tools-version: 5.6
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
+import PackageDescription
+
+let package = Package(
+    name: "EncoreSwiftUiKit",
+    defaultLocalization: "en",
+    platforms: [
+        .iOS(.v15)
+    ],
+    products: [
+        // Products define the executables and libraries a package produces, making them visible to other packages.
+        .library(
+            name: "EncoreSwiftUiKit",
+            targets: ["EncoreSwiftUiKit"]),
+    ],
+    targets: [
+        // Targets are the basic building blocks of a package, defining a module or a test suite.
+        // Targets can depend on other targets in this package and products from dependencies.
+        .target(
+            name: "EncoreSwiftUiKit",
+            path: "EncoreSwiftUiKit/EncoreSwiftUiKit",
+            resources: [
+                //.process("Resources/Certificates"),
+                //.process("PrivacyInfo.xcprivacy")
+            ]
+        ),
+        .testTarget(
+            name: "EncoreSwiftUiKitTests",
+            dependencies: ["EncoreSwiftUiKit"],
+            path: "EncoreSwiftUiKit/EncoreSwiftUiKitTests"
+        ),
+    ]
+)
