@@ -1,10 +1,4 @@
-//
-//  TriStateCheckbox.swift
-//  EncoreSwiftUiKit
-//
-//  Created by Kanj on 21/01/26.
-//
-
+import Foundation
 import SwiftUI
 
 enum TriState {
@@ -21,14 +15,11 @@ struct TriStateCheckbox: View {
         Button(action: action) {
             switch state {
             case .on:
-                Image("LCheckboxFilled")
-                    .frame(width: 16, height: 16)
+                EncoreImage(iconName: "LCheckboxFilled", size: 16)
             case .indeterminate:
-                Image("LCheckboxIndeterminate")
-                    .frame(width: 16, height: 16)
+                EncoreImage(iconName: "LCheckboxIndeterminate", size: 16)
             case .off:
-                Image("LCheckboxOutline")
-                    .frame(width: 16, height: 16)
+                EncoreImage(iconName: "LCheckboxOutline", size: 16)
             }
         }
         .padding(2)
