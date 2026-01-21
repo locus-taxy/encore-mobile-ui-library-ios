@@ -1,8 +1,13 @@
 import SwiftUI
 
 public struct EncoreImage: View {
-    public var iconName: String
-    public var size: CGFloat
+    var iconName: String
+    var size: CGFloat
+
+    public init(iconName: String, size: CGFloat) {
+        self.iconName = iconName
+        self.size = size
+    }
 
     public var body: some View {
         #if SWIFT_PACKAGE
