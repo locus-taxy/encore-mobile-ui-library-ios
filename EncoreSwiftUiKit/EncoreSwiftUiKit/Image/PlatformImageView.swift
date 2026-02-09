@@ -57,11 +57,11 @@ public final class PlatformImageView: UIView {
         imageView.image = UIImage(systemName: "rectangle.dashed")
     }
 
-    override var intrinsicContentSize: CGSize {
+    override public var intrinsicContentSize: CGSize {
         imageView.intrinsicContentSize
     }
 
-    override func sizeThatFits(_ size: CGSize) -> CGSize {
+    override public func sizeThatFits(_ size: CGSize) -> CGSize {
         imageView.sizeThatFits(size)
     }
 }
