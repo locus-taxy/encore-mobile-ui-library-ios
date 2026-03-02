@@ -2,7 +2,6 @@ import SwiftUI
 
 /// Preview for ChecklistView demonstrating all item types.
 /// Mirrors Android's `ChecklistViewPreview` composable.
-#if DEBUG
     struct ChecklistViewPreview: PreviewProvider {
         static var previews: some View {
             ChecklistView(
@@ -132,5 +131,3 @@ import SwiftUI
             )
         }
     }
-#endif
-

@@ -31,3 +31,7 @@ public struct TriStateCheckbox: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview {
+    TriStateCheckbox(state: .on, action: {})
+}
