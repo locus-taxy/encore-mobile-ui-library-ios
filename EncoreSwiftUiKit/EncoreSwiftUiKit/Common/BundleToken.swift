@@ -6,10 +6,14 @@
 //
 import Foundation
 
-enum BundleToken {
-    #if SWIFT_PACKAGE
-        static let bundle = Bundle.module
-    #else
-        static let bundle = Bundle.main
-    #endif
+final class BundleToken {
+    private init() {}
+
+    static let bundle: Bundle = {
+        #if SWIFT_PACKAGE
+            return Bundle.module
+        #else
+            return Bundle(for: BundleToken.self)
+        #endif
+    }()
 }
