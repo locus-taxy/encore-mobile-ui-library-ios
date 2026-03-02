@@ -14,3 +14,7 @@ public struct EncoreIcon: View {
             .frame(width: size, height: size)
     }
 }
+
+#Preview {
+    EncoreIcon(iconName: "Schedule", size: 26)
+}
