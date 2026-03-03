@@ -78,17 +78,18 @@ public class ChecklistStateManager: ObservableObject {
             switch item.format {
             case .boolean:
                 let boolValue = (value as? Bool) ?? false
-                result[item.key] = ChecklistItemValue(value: String(boolValue))
+                result[item.key] = .text(String(boolValue))
 
             case .singleChoice:
                 let selectedIndex = (value as? Int) ?? -1
                 if selectedIndex >= 0 {
-                    if !item.allowedValues.isEmpty, selectedIndex < item.allowedValues.count {
-                        result[item.key] = ChecklistItemValue(value: item.allowedValues[selectedIndex].key)
+                    let allowedValues = item.allowedValues ?? []
+                    if !allowedValues.isEmpty, selectedIndex < allowedValues.count {
+                        result[item.key] = .text(allowedValues[selectedIndex].key)
                     } else {
-                        let displayOptions = item.allowedValues.map(\.displayText)
+                        let displayOptions = allowedValues.map(\.displayText)
                         if selectedIndex < displayOptions.count {
-                            result[item.key] = ChecklistItemValue(value: displayOptions[selectedIndex])
+                            result[item.key] = .text(displayOptions[selectedIndex])
                         }
                     }
                 }
@@ -96,96 +97,81 @@ public class ChecklistStateManager: ObservableObject {
             case .multiChoice:
                 let selectedIndices = (value as? Set<Int>) ?? []
                 if !selectedIndices.isEmpty {
+                    let allowedValues = item.allowedValues ?? []
                     let selectedKeys = selectedIndices
-                        .filter { $0 < item.allowedValues.count }
-                        .map { item.allowedValues[$0].key }
+                        .filter { $0 < allowedValues.count }
+                        .map { allowedValues[$0].key }
                     if let jsonData = try? JSONSerialization.data(withJSONObject: selectedKeys),
                        let jsonString = String(data: jsonData, encoding: .utf8)
                     {
-                        result[item.key] = ChecklistItemValue(value: jsonString)
+                        result[item.key] = .text(jsonString)
                     }
                 }
 
             case .pin:
                 let pinValue = (value as? String) ?? ""
                 if !pinValue.isEmpty {
-                    result[item.key] = ChecklistItemValue(value: pinValue)
+                    result[item.key] = .text(pinValue)
                 }
 
             case .rating:
                 let rating = (value as? Int) ?? 0
                 if rating > 0 {
-                    result[item.key] = ChecklistItemValue(value: String(rating))
+                    result[item.key] = .text(String(rating))
                 }
 
             case .date:
                 let dateValue = (value as? String) ?? ""
                 if !dateValue.isEmpty {
-                    result[item.key] = ChecklistItemValue(value: dateValue)
+                    result[item.key] = .text(dateValue)
                 }
 
             case .time:
                 let timeValue = (value as? String) ?? ""
                 if !timeValue.isEmpty {
-                    result[item.key] = ChecklistItemValue(value: timeValue)
+                    result[item.key] = .text(timeValue)
                 }
 
             case .dateTime:
                 let dateTimeValue = (value as? String) ?? ""
                 if !dateTimeValue.isEmpty {
-                    result[item.key] = ChecklistItemValue(value: dateTimeValue)
+                    result[item.key] = .text(dateTimeValue)
                 }
 
             case .photo, .photoGallery:
                 let imageURLs = (value as? [URL]) ?? []
                 if !imageURLs.isEmpty {
-                    let filePath = imageURLs.first?.path ?? ""
-                    result[item.key] = ChecklistItemValue(
-                        value: filePath,
-                        isValuePodFilePath: true,
-                        isMultipleFilePresent: false
-                    )
+                    let path = imageURLs.first?.path ?? ""
+                    result[item.key] = .filePath(path)
                 }
 
             case .multiPhoto:
                 let imageURLs = (value as? [URL]) ?? []
                 if !imageURLs.isEmpty {
                     let filePaths = imageURLs.map(\.path)
-                    if let jsonData = try? JSONSerialization.data(withJSONObject: filePaths),
-                       let jsonString = String(data: jsonData, encoding: .utf8)
-                    {
-                        result[item.key] = ChecklistItemValue(
-                            value: jsonString,
-                            isValuePodFilePath: true,
-                            isMultipleFilePresent: true
-                        )
-                    }
+                    result[item.key] = .multipleFilePaths(filePaths)
                 }
 
             case .signature:
                 let signatureURL = value as? URL
                 if let signatureURL = signatureURL {
-                    result[item.key] = ChecklistItemValue(
-                        value: signatureURL.path,
-                        isValuePodFilePath: true,
-                        isMultipleFilePresent: false
-                    )
+                    result[item.key] = .filePath(signatureURL.path)
                 }
 
             case .textField:
                 let textValue = (value as? String) ?? ""
                 if !textValue.isEmpty {
-                    result[item.key] = ChecklistItemValue(value: textValue)
+                    result[item.key] = .text(textValue)
                 }
 
             case .url, .urlWithFeedback:
-                let url = item.possibleValues.first ?? ""
+                let url = item.possibleValues?.first ?? ""
                 if !url.isEmpty {
                     if item.format == .urlWithFeedback {
                         let urlClicked = (value as? Bool) ?? false
-                        result[item.key] = ChecklistItemValue(value: String(urlClicked))
+                        result[item.key] = .text(String(urlClicked))
                     } else {
-                        result[item.key] = ChecklistItemValue(value: url)
+                        result[item.key] = .text(url)
                     }
                 }
             }

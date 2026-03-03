@@ -1,24 +1,14 @@
 import Foundation
 
-/// Value wrapper for checklist item values matching LOTR structure.
+/// Sealed value type for checklist item submissions.
 /// Used in the final submission map: [String: ChecklistItemValue]
-/// Mirrors Android's `ChecklistItemValue` data class.
-public struct ChecklistItemValue: Equatable {
-    /// The string value of the item
-    public let value: String
-    /// Whether the value is a pod file path
-    public let isValuePodFilePath: Bool
-    /// Whether multiple files are present
-    public let isMultipleFilePresent: Bool
-
-    public init(
-        value: String,
-        isValuePodFilePath: Bool = false,
-        isMultipleFilePresent: Bool = false
-    ) {
-        self.value = value
-        self.isValuePodFilePath = isValuePodFilePath
-        self.isMultipleFilePresent = isMultipleFilePresent
-    }
+/// Mirrors Android's `ChecklistItemValue` sealed class.
+public enum ChecklistItemValue: Equatable {
+    /// A plain text/string value (boolean, choice, pin, rating, date, time, text, url, etc.)
+    case text(String)
+    /// A single file path (photo, photoGallery, signature)
+    case filePath(String)
+    /// Multiple file paths (multiPhoto)
+    case multipleFilePaths([String])
 }
 
