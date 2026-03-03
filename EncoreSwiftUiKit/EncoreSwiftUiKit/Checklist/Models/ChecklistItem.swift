@@ -13,11 +13,11 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
     /// The format/type of this checklist item
     public let format: ChecklistItemFormat
     /// For PIN expected value, URL string, TEXT_FIELD hints
-    public let possibleValues: [String]
+    public let possibleValues: [String]?
     /// For SINGLE_CHOICE and MULTI_CHOICE items
-    public let allowedValues: [ChecklistPossibleValue]
+    public let allowedValues: [ChecklistPossibleValue]?
     /// For TEXT_FIELD regex, date/time formats, etc.
-    public let additionalOptions: [String: String]
+    public let additionalOptions: [String: String]?
 
     /// Conformance to Identifiable using key
     public var id: String { key }
@@ -30,9 +30,9 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
         item: String,
         optional: Bool = false,
         format: ChecklistItemFormat,
-        possibleValues: [String] = [],
-        allowedValues: [ChecklistPossibleValue] = [],
-        additionalOptions: [String: String] = [:]
+        possibleValues: [String]? = nil,
+        allowedValues: [ChecklistPossibleValue]? = nil,
+        additionalOptions: [String: String]? = nil
     ) {
         self.key = key
         self.item = item

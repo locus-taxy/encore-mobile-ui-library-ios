@@ -118,7 +118,7 @@ public enum ChecklistValidator {
     }
 
     public static func validatePin(_ pinValue: String, item: ChecklistItem) -> Bool {
-        let expectedPin = item.possibleValues.first
+        let expectedPin = item.possibleValues?.first
         return validatePin(pinValue, isRequired: item.isRequired, expectedPin: expectedPin)
     }
 
@@ -147,7 +147,7 @@ public enum ChecklistValidator {
     }
 
     public static func validateTextField(_ textValue: String, item: ChecklistItem) -> Bool {
-        let regexPattern = item.additionalOptions["regex"]
+        let regexPattern = item.additionalOptions?["regex"]
         return validateTextField(textValue, isRequired: item.isRequired, regexPattern: regexPattern)
     }
 

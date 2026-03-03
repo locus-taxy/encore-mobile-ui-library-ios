@@ -133,10 +133,10 @@ struct ChecklistItemRenderer: View {
 
         case .singleChoice:
             let options: [String] = {
-                if !item.allowedValues.isEmpty {
-                    return item.allowedValues.map(\.displayText)
+                if let allowed = item.allowedValues, !allowed.isEmpty {
+                    return allowed.map(\.displayText)
                 }
-                return item.possibleValues
+                return item.possibleValues ?? []
             }()
             let currentValue = stateManager.getValue(key: item.key) as? Int ?? -1
             SingleChoiceCheckListItem(
@@ -151,10 +151,10 @@ struct ChecklistItemRenderer: View {
 
         case .multiChoice:
             let options: [String] = {
-                if !item.allowedValues.isEmpty {
-                    return item.allowedValues.map(\.displayText)
+                if let allowed = item.allowedValues, !allowed.isEmpty {
+                    return allowed.map(\.displayText)
                 }
-                return item.possibleValues
+                return item.possibleValues ?? []
             }()
             let currentValue = stateManager.getValue(key: item.key) as? Set<Int> ?? []
             MultiChoiceCheckListItem(
@@ -168,7 +168,7 @@ struct ChecklistItemRenderer: View {
             )
 
         case .pin:
-            let expectedPin = item.possibleValues.first
+            let expectedPin = item.possibleValues?.first
             let currentValue = stateManager.getValue(key: item.key) as? String ?? ""
             let callbacks = itemCallbacks?(item.key, item.format)
             let pinCallbacks = callbacks?.pinCallbacks
@@ -199,7 +199,7 @@ struct ChecklistItemRenderer: View {
             )
 
         case .date:
-            let dateFormat = item.additionalOptions["dateFormat"] ?? "MM/dd/yyyy"
+            let dateFormat = item.additionalOptions?["dateFormat"] ?? "MM/dd/yyyy"
             let currentValue = stateManager.getValue(key: item.key) as? String ?? ""
             DateCheckListItem(
                 title: item.item,
@@ -213,7 +213,7 @@ struct ChecklistItemRenderer: View {
             )
 
         case .time:
-            let timeFormat = item.additionalOptions["timeFormat"] ?? "HH:mm"
+            let timeFormat = item.additionalOptions?["timeFormat"] ?? "HH:mm"
             let currentValue = stateManager.getValue(key: item.key) as? String ?? ""
             TimeCheckListItem(
                 title: item.item,
@@ -227,8 +227,8 @@ struct ChecklistItemRenderer: View {
             )
 
         case .dateTime:
-            let dateFormat = item.additionalOptions["dateFormat"] ?? "MM/dd/yyyy"
-            let timeFormat = item.additionalOptions["timeFormat"] ?? "HH:mm"
+            let dateFormat = item.additionalOptions?["dateFormat"] ?? "MM/dd/yyyy"
+            let timeFormat = item.additionalOptions?["timeFormat"] ?? "HH:mm"
             let currentValue = stateManager.getValue(key: item.key) as? String ?? ""
             let (dateValue, timeValue): (String, String) = {
                 if !currentValue.isEmpty {
@@ -306,7 +306,7 @@ struct ChecklistItemRenderer: View {
             )
 
         case .textField:
-            let regexPattern = item.additionalOptions["regex"]
+            let regexPattern = item.additionalOptions?["regex"]
             let currentValue = stateManager.getValue(key: item.key) as? String ?? ""
             TextFieldCheckListItem(
                 title: item.item,
@@ -315,12 +315,12 @@ struct ChecklistItemRenderer: View {
                     stateManager.updateValue(key: item.key, value: newValue)
                 },
                 isRequired: item.isRequired,
-                hint: item.additionalOptions["hint"] ?? "",
+                hint: item.additionalOptions?["hint"] ?? "",
                 regexPattern: regexPattern
             )
 
         case .url:
-            let url = item.possibleValues.first ?? ""
+            let url = item.possibleValues?.first ?? ""
             let callbacks = itemCallbacks?(item.key, item.format)
             let urlCallbacks = callbacks?.urlCallbacks
             UrlCheckListItem(
@@ -331,7 +331,7 @@ struct ChecklistItemRenderer: View {
             )
 
         case .urlWithFeedback:
-            let url = item.possibleValues.first ?? ""
+            let url = item.possibleValues?.first ?? ""
             let callbacks = itemCallbacks?(item.key, item.format)
             let urlCallbacks = callbacks?.urlCallbacks
             UrlCheckListItem(
