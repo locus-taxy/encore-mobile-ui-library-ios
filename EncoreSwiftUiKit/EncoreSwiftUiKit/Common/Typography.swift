@@ -12,8 +12,7 @@ public struct TypographyStyle {
 }
 
 public extension View {
-    @ViewBuilder
-    func typography(_ style: TypographyStyle) -> some View {
+    @ViewBuilder func typography(_ style: TypographyStyle) -> some View {
         if #available(iOS 16.0, *) {
             self.font(style.font).tracking(style.tracking)
         } else {
@@ -26,7 +25,7 @@ public extension View {
 private let _registerInterFonts: Void = {
     let names = ["Inter-Regular", "Inter-Medium", "Inter-MediumItalic", "Inter-SemiBold"]
     for name in names {
-        guard let url = Bundle.module.url(forResource: name, withExtension: "ttf") else {
+        guard let url = BundleToken.bundle.url(forResource: name, withExtension: "ttf") else {
             assertionFailure("Missing font resource: \(name).ttf")
             continue
         }
@@ -34,7 +33,9 @@ private let _registerInterFonts: Void = {
     }
 }()
 
-// Inter PostScript names in the bundled font files include an "18pt" suffix.
+// Inter PostScript names in the bundled .ttf files use an "18pt" optical-size suffix
+// (e.g. Inter18pt-Medium). If font files are ever updated, verify PostScript names via
+// Font Book → Get Info, or `fc-query <file>.ttf | grep postscriptname`.
 private func inter(_ psName: String, size: CGFloat) -> Font {
     _ = _registerInterFonts
     return Font.custom("Inter18pt-\(psName)", size: size)
