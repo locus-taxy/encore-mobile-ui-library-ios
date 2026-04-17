@@ -22,7 +22,8 @@ let package = Package(
             name: "EncoreSwiftUiKit",
             path: "EncoreSwiftUiKit/EncoreSwiftUiKit",
             resources: [
-                .process("Assets")
+                .process("Assets"),
+                .process("Fonts")
                 //.process("PrivacyInfo.xcprivacy")
             ]
         ),
