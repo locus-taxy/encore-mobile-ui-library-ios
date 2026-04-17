@@ -16,6 +16,7 @@ public extension View {
         if #available(iOS 16.0, *) {
             self.font(style.font).tracking(style.tracking)
         } else {
+            // tracking() requires iOS 16; letter spacing is not applied on iOS 15.
             self.font(style.font)
         }
     }
