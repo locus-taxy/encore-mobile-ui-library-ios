@@ -1,4 +1,7 @@
 EncoreSwiftUiKit/EncoreSwiftUiKit.xcodeproj
 .swiftpm
 .build
+*.d
+*.dia
+*.swiftdeps
 
