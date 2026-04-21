@@ -45,13 +45,17 @@ Read `EncoreSwiftUiKit/project.yml`. Search for `SnapshotPreviews` in the `packa
 
 **If already present:** skip to 1c.
 
-**If missing**, apply two edits to `EncoreSwiftUiKit/project.yml`:
+**If missing**, do the following in order:
+
+1. Resolve the latest stable version tag from https://github.com/EmergeTools/SnapshotPreviews/releases.
+   Record it as `SNAPSHOTS_VERSION` (e.g. `1.2.3`).
+2. Apply two edits to `EncoreSwiftUiKit/project.yml`:
 
 Under the `packages:` key, add:
 ```
 SnapshotPreviews:
   url: https://github.com/EmergeTools/SnapshotPreviews.git
-  version: <latest-stable>  # check https://github.com/EmergeTools/SnapshotPreviews/releases
+  version: SNAPSHOTS_VERSION
 ```
 
 Under `targets.EncoreSwiftUiKitTests.dependencies`, add:
@@ -110,7 +114,9 @@ Update the preview or provide a different preview_name before retrying.
 
 Check whether `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/COMPONENT_NAMESnapshotTest.swift` already exists (path relative to repo root).
 
-- **If it exists:** reuse it — skip to Phase 4.
+- **If it exists:** Read the file. Confirm that `snapshotPreviews()` returns `["PREVIEW_NAME"]`.
+  - If it matches: skip to Phase 4.
+  - If it does not match: overwrite the file using the template below.
 - **If not:** create it using the template below. Replace `COMPONENT_NAME` and `PREVIEW_NAME` with actual values.
 
 ```
@@ -158,7 +164,7 @@ magick compare /tmp/reference_resized.png SNAPSHOT_PATH \
   EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/deltas/COMPONENT_NAME_diff.png || true
 ```
 
-`magick compare` exits with code 1 when images differ — expected, not an error.
+`magick compare` exit codes: 0 = identical, 1 = pixel differences (expected), 2 = error. The `|| true` suppresses exit code 1. If the diff image is absent after this step, a real ImageMagick error occurred — proceed with vision-only comparison and note the failure.
 
 **Step 3 — Vision comparison**
 
