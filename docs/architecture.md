@@ -56,6 +56,30 @@ EncoreSwiftUiKit/
 
 ---
 
+## Preview Components
+
+Two patterns coexist in the library:
+
+**Simple components** — `#Preview` macro placed inline at the bottom of the component file:
+```swift
+#Preview {
+    EncoreIcon(iconName: "Schedule", size: 26)
+}
+```
+
+**Complex components** — `PreviewProvider` struct in a dedicated `*Preview.swift` file alongside the component (e.g. `Checklist/ChecklistViewPreview.swift`):
+```swift
+struct ChecklistViewPreview: PreviewProvider {
+    static var previews: some View {
+        ChecklistView(header: "Complete Your Information", items: [...], ...)
+    }
+}
+```
+
+Use `#Preview` for simple single-call previews. Use `PreviewProvider` when the preview requires substantial mock data setup (e.g. building a full `ChecklistItem` list).
+
+---
+
 ## State Management
 
 **SwiftUI property wrappers + ObservableObject** (no third-party library).
