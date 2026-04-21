@@ -1,6 +1,6 @@
 # CLAUDE.md — encore-mobile-ui-library-ios
 
-This file provides guidance to Claude Code when working in this repository. See also the root `CLAUDE.md` at `../CLAUDE.md` for cross-project context.
+This file provides guidance to Claude Code when working in this repository.
 
 ---
 
@@ -60,6 +60,14 @@ All components are in `EncoreSwiftUiKit/EncoreSwiftUiKit/`:
 - `ChecklistItemCallbacks.swift` — callback protocols
 - `Models/ChecklistItem.swift`, `ChecklistItemValue.swift`, `ChecklistItemFormat.swift`, `ChecklistPossibleValue.swift`
 - `Utils/ChecklistHeader.swift`, `ChecklistItemConstants.swift`
+
+---
+
+## Design Tokens
+
+Colours, typography, and spacing values are documented in [`docs/design-tokens.md`](docs/design-tokens.md).
+
+Component structure, state management, and test patterns: [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
