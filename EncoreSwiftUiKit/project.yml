@@ -40,18 +40,33 @@ targets:
         - EncoreSwiftUiKit
         - EncoreSwiftUiKitTests
 
+  SnapshotTestHost:
+    type: application
+    platform: iOS
+    sources: [SnapshotTestHost]
+    dependencies:
+      - target: EncoreSwiftUiKit
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.SnapshotTestHost
+      GENERATE_INFOPLIST_FILE: YES
+      IPHONEOS_DEPLOYMENT_TARGET: 15.0
+    scheme: {}
+
   EncoreSwiftUiKitTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - EncoreSwiftUiKitTests/
     dependencies:
+      - target: SnapshotTestHost
       - package: Swifter
       - package: SnapshotPreviews
         product: SnapshottingTests
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.UiKitTests
       SWIFT_VERSION: 6.0
+      TEST_HOST: $(BUILT_PRODUCTS_DIR)/SnapshotTestHost.app/SnapshotTestHost
+      BUNDLE_LOADER: $(TEST_HOST)
     scheme:
       testTargets:
         - EncoreSwiftUiKitTests
