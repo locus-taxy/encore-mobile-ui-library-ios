@@ -20,10 +20,7 @@ public struct MaterialFAB: View {
 
     public var body: some View {
         Button(action: action) {
-            Image.withName(iconName)
-                .renderingMode(.template)
-                .resizable()
-                .frame(width: Spacing.spacing24, height: Spacing.spacing24)
+            EncoreIcon(iconName: iconName, size: Spacing.spacing24)
                 .foregroundColor(fabContentColor(color))
         }
         .buttonStyle(.plain)
@@ -64,10 +61,7 @@ public struct MaterialExtendedFAB: View {
                 Text(label)
                     .typography(Typography.Button.medium)
                     .foregroundColor(fabContentColor(color))
-                Image.withName(iconName)
-                    .renderingMode(.template)
-                    .resizable()
-                    .frame(width: Spacing.spacing24, height: Spacing.spacing24)
+                EncoreIcon(iconName: iconName, size: Spacing.spacing24)
                     .foregroundColor(fabContentColor(color))
             }
             .padding(.horizontal, Spacing.spacing16)

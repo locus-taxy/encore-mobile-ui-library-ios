@@ -10,7 +10,9 @@ public struct EncoreIcon: View {
     }
 
     public var body: some View {
-        return Image.withName(iconName)
+        Image.withName(iconName)
+            .renderingMode(.template)
+            .resizable()
             .frame(width: size, height: size)
     }
 }
