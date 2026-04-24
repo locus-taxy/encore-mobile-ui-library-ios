@@ -33,6 +33,11 @@ targets:
         - signing
 
     scheme:
+      build:
+        targets:
+          EncoreSwiftUiKit: all
+          SnapshotTestHost: [test]
+          EncoreSwiftUiKitTests: [test]
       testTargets:
         - EncoreSwiftUiKitTests
       gatherCoverageData: true
