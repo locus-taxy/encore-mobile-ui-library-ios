@@ -1,6 +1,6 @@
 ---
 name: ios-snapshot-test
-description: Use when verifying that a SwiftUI component's visual output matches a Figma reference screenshot. Runs SnapshotPreviews tests against existing #Preview / PreviewProvider and reports match/mismatch with pixel diff analysis. Required inputs: component_name, reference_png, preview_name, preview_description.
+description: Use when verifying that a SwiftUI component's visual output matches a Figma reference screenshot. Runs SnapshotPreviews tests against existing #Preview / PreviewProvider and reports match/mismatch with vision analysis. Required inputs: component_name, reference_png, preview_name, preview_description.
 ---
 
 # ios-snapshot-test
@@ -33,13 +33,7 @@ Do NOT edit `Package.swift` for test dependencies — it is the SPM manifest for
 
 ## Phase 1 — Setup
 
-### 1a. Check ImageMagick
-
-Run: `magick -version`
-
-If this fails, continue without diff images — Phase 4 uses vision-only comparison. Note this limitation in the final output.
-
-### 1b. Check SnapshotPreviews
+### 1a. Check SnapshotPreviews
 
 Read `EncoreSwiftUiKit/project.yml`. Search for `SnapshotPreviews` in the `packages:` section.
 
@@ -69,7 +63,7 @@ Then regenerate the Xcode project:
 cd EncoreSwiftUiKit && ./xcodegen.sh
 ```
 
-### 1c. Ensure .gitignore entries
+### 1b. Ensure .gitignore entries
 
 Read the repo root `.gitignore`. Add if missing:
 ```
@@ -149,33 +143,16 @@ cd EncoreSwiftUiKit && xcodebuild test \
 
 Exported PNG(s) land in `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/exports/`. Find the file whose name contains `PREVIEW_NAME`.
 
-**Step 2 — Generate pixel diff (skip if ImageMagick unavailable)**
+**Step 2 — Vision comparison**
 
-Get the snapshot's pixel dimensions:
-```
-magick identify SNAPSHOT_PATH
-```
-
-Create the deltas directory, resize the reference, then diff:
-```
-mkdir -p EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/deltas
-magick REFERENCE_PNG -resize WxH! /tmp/reference_resized.png
-magick compare /tmp/reference_resized.png SNAPSHOT_PATH \
-  EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/deltas/COMPONENT_NAME_diff.png || true
-```
-
-`magick compare` exit codes: 0 = identical, 1 = pixel differences (expected), 2 = error. The `|| true` suppresses exit code 1. If the diff image is absent after this step, a real ImageMagick error occurred — proceed with vision-only comparison and note the failure.
-
-**Step 3 — Vision comparison**
-
-Read `reference_png`, the exported snapshot, and the diff image (if available) with vision. Evaluate match across:
+Read `reference_png` and the exported snapshot with vision. Evaluate match across:
 - Layout structure (variants present, grid arrangement)
 - Colors (backgrounds, foregrounds, tints)
 - Typography (font weight, size, spacing)
 - Spacing and padding
 - Component states
 
-**Step 4 — Decide**
+**Step 3 — Decide**
 
 | Situation | Action |
 |---|---|
@@ -197,7 +174,6 @@ before snapshot testing can proceed.
 ⛔ ERROR: Component rendering did not match the reference after 3 iteration(s).
 The preview layout is structurally correct, but colors, typography, or spacing differ.
 Review the component implementation for styling discrepancies before retrying.
-Last diff image: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/deltas/COMPONENT_NAME_diff.png
 Test file retained at: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/COMPONENT_NAMESnapshotTest.swift
 ```
 
@@ -220,6 +196,5 @@ Test file retained at: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/COMPONENT
 Divergences detected:
   - AREA: DESCRIPTION OF DIVERGENCE
   - AREA: DESCRIPTION OF DIVERGENCE
-Diff image: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/deltas/COMPONENT_NAME_diff.png
 Test file retained at: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/COMPONENT_NAMESnapshotTest.swift
 ```

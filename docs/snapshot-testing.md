@@ -9,13 +9,12 @@ The skill:
 2. Configures SnapshotPreviews automatically in `project.yml` if not already set up
 3. Writes a minimal `SnapshotTest` subclass that filters to the named preview
 4. Runs `xcodebuild test` and exports snapshot PNGs via `TEST_RUNNER_SNAPSHOTS_EXPORT_DIR`
-5. Generates a pixel diff against the reference and uses vision to report the result
+5. Uses vision to compare the snapshot against the reference and report the result
 
 Test files and snapshot images are **git-ignored** and **retained between runs** — subsequent invocations reuse the existing test file for faster re-evaluation.
 
 ## Prerequisites
 
-- ImageMagick: `brew install imagemagick`. If absent, the skill falls back to vision-only comparison without a diff image.
 - XcodeGen: `brew install xcodegen`. Used to regenerate the Xcode project after editing `project.yml`.
 - Xcode with the **iPhone 16 simulator** available.
 
@@ -75,7 +74,6 @@ Test file retained at: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/BooleanVi
 Divergences detected:
   - Background: incorrect dark tint applied
   - Row 2 (Off state): checkmark visible when it should not be
-Diff image: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/deltas/BooleanView_diff.png
 Test file retained at: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/BooleanViewSnapshotTest.swift
 ```
 
@@ -101,7 +99,6 @@ before snapshot testing can proceed.
 ⛔ ERROR: Component rendering did not match the reference after 3 iteration(s).
 The preview layout is structurally correct, but colors, typography, or spacing differ.
 Review the component implementation for styling discrepancies before retrying.
-Last diff image: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/deltas/BooleanView_diff.png
 Test file retained at: EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/BooleanViewSnapshotTest.swift
 ```
 
@@ -113,4 +110,3 @@ All paths below are git-ignored:
 |---|---|
 | Test file | `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/<Name>SnapshotTest.swift` |
 | Exported snapshots | `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/exports/` |
-| Diff images | `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/deltas/` |
