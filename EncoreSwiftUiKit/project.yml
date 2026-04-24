@@ -32,23 +32,14 @@ targets:
       groups:
         - signing
 
-    scheme:
-      build:
-        targets:
-          EncoreSwiftUiKit: all
-          SnapshotTestHost: [test]
-          EncoreSwiftUiKitTests: [test]
-      testTargets:
-        - EncoreSwiftUiKitTests
-      gatherCoverageData: true
-      coverageTargets:
-        - EncoreSwiftUiKit
-        - EncoreSwiftUiKitTests
+    scheme: {}
 
   SnapshotTestHost:
     type: application
     platform: iOS
     sources: [SnapshotTestHost]
+    dependencies:
+      - target: EncoreSwiftUiKit
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.SnapshotTestHost
       GENERATE_INFOPLIST_FILE: YES
