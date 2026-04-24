@@ -2,16 +2,16 @@ import SwiftUI
 
 internal func fabBackgroundColor(_ color: FABColor) -> Color {
     switch color {
-    case .primary:   return Color("primary/main")
-    case .secondary: return Color("secondary/main")
-    case .default:   return Color("grey/300")
+    case .primary:   return Color("Primary/Main")
+    case .secondary: return Color("Secondary/Main")
+    case .default:   return Color("Grey/300")
     }
 }
 
 internal func fabContentColor(_ color: FABColor) -> Color {
     switch color {
-    case .primary:   return Color("primary/contrast_text")
-    case .secondary: return Color("secondary/contrast_text")
-    case .default:   return Color("text/primary")
+    case .primary:   return Color("Primary/ContrastText")
+    case .secondary: return Color("Secondary/ContrastText")
+    case .default:   return Color("Text/Primary")
     }
 }
