@@ -65,6 +65,8 @@ targets:
       testTargets:
         - EncoreSwiftUiKitTests
       gatherCoverageData: true
+      coverageTargets:
+        - EncoreSwiftUiKit
 
 packages:
   Swifter:
