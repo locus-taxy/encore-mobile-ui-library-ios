@@ -5,4 +5,5 @@ EncoreSwiftUiKit/EncoreSwiftUiKit.xcodeproj
 *.dia
 *.swiftdeps
 
-EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/exports/
+EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/
+*SnapshotTest.swift
