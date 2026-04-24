@@ -49,8 +49,6 @@ targets:
     type: application
     platform: iOS
     sources: [SnapshotTestHost]
-    dependencies:
-      - target: EncoreSwiftUiKit
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.SnapshotTestHost
       GENERATE_INFOPLIST_FILE: YES
