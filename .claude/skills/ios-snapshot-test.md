@@ -70,6 +70,17 @@ Read the repo root `.gitignore`. Add if missing:
 EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/
 ```
 
+### 1c. Ensure preview uses light mode
+
+Read the preview source file and verify the root view has `.preferredColorScheme(.light)`.
+
+**If missing**, add it:
+- Inline `#Preview`: append `.preferredColorScheme(.light)` to the outermost content view
+- `PreviewProvider`: add `.preferredColorScheme(.light)` to the `previews` body
+
+Without this, SnapshotPreviews captures whatever color scheme the simulator is set to,
+producing dark-mode color variants that won't match Figma references (which are light mode).
+
 ---
 
 ## Phase 2 — Preview Source Validation

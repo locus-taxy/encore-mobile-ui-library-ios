@@ -6,3 +6,5 @@ EncoreSwiftUiKit/EncoreSwiftUiKit.xcodeproj
 *.swiftdeps
 
 EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/
+*SnapshotTest.swift
+visual-refs/
