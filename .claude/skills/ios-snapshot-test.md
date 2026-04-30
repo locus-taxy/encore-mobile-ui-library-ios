@@ -144,13 +144,23 @@ Track the current iteration number starting at 1.
 
 **Step 1 — Run xcodebuild**
 
+First, find an available iPhone simulator:
+```
+xcrun simctl list devices available | grep -E "iPhone [0-9]" | tail -1
+```
+
+Use the device name from that output (e.g. `iPhone 16`). Then:
+
 ```
 cd EncoreSwiftUiKit && xcodebuild test \
-  -scheme EncoreSwiftUiKit \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -scheme EncoreSwiftUiKitTests \
+  -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=SIMULATOR_NAME' \
   -only-testing:EncoreSwiftUiKitTests/COMPONENT_NAMESnapshotTest \
-  TEST_RUNNER_SNAPSHOTS_EXPORT_DIR=$(pwd)/EncoreSwiftUiKitTests/snapshot/exports
+  -testenv SNAPSHOTS_EXPORT_DIR=$(pwd)/EncoreSwiftUiKitTests/snapshot/exports
 ```
+
+**Important**: use `-testenv SNAPSHOTS_EXPORT_DIR=...` (not `TEST_RUNNER_SNAPSHOTS_EXPORT_DIR=...` and not a bare build setting). The SnapshotPreviews library reads `ProcessInfo.processInfo.environment["SNAPSHOTS_EXPORT_DIR"]`; passing it any other way means the coordinator returns nil and PNGs go to XCTest attachments instead of the filesystem.
 
 Exported PNG(s) land in `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/exports/`. Find the file whose name contains `PREVIEW_NAME`.
 
