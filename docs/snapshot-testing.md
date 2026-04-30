@@ -8,7 +8,7 @@ The skill:
 1. Validates that the named preview structurally matches the reference before running any builds
 2. Configures SnapshotPreviews automatically in `project.yml` if not already set up
 3. Writes a minimal `SnapshotTest` subclass that filters to the named preview
-4. Runs `xcodebuild test` and exports snapshot PNGs via `TEST_RUNNER_SNAPSHOTS_EXPORT_DIR`
+4. Runs `xcodebuild test` and exports snapshot PNGs via `-testenv SNAPSHOTS_EXPORT_DIR`
 5. Uses vision to compare the snapshot against the reference and report the result
 
 Test files and snapshot images are **git-ignored** and **retained between runs** — subsequent invocations reuse the existing test file for faster re-evaluation.
