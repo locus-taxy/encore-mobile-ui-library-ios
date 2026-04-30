@@ -60,6 +60,7 @@ public struct EncoreButton: View {
                 Text(label)
                     .typography(font)
                     .foregroundColor(contentColor)
+                    .lineLimit(1)
                     .padding(.horizontal, labelHPadding)
                 EncoreIcon(iconName: "LArrowDropDown", size: iconSize)
                     .foregroundColor(contentColor)
