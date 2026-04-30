@@ -50,7 +50,9 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - EncoreSwiftUiKitTests/
+      - path: EncoreSwiftUiKitTests/
+        excludes:
+          - snapshot/exports/**
     dependencies:
       - target: SnapshotTestHost
       - package: Swifter
