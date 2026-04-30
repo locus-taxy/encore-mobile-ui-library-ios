@@ -28,26 +28,25 @@ private struct EncoreButtonPreviewLayout: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         ForEach(colors.indices, id: \.self) { ci in
-                            let color = colors[ci]
-                            HStack(spacing: Spacing.spacing16) {
-                                EncoreButton(
-                                    label: "Label",
-                                    startIconName: "LAdd",
-                                    color: color,
-                                    variant: variant,
-                                    size: size,
-                                    action: {}
-                                )
-                                EncoreButton(
-                                    label: "Label",
-                                    startIconName: "LAdd",
-                                    color: color,
-                                    variant: variant,
-                                    size: size,
-                                    action: {}
-                                )
-                                .disabled(true)
-                            }
+                            EncoreButton(
+                                label: "Label",
+                                startIconName: "LAdd",
+                                color: colors[ci],
+                                variant: variant,
+                                size: size,
+                                action: {}
+                            )
+                        }
+                        ForEach(colors.indices, id: \.self) { ci in
+                            EncoreButton(
+                                label: "Label",
+                                startIconName: "LAdd",
+                                color: colors[ci],
+                                variant: variant,
+                                size: size,
+                                action: {}
+                            )
+                            .disabled(true)
                         }
                     }
                 }
