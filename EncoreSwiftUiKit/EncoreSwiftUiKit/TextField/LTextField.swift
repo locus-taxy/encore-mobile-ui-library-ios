@@ -9,7 +9,7 @@ public enum LTextFieldValidationState {
 }
 
 /// Variant of `LTextField`.
-/// `password`, `pin`, and `payment` are reserved for follow-up tasks (T003/T004).
+/// `password` and `pin` are reserved for follow-up tasks (T003).
 public enum LTextFieldVariant {
     case standard
     case number
@@ -100,12 +100,26 @@ public struct LTextField: View {
     }
 
     private var inputContainer: some View {
-        HStack(spacing: Spacing.spacing4) {
+        HStack(spacing: Spacing.spacing8) {
+            leadingAdornment
             inputField
             trailingAdornment
         }
         .padding(.horizontal, Spacing.spacing16)
         .padding(.vertical, Spacing.spacing12)
+    }
+
+    @ViewBuilder
+    private var leadingAdornment: some View {
+        if variant == .payment {
+            Image(systemName: "creditcard")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
+                .foregroundColor(Color.encore("Action/Active"))
+        } else {
+            EmptyView()
+        }
     }
 
     @ViewBuilder
@@ -223,6 +237,16 @@ public struct LTextField: View {
                 }
             }
             return result
+        case .payment:
+            let digits = input.filter { $0.isNumber }.prefix(16)
+            var formatted = ""
+            for (idx, ch) in digits.enumerated() {
+                if idx > 0 && idx % 4 == 0 {
+                    formatted.append(" ")
+                }
+                formatted.append(ch)
+            }
+            return formatted
         default:
             return input
         }
@@ -234,6 +258,7 @@ public struct LTextField: View {
         switch variant {
         case .number: return .numberPad
         case .decimal: return .decimalPad
+        case .payment: return .numberPad
         default: return .default
         }
     }
