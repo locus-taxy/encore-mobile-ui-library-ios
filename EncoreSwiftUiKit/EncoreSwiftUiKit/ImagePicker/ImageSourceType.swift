@@ -7,4 +7,3 @@ public enum ImageSourceType {
     case galleryOnly
     case cameraOrGallery
 }
-

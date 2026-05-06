@@ -1,6 +1,6 @@
 import SwiftUI
 
-internal func encoreButtonBackgroundColor(
+func encoreButtonBackgroundColor(
     color: EncoreButtonColor,
     variant: EncoreButtonVariant,
     isEnabled: Bool
@@ -9,12 +9,12 @@ internal func encoreButtonBackgroundColor(
     if !isEnabled { return Color.encore("Action/DisabledBackground") }
     switch color {
     case .primary: return Color.encore("Primary/Main")
-    case .error:   return Color.encore("Error/Main")
+    case .error: return Color.encore("Error/Main")
     case .success: return Color.encore("Success/Main")
     }
 }
 
-internal func encoreButtonContentColor(
+func encoreButtonContentColor(
     color: EncoreButtonColor,
     variant: EncoreButtonVariant,
     isEnabled: Bool
@@ -24,26 +24,26 @@ internal func encoreButtonContentColor(
     case .contained:
         switch color {
         case .primary: return Color.encore("Primary/ContrastText")
-        case .error:   return Color.encore("Error/ContrastText")
+        case .error: return Color.encore("Error/ContrastText")
         case .success: return Color.encore("Success/ContrastText")
         }
     case .outlined, .text:
         switch color {
         case .primary: return Color.encore("Primary/Main")
-        case .error:   return Color.encore("Error/Main")
+        case .error: return Color.encore("Error/Main")
         case .success: return Color.encore("Success/Main")
         }
     }
 }
 
-internal func encoreButtonBorderColor(
+func encoreButtonBorderColor(
     color: EncoreButtonColor,
     isEnabled: Bool
 ) -> Color {
     if !isEnabled { return Color.encore("Action/DisabledBackground") }
     switch color {
     case .primary: return Color.encore("Primary/OutlinedBorder")
-    case .error:   return Color.encore("Error/OutlinedBorder")
+    case .error: return Color.encore("Error/OutlinedBorder")
     case .success: return Color.encore("Success/OutlinedBorder")
     }
 }

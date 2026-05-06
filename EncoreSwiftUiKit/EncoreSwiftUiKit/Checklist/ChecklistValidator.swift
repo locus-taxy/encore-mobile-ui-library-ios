@@ -7,7 +7,7 @@ public enum ChecklistValidator {
     // MARK: - Standalone helpers (used by individual item views)
 
     /// Validates a boolean value. Boolean items are always valid.
-    public static func validateBoolean(_ value: Bool, isRequired: Bool) -> Bool {
+    public static func validateBoolean(_: Bool, isRequired _: Bool) -> Bool {
         true
     }
 
@@ -99,7 +99,7 @@ public enum ChecklistValidator {
     }
 
     /// Validates a URL value. URL items are always valid (read-only).
-    public static func validateUrl(_ url: String, isRequired: Bool) -> Bool {
+    public static func validateUrl(_: String, isRequired _: Bool) -> Bool {
         true
     }
 
@@ -155,4 +155,3 @@ public enum ChecklistValidator {
         validateUrl(url, isRequired: item.isRequired)
     }
 }
-

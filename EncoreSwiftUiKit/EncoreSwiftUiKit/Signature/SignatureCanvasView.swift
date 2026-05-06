@@ -119,7 +119,7 @@ struct SignatureDrawingCanvas: View {
                     .padding(.top, 16)
 
                 // Drawing area
-                Canvas { context, size in
+                Canvas { context, _ in
                     for line in lines {
                         var path = Path()
                         guard let firstPoint = line.first else { continue }
@@ -215,4 +215,3 @@ struct SignatureDrawingCanvas: View {
         }
     }
 }
-

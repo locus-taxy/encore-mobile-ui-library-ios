@@ -52,4 +52,3 @@ public struct EncoreDateTimeView: View {
         .padding(.vertical, 10)
     }
 }
-

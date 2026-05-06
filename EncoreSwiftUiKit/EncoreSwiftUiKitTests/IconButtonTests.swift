@@ -1,6 +1,6 @@
-import XCTest
-import SwiftUI
 @testable import EncoreSwiftUiKit
+import SwiftUI
+import XCTest
 
 final class IconButtonTests: XCTestCase {
 

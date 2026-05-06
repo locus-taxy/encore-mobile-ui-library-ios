@@ -20,10 +20,14 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
     public let additionalOptions: [String: String]?
 
     /// Conformance to Identifiable using key
-    public var id: String { key }
+    public var id: String {
+        key
+    }
 
     /// Returns true if this item is required.
-    public var isRequired: Bool { !optional }
+    public var isRequired: Bool {
+        !optional
+    }
 
     public init(
         key: String,
@@ -43,4 +47,3 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
         self.additionalOptions = additionalOptions
     }
 }
-

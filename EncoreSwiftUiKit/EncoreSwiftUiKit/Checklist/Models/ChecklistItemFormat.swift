@@ -19,4 +19,3 @@ public enum ChecklistItemFormat: String, Codable, CaseIterable {
     case url = "URL"
     case urlWithFeedback = "URL_WITH_FEEDBACK"
 }
-

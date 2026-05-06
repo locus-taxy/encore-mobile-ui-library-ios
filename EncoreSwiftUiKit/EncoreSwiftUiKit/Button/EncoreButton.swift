@@ -88,7 +88,7 @@ public struct EncoreButton: View {
     private var vPadding: CGFloat {
         switch size {
         case .xlarge: return Spacing.spacing12
-        case .large:  return Spacing.spacing8
+        case .large: return Spacing.spacing8
         case .medium: return Spacing.spacing6
         }
     }
@@ -96,7 +96,7 @@ public struct EncoreButton: View {
     private var hPadding: CGFloat {
         switch size {
         case .xlarge: return Spacing.spacing16
-        case .large:  return Spacing.spacing12
+        case .large: return Spacing.spacing12
         case .medium: return Spacing.spacing8
         }
     }
@@ -104,14 +104,14 @@ public struct EncoreButton: View {
     private var iconSize: CGFloat {
         switch size {
         case .xlarge, .large: return Spacing.spacing24
-        case .medium:         return Spacing.spacing20
+        case .medium: return Spacing.spacing20
         }
     }
 
     private var labelHPadding: CGFloat {
         switch size {
         case .xlarge: return Spacing.spacing8
-        case .large:  return Spacing.spacing6
+        case .large: return Spacing.spacing6
         case .medium: return Spacing.spacing4
         }
     }
@@ -119,7 +119,7 @@ public struct EncoreButton: View {
     private var font: TypographyStyle {
         switch size {
         case .xlarge, .large: return Typography.Button.large
-        case .medium:         return Typography.Button.medium
+        case .medium: return Typography.Button.medium
         }
     }
 }

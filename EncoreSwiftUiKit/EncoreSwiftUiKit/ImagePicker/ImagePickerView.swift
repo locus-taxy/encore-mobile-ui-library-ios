@@ -135,7 +135,9 @@ public struct ImagePickerView: View {
 // MARK: - URL + Identifiable for fullScreenCover
 
 extension URL: @retroactive Identifiable {
-    public var id: String { absoluteString }
+    public var id: String {
+        absoluteString
+    }
 }
 
 // MARK: - PHPicker (iOS 14+)
