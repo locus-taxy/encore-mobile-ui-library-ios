@@ -36,6 +36,9 @@ public struct LTextField: View {
     public var isDisabled: Bool
 
     @FocusState private var isFocused: Bool
+    @State private var isPasswordVisible: Bool = false
+
+    private static let pinLength: Int = 6
 
     public init(
         value: Binding<String>,
@@ -70,15 +73,19 @@ public struct LTextField: View {
                     .padding(.bottom, Spacing.spacing4)
             }
 
-            inputContainer
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: containerMinHeight, alignment: .top)
-                .background(backgroundFill)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(borderColor, lineWidth: borderWidth)
-                )
+            if variant == .pin {
+                pinContainer
+            } else {
+                inputContainer
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: containerMinHeight, alignment: .top)
+                    .background(backgroundFill)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(borderColor, lineWidth: borderWidth)
+                    )
+            }
 
             helperRow
                 .padding(.top, Spacing.spacing2)
@@ -124,7 +131,23 @@ public struct LTextField: View {
 
     @ViewBuilder
     private var inputField: some View {
-        if variant == .multiline {
+        if variant == .password {
+            if isPasswordVisible {
+                TextField(placeholder ?? "", text: fieldBinding)
+                    .focused($isFocused)
+                    .typography(Typography.Input.value)
+                    .foregroundColor(textColor)
+                    .disabled(isDisabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                SecureField(placeholder ?? "", text: fieldBinding)
+                    .focused($isFocused)
+                    .typography(Typography.Input.value)
+                    .foregroundColor(textColor)
+                    .disabled(isDisabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else if variant == .multiline {
             ZStack(alignment: .topLeading) {
                 if value.isEmpty, let placeholder = placeholder {
                     Text(placeholder)
@@ -156,24 +179,106 @@ public struct LTextField: View {
 
     @ViewBuilder
     private var trailingAdornment: some View {
-        switch validationState {
-        case .validating:
-            HStack(spacing: Spacing.spacing4) {
+        HStack(spacing: Spacing.spacing4) {
+            switch validationState {
+            case .validating:
                 ProgressView()
                     .controlSize(.small)
                 Image(systemName: "xmark.circle.fill")
                     .resizable()
                     .frame(width: 24, height: 24)
                     .foregroundColor(Color.encore("Error/Main"))
+            case .error:
+                Image(systemName: "xmark.circle.fill")
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(Color.encore("Error/Main"))
+            case .success, .normal:
+                EmptyView()
             }
-        case .error:
-            Image(systemName: "xmark.circle.fill")
-                .resizable()
-                .frame(width: 24, height: 24)
-                .foregroundColor(Color.encore("Error/Main"))
-        case .success, .normal:
-            EmptyView()
+
+            if variant == .password {
+                passwordToggleButton
+            }
         }
+    }
+
+    private var passwordToggleButton: some View {
+        Button(action: { isPasswordVisible.toggle() }) {
+            Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 24, height: 24)
+                .foregroundColor(Color.encore("Action/Active"))
+                .frame(width: 48, height: 48)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+    }
+
+    private var pinContainer: some View {
+        GeometryReader { geometry in
+            let totalSpacing = Spacing.spacing8 * CGFloat(Self.pinLength - 1)
+            let boxWidth = max(0, (geometry.size.width - totalSpacing) / CGFloat(Self.pinLength))
+            ZStack(alignment: .leading) {
+                HStack(spacing: Spacing.spacing8) {
+                    ForEach(0..<Self.pinLength, id: \.self) { index in
+                        pinBox(index: index)
+                            .frame(width: boxWidth, height: 48)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { isFocused = true }
+
+                TextField("", text: fieldBinding)
+                    .focused($isFocused)
+                    .keyboardType(.numberPad)
+                    .textContentType(.oneTimeCode)
+                    .disabled(isDisabled)
+                    .frame(width: 1, height: 1)
+                    .opacity(0.001)
+                    .accessibilityHidden(true)
+            }
+        }
+        .frame(height: 48)
+    }
+
+    @ViewBuilder
+    private func pinBox(index: Int) -> some View {
+        let activeIndex = min(value.count, Self.pinLength - 1)
+        let isActive = isFocused && index == activeIndex
+        let hasDigit = index < value.count
+
+        ZStack {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(pinBoxFill)
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(pinBoxBorderColor(isActive: isActive), lineWidth: pinBoxBorderWidth(isActive: isActive))
+            if hasDigit {
+                Text("\u{25CF}")
+                    .typography(Typography.Input.value)
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+            }
+        }
+    }
+
+    private func pinBoxBorderColor(isActive: Bool) -> Color {
+        if isDisabled { return .clear }
+        if validationState == .error { return Color.encore("Error/Main") }
+        if isActive { return Color.encore("Primary/Main") }
+        return Color.encore("Input/OutlinedEnabledBorder")
+    }
+
+    private func pinBoxBorderWidth(isActive: Bool) -> CGFloat {
+        if isDisabled { return 0 }
+        if validationState == .error { return 1 }
+        return isActive ? 2 : 1
+    }
+
+    private var pinBoxFill: Color {
+        isDisabled ? Color.encore("Action/DisabledBackground") : .clear
     }
 
     @ViewBuilder
@@ -225,6 +330,8 @@ public struct LTextField: View {
         switch variant {
         case .number:
             return input.filter { $0.isNumber }
+        case .pin:
+            return String(input.filter { $0.isNumber }.prefix(Self.pinLength))
         case .decimal:
             var seenSeparator = false
             var result = ""
