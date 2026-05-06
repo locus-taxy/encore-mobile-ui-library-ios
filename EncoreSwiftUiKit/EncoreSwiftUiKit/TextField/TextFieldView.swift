@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// Validation state for text field.
+@available(*, deprecated, renamed: "LTextFieldValidationState")
 public enum TextFieldValidationState {
     case normal
     case error
@@ -10,6 +11,7 @@ public enum TextFieldValidationState {
 /// Reusable text field component matching Figma design specifications.
 /// Can be used standalone or within checklist items.
 /// Mirrors Android's `MaterialTextField` composable.
+@available(*, deprecated, renamed: "LTextField")
 public struct TextFieldView: View {
     @Binding var value: String
     let onValueChange: (String) -> Void
