@@ -32,11 +32,11 @@ public struct SlidingButtonView: View {
                 if isLoading {
                     HStack(spacing: Spacing.spacing8) {
                         ProgressView()
-                            .tint(Color.encore("text/disabled"))
+                            .tint(Color.encore("Text/Disabled"))
                             .frame(width: Spacing.spacing16, height: Spacing.spacing16)
                         Text("Loading...")
                             .typography(Typography.Button.large)
-                            .foregroundColor(Color.encore("text/disabled"))
+                            .foregroundColor(Color.encore("Text/Disabled"))
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -65,10 +65,10 @@ public struct SlidingButtonView: View {
         let iconName = progress >= 0.8 ? "LCheck" : "LKeyboardDoubleArrowRight"
         return ZStack {
             EncoreIcon(iconName: iconName, size: Spacing.spacing20)
-                .foregroundColor(Color.encore("primary/main"))
+                .foregroundColor(Color.encore("Primary/Main"))
         }
         .frame(width: Spacing.spacing40, height: Spacing.spacing40)
-        .background(Color.encore("background/default"))
+        .background(Color.encore("Background/Default"))
         .cornerRadius(Spacing.spacing4)
     }
 
@@ -95,16 +95,16 @@ public struct SlidingButtonView: View {
 
     private var backgroundColor: Color {
         if isLoading || !isEnabled {
-            return Color.encore("action/disabled_background")
+            return Color.encore("Action/DisabledBackground")
         }
-        return Color.encore("primary/main")
+        return Color.encore("Primary/Main")
     }
 
     private var labelColor: Color {
         if !isEnabled {
-            return Color.encore("text/disabled")
+            return Color.encore("Text/Disabled")
         }
-        return Color.encore("primary/contrast_text")
+        return Color.encore("Primary/ContrastText")
     }
 }
 
