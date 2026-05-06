@@ -1,6 +1,6 @@
-import XCTest
-import SwiftUI
 @testable import EncoreSwiftUiKit
+import SwiftUI
+import XCTest
 
 final class TypographyTests: XCTestCase {
 
@@ -37,7 +37,7 @@ final class TypographyTests: XCTestCase {
             Typography.link0, Typography.link1, Typography.link2,
             Typography.subtitle1, Typography.subtitle2,
             Typography.overline0, Typography.overline1, Typography.overline2, Typography.overline3,
-            Typography.caption
+            Typography.caption,
         ]
         XCTAssertEqual(styles.count, 28)
     }

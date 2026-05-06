@@ -49,9 +49,9 @@ public struct EncoreIconButton: View {
 
     private var innerPadding: CGFloat {
         switch size {
-        case .large:  return Spacing.spacing12
+        case .large: return Spacing.spacing12
         case .medium: return Spacing.spacing8
-        case .small:  return 5
+        case .small: return 5
         }
     }
 }

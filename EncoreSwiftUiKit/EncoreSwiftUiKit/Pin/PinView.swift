@@ -127,4 +127,3 @@ public struct PinView: View {
         }
     }
 }
-

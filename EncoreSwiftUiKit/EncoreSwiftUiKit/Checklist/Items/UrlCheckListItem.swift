@@ -37,4 +37,3 @@ public struct UrlCheckListItem: View {
         .padding(ChecklistItemConstants.itemPadding)
     }
 }
-

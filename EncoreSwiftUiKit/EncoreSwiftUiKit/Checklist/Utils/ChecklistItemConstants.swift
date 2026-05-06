@@ -34,4 +34,3 @@ public enum ChecklistItemConstants {
     /// Standard top padding for inner component
     public static let innerTopPadding: CGFloat = 8
 }
-

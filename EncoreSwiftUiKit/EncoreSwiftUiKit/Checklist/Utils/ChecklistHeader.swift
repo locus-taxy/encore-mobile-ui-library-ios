@@ -56,4 +56,3 @@ public struct ChecklistHeader: View {
         }
     }
 }
-

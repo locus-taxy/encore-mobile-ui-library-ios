@@ -11,4 +11,3 @@ public enum ChecklistItemValue: Equatable {
     /// Multiple file paths (multiPhoto)
     case multipleFilePaths([String])
 }
-

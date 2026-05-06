@@ -32,4 +32,3 @@ public struct BooleanView: View {
         .toggleStyle(ChecklistToggleStyle())
     }
 }
-

@@ -60,4 +60,3 @@ struct SingleChoiceOptionRow: View {
         .buttonStyle(.plain)
     }
 }
-

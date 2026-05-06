@@ -15,4 +15,3 @@ public enum DateTimeHelper {
         String(format: "%02d:%02d", hour, minute)
     }
 }
-

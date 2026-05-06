@@ -14,4 +14,3 @@ public struct ChecklistPossibleValue: Codable, Equatable, Hashable {
         self.displayText = displayText
     }
 }
-

@@ -66,4 +66,3 @@ public struct TextFieldCheckListItem: View {
         }
     }
 }
-

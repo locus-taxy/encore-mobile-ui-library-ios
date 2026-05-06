@@ -93,4 +93,3 @@ public struct EncoreDateView: View {
         }
     }
 }
-

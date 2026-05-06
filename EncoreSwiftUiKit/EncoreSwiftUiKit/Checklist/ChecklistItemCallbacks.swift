@@ -83,4 +83,3 @@ public struct ChecklistItemCallbacks {
 /// Receives the item key and format, and returns appropriate callbacks or nil.
 /// Mirrors Android's `ChecklistItemCallbackProvider` typealias.
 public typealias ChecklistItemCallbackProvider = (_ itemKey: String, _ format: ChecklistItemFormat) -> ChecklistItemCallbacks?
-

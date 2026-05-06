@@ -60,4 +60,3 @@ struct MultiChoiceOptionRow: View {
         .buttonStyle(.plain)
     }
 }
-
