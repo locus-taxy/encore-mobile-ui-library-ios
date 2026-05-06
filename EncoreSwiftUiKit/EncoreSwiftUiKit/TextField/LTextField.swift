@@ -326,7 +326,7 @@ public struct LTextField: View {
         )
     }
 
-    private func filter(_ input: String) -> String {
+    internal func filter(_ input: String) -> String {
         switch variant {
         case .number:
             return input.filter { $0.isNumber }
