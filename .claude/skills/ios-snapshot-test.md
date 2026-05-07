@@ -152,15 +152,15 @@ xcrun simctl list devices available | grep -E "iPhone [0-9]" | tail -1
 Use the device name from that output (e.g. `iPhone 16`). Then:
 
 ```
-cd EncoreSwiftUiKit && xcodebuild test \
+cd EncoreSwiftUiKit && TEST_RUNNER_SNAPSHOTS_EXPORT_DIR=$(pwd)/EncoreSwiftUiKitTests/snapshot/exports \
+  xcodebuild test \
   -scheme EncoreSwiftUiKitTests \
   -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=SIMULATOR_NAME' \
-  -only-testing:EncoreSwiftUiKitTests/COMPONENT_NAMESnapshotTest \
-  -testenv SNAPSHOTS_EXPORT_DIR=$(pwd)/EncoreSwiftUiKitTests/snapshot/exports
+  -only-testing:EncoreSwiftUiKitTests/COMPONENT_NAMESnapshotTest
 ```
 
-**Important**: use `-testenv SNAPSHOTS_EXPORT_DIR=...` (not `TEST_RUNNER_SNAPSHOTS_EXPORT_DIR=...` and not a bare build setting). The SnapshotPreviews library reads `ProcessInfo.processInfo.environment["SNAPSHOTS_EXPORT_DIR"]`; passing it any other way means the coordinator returns nil and PNGs go to XCTest attachments instead of the filesystem.
+**Important**: pass the export path via the `TEST_RUNNER_SNAPSHOTS_EXPORT_DIR` environment variable prefix (not `-testenv`, which is not supported on newer Xcode). The `TEST_RUNNER_` prefix causes xcodebuild to forward the variable to the test runner as `SNAPSHOTS_EXPORT_DIR`, which SnapshotPreviews reads via `ProcessInfo.processInfo.environment["SNAPSHOTS_EXPORT_DIR"]`. Without this, PNGs go to XCTest attachments inside the `.xcresult` bundle instead of the filesystem.
 
 Exported PNG(s) land in `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/exports/`. Find the file whose name contains `PREVIEW_NAME`.
 
