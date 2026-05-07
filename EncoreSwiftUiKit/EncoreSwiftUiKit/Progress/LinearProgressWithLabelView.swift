@@ -27,7 +27,7 @@ public struct LinearProgressWithLabelView: View {
                 }
             }
 
-            LinearProgressView(value: value)
+            LinearProgressTrack(value: value)
         }
         .frame(minWidth: 180)
         .frame(maxWidth: .infinity)
