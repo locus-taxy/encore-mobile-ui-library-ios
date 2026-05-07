@@ -142,17 +142,50 @@ Track the current iteration number starting at 1.
 
 ### Each iteration:
 
-**Step 1 — Run xcodebuild**
+**Step 1 — Verify test file exists, then run xcodebuild**
 
-First, find an available iPhone simulator:
+> **Why this check is required:** The snapshot test file lives under
+> `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/` which is git-ignored.
+> This means the file is not committed and will be absent in any worktree
+> other than the one where Phase 3 originally created it (e.g. after a
+> `wrapup`, a teammate merge, or a fresh checkout). If the file is missing,
+> xcodebuild's `-only-testing:` filter matches zero tests, reports
+> "TEST SUCCEEDED" with 0 tests run, and exports nothing — a silent false
+> positive. Always recreate the file if it is missing.
+
+Check whether `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/COMPONENT_NAMESnapshotTest.swift` exists (path relative to repo root):
+
+```bash
+test -f EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/COMPONENT_NAMESnapshotTest.swift \
+  && echo EXISTS || echo MISSING
+```
+
+**If MISSING**, recreate it immediately using the Phase 3 template (same content as 3a):
+
+```
+import SnapshottingTests
+
+class COMPONENT_NAMESnapshotTest: SnapshotTest {
+    override class func snapshotPreviews() -> [String]? {
+        return ["PREVIEW_NAME"]
+    }
+}
+```
+
+Then find an available iPhone simulator:
 ```
 xcrun simctl list devices available | grep -E "iPhone [0-9]" | tail -1
 ```
 
-Use the device name from that output (e.g. `iPhone 16`). Then:
+Use the device name from that output (e.g. `iPhone 16`). Compute absolute paths before entering the subdirectory to avoid `cd`-state issues:
 
-```
-cd EncoreSwiftUiKit && TEST_RUNNER_SNAPSHOTS_EXPORT_DIR=$(pwd)/EncoreSwiftUiKitTests/snapshot/exports \
+```bash
+REPO_ROOT=$(pwd)
+EXPORT_DIR="$REPO_ROOT/EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/exports"
+mkdir -p "$EXPORT_DIR"
+
+cd EncoreSwiftUiKit && \
+  TEST_RUNNER_SNAPSHOTS_EXPORT_DIR="$EXPORT_DIR" \
   xcodebuild test \
   -scheme EncoreSwiftUiKitTests \
   -sdk iphonesimulator \
@@ -161,6 +194,14 @@ cd EncoreSwiftUiKit && TEST_RUNNER_SNAPSHOTS_EXPORT_DIR=$(pwd)/EncoreSwiftUiKitT
 ```
 
 **Important**: pass the export path via the `TEST_RUNNER_SNAPSHOTS_EXPORT_DIR` environment variable prefix (not `-testenv`, which is not supported on newer Xcode). The `TEST_RUNNER_` prefix causes xcodebuild to forward the variable to the test runner as `SNAPSHOTS_EXPORT_DIR`, which SnapshotPreviews reads via `ProcessInfo.processInfo.environment["SNAPSHOTS_EXPORT_DIR"]`. Without this, PNGs go to XCTest attachments inside the `.xcresult` bundle instead of the filesystem.
+
+After the run, verify PNGs were actually exported — a "TEST SUCCEEDED" result with an empty exports dir means zero tests ran (test file was missing or `-only-testing:` matched nothing):
+
+```bash
+ls "$EXPORT_DIR"/*.png 2>/dev/null | wc -l
+```
+
+If the count is 0: the test file was not picked up. Confirm the class name matches the `-only-testing:` argument exactly (Swift class name = `COMPONENT_NAMESnapshotTest`, target = `EncoreSwiftUiKitTests`), then retry.
 
 Exported PNG(s) land in `EncoreSwiftUiKit/EncoreSwiftUiKitTests/snapshot/exports/`. Find the file whose name contains `PREVIEW_NAME`.
 
