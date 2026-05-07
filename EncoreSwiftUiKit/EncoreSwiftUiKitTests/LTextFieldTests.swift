@@ -6,7 +6,7 @@ final class LTextFieldTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func makeField(variant: LTextFieldVariant, isRequired: Bool = false) -> LTextField {
+    @MainActor private func makeField(variant: LTextFieldVariant, isRequired: Bool = false) -> LTextField {
         var stored = ""
         let binding = Binding<String>(get: { stored }, set: { stored = $0 })
         return LTextField(
@@ -19,14 +19,14 @@ final class LTextFieldTests: XCTestCase {
 
     // MARK: - Filter behavior
 
-    func testStandardFilter_passesAllInputUnchanged() {
+    @MainActor func testStandardFilter_passesAllInputUnchanged() {
         let field = makeField(variant: .standard)
         XCTAssertEqual(field.filter("Hello, World! 123"), "Hello, World! 123")
         XCTAssertEqual(field.filter(""), "")
         XCTAssertEqual(field.filter("emoji ✓"), "emoji ✓")
     }
 
-    func testNumberFilter_onlyDigitsPass() {
+    @MainActor func testNumberFilter_onlyDigitsPass() {
         let field = makeField(variant: .number)
         XCTAssertEqual(field.filter("abc123def456"), "123456")
         XCTAssertEqual(field.filter("12.34"), "1234")
@@ -34,7 +34,7 @@ final class LTextFieldTests: XCTestCase {
         XCTAssertEqual(field.filter("0987"), "0987")
     }
 
-    func testDecimalFilter_oneSeparatorAllowed() {
+    @MainActor func testDecimalFilter_oneSeparatorAllowed() {
         let field = makeField(variant: .decimal)
         XCTAssertEqual(field.filter("12.34"), "12.34")
         XCTAssertEqual(field.filter("12,34"), "12,34")
@@ -44,7 +44,7 @@ final class LTextFieldTests: XCTestCase {
         XCTAssertEqual(field.filter("abc12.3xy"), "12.3")
     }
 
-    func testPINFilter_maxSixDigits() {
+    @MainActor func testPINFilter_maxSixDigits() {
         let field = makeField(variant: .pin)
         XCTAssertEqual(field.filter("123456"), "123456")
         XCTAssertEqual(field.filter("1234567890"), "123456")
@@ -52,7 +52,7 @@ final class LTextFieldTests: XCTestCase {
         XCTAssertEqual(field.filter("12"), "12")
     }
 
-    func testPaymentFormat_insertsSpaceEveryFourDigits() {
+    @MainActor func testPaymentFormat_insertsSpaceEveryFourDigits() {
         let field = makeField(variant: .payment)
         XCTAssertEqual(field.filter("1234"), "1234")
         XCTAssertEqual(field.filter("12345"), "1234 5")
@@ -60,7 +60,7 @@ final class LTextFieldTests: XCTestCase {
         XCTAssertEqual(field.filter("1234567890123456"), "1234 5678 9012 3456")
     }
 
-    func testPaymentFormat_maxSixteenDigits() {
+    @MainActor func testPaymentFormat_maxSixteenDigits() {
         let field = makeField(variant: .payment)
         // 20 digits supplied, only 16 should remain (formatted to 19 chars including 3 spaces)
         let formatted = field.filter("12345678901234567890")
@@ -70,7 +70,7 @@ final class LTextFieldTests: XCTestCase {
         XCTAssertEqual(field.filter("4111-1111-1111-1111"), "4111 1111 1111 1111")
     }
 
-    func testPaymentFormat_emptyAndShortInputs() {
+    @MainActor func testPaymentFormat_emptyAndShortInputs() {
         let field = makeField(variant: .payment)
         XCTAssertEqual(field.filter(""), "")
         XCTAssertEqual(field.filter("1"), "1")
@@ -78,7 +78,7 @@ final class LTextFieldTests: XCTestCase {
         XCTAssertEqual(field.filter("abcd"), "")
     }
 
-    func testMultilineVariant_returnsInputUnchangedFromFilter() {
+    @MainActor func testMultilineVariant_returnsInputUnchangedFromFilter() {
         // Multiline doesn't go through filter() in production (uses editorBinding),
         // but the filter switch falls through to default — verify it preserves input.
         let field = makeField(variant: .multiline)
@@ -87,7 +87,7 @@ final class LTextFieldTests: XCTestCase {
 
     // MARK: - Required label flag
 
-    func testIsRequired_flagIsExposed() {
+    @MainActor func testIsRequired_flagIsExposed() {
         let required = makeField(variant: .standard, isRequired: true)
         let optional = makeField(variant: .standard, isRequired: false)
         XCTAssertTrue(required.isRequired)

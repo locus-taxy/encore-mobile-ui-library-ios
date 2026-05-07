@@ -94,7 +94,6 @@ public struct LTextField: View {
 
     // MARK: - Subviews
 
-    @ViewBuilder
     private func labelRow(_ text: String) -> some View {
         HStack(spacing: 0) {
             Text(text)
@@ -124,8 +123,6 @@ public struct LTextField: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 20, height: 20)
                 .foregroundColor(Color.encore("Action/Active"))
-        } else {
-            EmptyView()
         }
     }
 
@@ -177,7 +174,6 @@ public struct LTextField: View {
         }
     }
 
-    @ViewBuilder
     private var trailingAdornment: some View {
         HStack(spacing: Spacing.spacing4) {
             switch validationState {
@@ -223,7 +219,7 @@ public struct LTextField: View {
             let boxWidth = max(0, (geometry.size.width - totalSpacing) / CGFloat(Self.pinLength))
             ZStack(alignment: .leading) {
                 HStack(spacing: Spacing.spacing8) {
-                    ForEach(0..<Self.pinLength, id: \.self) { index in
+                    ForEach(0 ..< Self.pinLength, id: \.self) { index in
                         pinBox(index: index)
                             .frame(width: boxWidth, height: 48)
                     }
@@ -326,7 +322,7 @@ public struct LTextField: View {
         )
     }
 
-    internal func filter(_ input: String) -> String {
+    func filter(_ input: String) -> String {
         switch variant {
         case .number:
             return input.filter { $0.isNumber }
