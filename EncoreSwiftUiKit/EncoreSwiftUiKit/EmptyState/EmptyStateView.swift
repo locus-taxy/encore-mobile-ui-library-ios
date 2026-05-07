@@ -65,7 +65,7 @@ public struct EmptyStateView: View {
                 }
             }
             if let actionLabel, let action {
-                EncoreButton(label: actionLabel, variant: .outlined, action: action)
+                EncoreButton(label: actionLabel, endIconName: nil, variant: .outlined, action: action)
             }
         }
         .frame(maxWidth: 400)
