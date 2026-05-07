@@ -109,3 +109,84 @@ public struct RadioView: View {
         }
     }
 }
+
+/// A group of radio options sharing a single selection. Renders an optional
+/// form label above the options and an optional helper text below. Options are
+/// laid out vertically by default, or horizontally when `isRow` is true. All
+/// child `RadioView`s use `.end` label placement.
+public struct RadioGroupView: View {
+    let options: [String]
+    let selectedIndex: Int?
+    let isDisabled: Bool
+    let isRow: Bool
+    let label: String?
+    let helperText: String?
+    let isError: Bool
+    let onSelect: (Int) -> Void
+
+    public init(
+        options: [String],
+        selectedIndex: Int?,
+        isDisabled: Bool = false,
+        isRow: Bool = false,
+        label: String? = nil,
+        helperText: String? = nil,
+        isError: Bool = false,
+        onSelect: @escaping (Int) -> Void
+    ) {
+        self.options = options
+        self.selectedIndex = selectedIndex
+        self.isDisabled = isDisabled
+        self.isRow = isRow
+        self.label = label
+        self.helperText = helperText
+        self.isError = isError
+        self.onSelect = onSelect
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let label {
+                Text(label)
+                    .typography(Typography.Input.label)
+                    .foregroundColor(Color.encore("Text/Primary"))
+                    .padding(.bottom, Spacing.spacing4)
+            }
+            if isRow {
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(Array(options.enumerated()), id: \.offset) { index, option in
+                        RadioView(
+                            label: option,
+                            isSelected: selectedIndex == index,
+                            isDisabled: isDisabled,
+                            labelPlacement: .end,
+                            onTap: { onSelect(index) }
+                        )
+                    }
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(options.enumerated()), id: \.offset) { index, option in
+                        RadioView(
+                            label: option,
+                            isSelected: selectedIndex == index,
+                            isDisabled: isDisabled,
+                            labelPlacement: .end,
+                            onTap: { onSelect(index) }
+                        )
+                    }
+                }
+            }
+            if let helperText {
+                HStack(spacing: Spacing.spacing4) {
+                    Image(systemName: isError ? "exclamationmark.circle" : "info.circle")
+                        .frame(width: 16, height: 16)
+                    Text(helperText).typography(Typography.Input.helper)
+                }
+                .foregroundColor(isError ? Color.encore("Error/Main") : Color.encore("Text/Secondary"))
+                .padding(.top, Spacing.spacing2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
