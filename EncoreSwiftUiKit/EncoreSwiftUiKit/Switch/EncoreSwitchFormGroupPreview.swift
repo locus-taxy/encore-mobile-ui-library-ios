@@ -8,12 +8,12 @@ private struct EncoreSwitchFormGroupPreviewLayout: View {
     @State private var enabledItems = [
         EncoreSwitchItem(id: "1", label: "Option one", isOn: true),
         EncoreSwitchItem(id: "2", label: "Option two", isOn: false),
-        EncoreSwitchItem(id: "3", label: "Option three", isOn: true)
+        EncoreSwitchItem(id: "3", label: "Option three", isOn: true),
     ]
     @State private var errorItems = [
         EncoreSwitchItem(id: "4", label: "Option one", isOn: true),
         EncoreSwitchItem(id: "5", label: "Option two", isOn: false),
-        EncoreSwitchItem(id: "6", label: "Option three", isOn: false)
+        EncoreSwitchItem(id: "6", label: "Option three", isOn: false),
     ]
 
     var body: some View {
@@ -31,7 +31,7 @@ private struct EncoreSwitchFormGroupPreviewLayout: View {
                     items: [
                         EncoreSwitchItem(id: "7", label: "Option one", isOn: true),
                         EncoreSwitchItem(id: "8", label: "Option two", isOn: false),
-                        EncoreSwitchItem(id: "9", label: "Option three", isOn: true)
+                        EncoreSwitchItem(id: "9", label: "Option three", isOn: true),
                     ],
                     onToggle: { _, _ in },
                     isDisabled: true

@@ -8,10 +8,21 @@ public struct EncoreSwitchStyle: ToggleStyle {
     let size: EncoreSwitchSize
     let isDisabled: Bool
 
-    private var pillWidth: CGFloat { size == .medium ? 34 : 26 }
-    private var pillHeight: CGFloat { size == .medium ? 14 : 10 }
-    private var slidePadding: CGFloat { size == .medium ? Spacing.spacing12 : CGFloat(7) }
-    private var knobOffset: CGFloat { size == .medium ? Spacing.spacing20 : Spacing.spacing16 }
+    private var pillWidth: CGFloat {
+        size == .medium ? 34 : 26
+    }
+
+    private var pillHeight: CGFloat {
+        size == .medium ? 14 : 10
+    }
+
+    private var slidePadding: CGFloat {
+        size == .medium ? Spacing.spacing12 : CGFloat(7)
+    }
+
+    private var knobOffset: CGFloat {
+        size == .medium ? Spacing.spacing20 : Spacing.spacing16
+    }
 
     public func makeBody(configuration: Configuration) -> some View {
         let knobDiameter = pillHeight

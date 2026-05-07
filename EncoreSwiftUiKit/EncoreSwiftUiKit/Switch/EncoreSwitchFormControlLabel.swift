@@ -36,13 +36,25 @@ public struct EncoreSwitchFormControlLabel: View {
 
         switch labelPlacement {
         case .end:
-            HStack { switchView; labelView }
+            HStack {
+                switchView
+                labelView
+            }
         case .start:
-            HStack { labelView; switchView }
+            HStack {
+                labelView
+                switchView
+            }
         case .top:
-            VStack(alignment: .center) { labelView; switchView }
+            VStack(alignment: .center) {
+                labelView
+                switchView
+            }
         case .bottom:
-            VStack(alignment: .center) { switchView; labelView }
+            VStack(alignment: .center) {
+                switchView
+                labelView
+            }
         }
     }
 }
