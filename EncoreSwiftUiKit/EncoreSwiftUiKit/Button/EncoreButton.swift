@@ -23,6 +23,7 @@ public struct EncoreButton: View {
 
     private let label: String
     private let startIconName: String?
+    private let endIconName: String?
     private let color: EncoreButtonColor
     private let variant: EncoreButtonVariant
     private let size: EncoreButtonSize
@@ -31,6 +32,7 @@ public struct EncoreButton: View {
     public init(
         label: String,
         startIconName: String? = nil,
+        endIconName: String? = "LArrowDropDown",
         color: EncoreButtonColor = .primary,
         variant: EncoreButtonVariant = .contained,
         size: EncoreButtonSize = .medium,
@@ -38,6 +40,7 @@ public struct EncoreButton: View {
     ) {
         self.label = label
         self.startIconName = startIconName
+        self.endIconName = endIconName
         self.color = color
         self.variant = variant
         self.size = size
@@ -62,10 +65,12 @@ public struct EncoreButton: View {
                     .foregroundColor(contentColor)
                     .lineLimit(1)
                     .padding(.horizontal, labelHPadding)
-                EncoreIcon(iconName: "LArrowDropDown", size: iconSize)
-                    .foregroundColor(contentColor)
-                    .frame(width: iconSize, height: iconSize)
-                    .clipped()
+                if let endIconName {
+                    EncoreIcon(iconName: endIconName, size: iconSize)
+                        .foregroundColor(contentColor)
+                        .frame(width: iconSize, height: iconSize)
+                        .clipped()
+                }
             }
             .padding(.vertical, vPadding)
             .padding(.horizontal, hPadding)
