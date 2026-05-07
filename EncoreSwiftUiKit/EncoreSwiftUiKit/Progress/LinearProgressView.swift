@@ -11,40 +11,54 @@ public struct LinearProgressView: View {
 
     public var body: some View {
         if let value = value {
-            DeterminateLinearProgress(value: max(0, min(1, value)))
+            HStack(spacing: Spacing.spacing8) {
+                LinearProgressTrack(value: value)
+                Text("\(Int(max(0, min(1, value)) * 100))%")
+                    .typography(Typography.body2)
+                    .foregroundColor(Color.encore("Text/Primary"))
+            }
+            .frame(minWidth: 200)
+            .frame(maxWidth: .infinity)
         } else {
-            IndeterminateLinearProgress()
+            LinearProgressTrack(value: nil)
+                .frame(minWidth: 200)
+                .frame(maxWidth: .infinity)
         }
     }
 }
 
-private struct DeterminateLinearProgress: View {
+/// Track-only rendering shared by LinearProgressView and LinearProgressWithLabelView.
+struct LinearProgressTrack: View {
+    let value: Double?
+
+    var body: some View {
+        if let value = value {
+            DeterminateTrack(value: max(0, min(1, value)))
+        } else {
+            IndeterminateTrack()
+        }
+    }
+}
+
+private struct DeterminateTrack: View {
     let value: Double
 
     var body: some View {
-        HStack(spacing: Spacing.spacing8) {
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color.encore("Primary/Main").opacity(0.38))
-                    Rectangle()
-                        .fill(Color.encore("Primary/Main"))
-                        .frame(width: geometry.size.width * CGFloat(value))
-                }
-                .clipped()
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(Color.encore("Primary/Main").opacity(0.38))
+                Rectangle()
+                    .fill(Color.encore("Primary/Main"))
+                    .frame(width: geometry.size.width * CGFloat(value))
             }
-            .frame(height: Spacing.spacing4)
-
-            Text("\(Int(value * 100))%")
-                .typography(Typography.body2)
-                .foregroundColor(Color.encore("Text/Primary"))
+            .clipped()
         }
-        .frame(minWidth: 200)
-        .frame(maxWidth: .infinity)
+        .frame(height: Spacing.spacing4)
     }
 }
 
-private struct IndeterminateLinearProgress: View {
+private struct IndeterminateTrack: View {
     @State private var bar1Progress: CGFloat = 0
     @State private var bar2Progress: CGFloat = 0
 
@@ -80,7 +94,5 @@ private struct IndeterminateLinearProgress: View {
             }
         }
         .frame(height: Spacing.spacing4)
-        .frame(minWidth: 200)
-        .frame(maxWidth: .infinity)
     }
 }
