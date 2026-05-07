@@ -65,4 +65,5 @@ import SwiftUI
         }
         .padding(Spacing.spacing16)
     }
+    .preferredColorScheme(.light)
 }
