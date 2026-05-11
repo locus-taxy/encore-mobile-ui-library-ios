@@ -1,8 +1,8 @@
 import SwiftUI
 
 public struct PODValidationView: View {
-    public let errorMessage: String
-    public let action: any PODValidationAction
+    let errorMessage: String
+    let action: any PODValidationAction
 
     public init(errorMessage: String, action: any PODValidationAction) {
         self.errorMessage = errorMessage
@@ -10,7 +10,27 @@ public struct PODValidationView: View {
     }
 
     public var body: some View {
-        // Placeholder — T005 will flesh this out with retry/continue buttons.
-        Text(errorMessage)
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 44))
+                .foregroundColor(.orange)
+
+            Text(errorMessage)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            HStack(spacing: 16) {
+                Button("Retry") {
+                    action.retry()
+                }
+                .buttonStyle(.bordered)
+
+                Button("Continue Anyway") {
+                    action.continueAnyway()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding()
     }
 }
