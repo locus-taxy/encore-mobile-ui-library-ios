@@ -11,6 +11,7 @@ internal final class TextExtractionProcessor: ImageProcessor {
         guard config.textExtractionEnabled, !config.requiredTexts.isEmpty else {
             return .success(image, metadata)
         }
+        guard !metadata.blurDetected else { return .success(image, metadata) }
         guard let cgImage = image.cgImage else { return .success(image, metadata) }
 
         var recognizedStrings: [String] = []

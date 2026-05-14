@@ -18,10 +18,18 @@ public struct ImageCheckListItem: View {
 
     @State private var imageURLs: [URL]
     @State private var pipeline: PODImagePipeline?
-    @State private var validationState: ValidationState?
-    @State private var cropContinuation: CheckedContinuation<UIImage?, Never>?
-    @State private var showCropSheet = false
-    @State private var pendingCropImage: UIImage?
+    @State private var activeSheet: ActiveSheet?
+
+    private enum ActiveSheet: Identifiable {
+        case crop(UIImage, CheckedContinuation<UIImage?, Never>)
+        case validation(ValidationState)
+        var id: String {
+            switch self {
+            case .crop: return "crop"
+            case .validation: return "validation"
+            }
+        }
+    }
 
     public init(
         title: String,
@@ -85,39 +93,34 @@ public struct ImageCheckListItem: View {
         .onChange(of: initialImageURLs) { newValue in
             imageURLs = newValue
         }
-        .sheet(isPresented: $showCropSheet) {
-            if let img = pendingCropImage {
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case let .crop(img, continuation):
                 CropImageView(
                     image: img,
                     onConfirm: { cropped in
-                        cropContinuation?.resume(returning: cropped)
-                        cropContinuation = nil
-                        showCropSheet = false
-                        pendingCropImage = nil
+                        continuation.resume(returning: cropped)
+                        activeSheet = nil
                     },
                     onCancel: {
-                        cropContinuation?.resume(returning: nil)
-                        cropContinuation = nil
-                        showCropSheet = false
-                        pendingCropImage = nil
+                        continuation.resume(returning: nil)
+                        activeSheet = nil
                     }
                 )
+            case let .validation(state):
+                PODValidationView(
+                    errorMessage: errorMessage(for: state.errorType),
+                    action: {
+                        let action = CallbackValidationAction()
+                        action.onRetry = { activeSheet = nil }
+                        action.onContinueAnyway = {
+                            activeSheet = nil
+                            pipeline?.resume(image: state.image, metadata: state.metadata)
+                        }
+                        return action
+                    }()
+                )
             }
-        }
-        .sheet(item: $validationState) { state in
-            let action = CallbackValidationAction()
-            action.onRetry = {
-                validationState = nil
-                runPipeline(on: state.image)
-            }
-            action.onContinueAnyway = {
-                validationState = nil
-                appendProcessedURL(state.metadata.savedURL)
-            }
-            return PODValidationView(
-                errorMessage: errorMessage(for: state.errorType),
-                action: action
-            )
         }
     }
 
@@ -146,20 +149,21 @@ public struct ImageCheckListItem: View {
         )
         p.delegate = podDelegate
         p.onValidationError = { errorType, image, metadata in
-            validationState = ValidationState(
+            activeSheet = .validation(ValidationState(
                 errorType: errorType,
                 image: image,
                 metadata: metadata
-            )
+            ))
         }
         p.onComplete = { url in
             appendProcessedURL(url)
         }
         pipeline = p
-        p.execute(image: image) { image, continuation in
-            pendingCropImage = image
-            cropContinuation = continuation
-            showCropSheet = true
+        p.execute(image: image) { rawImage, continuation in
+            let decoded = rawImage.preparingForDisplay() ?? rawImage
+            DispatchQueue.main.async {
+                activeSheet = .crop(decoded, continuation)
+            }
         }
     }
 

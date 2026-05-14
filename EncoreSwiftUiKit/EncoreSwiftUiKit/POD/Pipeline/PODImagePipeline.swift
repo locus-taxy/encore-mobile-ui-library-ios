@@ -35,11 +35,8 @@ final class PODImagePipeline {
                         currentImage = img
                         metadata = meta
                     case let .validationError(errorType, img, meta):
-                        let errType = errorType
-                        let errImg = img
-                        let errMeta = meta
                         await MainActor.run {
-                            onValidationError?(errType, errImg, errMeta)
+                            onValidationError?(errorType, img, meta)
                         }
                         return
                     }
@@ -52,13 +49,57 @@ final class PODImagePipeline {
                     }
                 }
             } catch {
-                let err = error
                 let itemId = captureData.itemId
                 await MainActor.run {
-                    delegate?.podPipeline(didFailWithError: err, itemId: itemId)
+                    delegate?.podPipeline(didFailWithError: error, itemId: itemId)
                 }
             }
         }
+    }
+
+    func resume(image: UIImage, metadata: ProcessingMetadata) {
+        Task {
+            do {
+                var currentImage = image
+                var currentMetadata = metadata
+                for processor in buildPostValidationProcessors() {
+                    let result = try await processor.process(
+                        image: currentImage,
+                        config: config,
+                        context: captureData,
+                        metadata: currentMetadata
+                    )
+                    switch result {
+                    case let .success(img, meta):
+                        currentImage = img
+                        currentMetadata = meta
+                    case let .validationError(_, img, meta):
+                        currentImage = img
+                        currentMetadata = meta
+                    }
+                }
+                if let url = currentMetadata.savedURL {
+                    let itemId = captureData.itemId
+                    await MainActor.run {
+                        delegate?.podPipeline(didCompleteWithURL: url, itemId: itemId)
+                        onComplete?(url)
+                    }
+                }
+            } catch {
+                let itemId = captureData.itemId
+                await MainActor.run {
+                    delegate?.podPipeline(didFailWithError: error, itemId: itemId)
+                }
+            }
+        }
+    }
+
+    private func buildPostValidationProcessors() -> [any ImageProcessor] {
+        var list: [any ImageProcessor] = []
+        if config.scaleDownEnabled { list.append(ScaleDownProcessor()) }
+        if config.captionEnabled { list.append(CaptionProcessor()) }
+        list.append(ExifProcessor())
+        return list
     }
 
     private func buildProcessors(

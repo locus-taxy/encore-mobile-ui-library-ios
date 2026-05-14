@@ -15,6 +15,8 @@ internal struct CropImageView: View {
     @State private var cropRect: CGRect = CGRect(x: 0.1, y: 0.1, width: 0.8, height: 0.8)
     /// Rotation applied to the source image, in degrees. Always a multiple of 90.
     @State private var rotationAngle: CGFloat = 0
+    /// Cached result of rotatedImage() — recomputed only when rotationAngle changes.
+    @State private var cachedRotatedImage: UIImage? = nil
     /// Snapshot of `cropRect` at the start of the current drag. Drag gestures
     /// report cumulative translation, so we apply deltas against this base
     /// instead of the live `cropRect` to avoid compounding drift.
@@ -24,24 +26,37 @@ internal struct CropImageView: View {
     private let minCropFraction: CGFloat = 0.1
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color.black.ignoresSafeArea()
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    cropArea(in: geometry.size)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                    controlBar
+            VStack(spacing: 0) {
+                GeometryReader { cropGeometry in
+                    cropArea(in: cropGeometry.size)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                controlBar
+                    .padding(.bottom, bottomSafeAreaInset)
             }
         }
+        .onAppear {
+            cachedRotatedImage = rotatedImage()
+        }
+        .onChange(of: rotationAngle) { _ in
+            cachedRotatedImage = rotatedImage()
+        }
+    }
+
+    private var bottomSafeAreaInset: CGFloat {
+        (UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.bottom) ?? 0
     }
 
     // MARK: - Crop area
 
     private func cropArea(in containerSize: CGSize) -> some View {
-        let rotated = rotatedImage()
+        let rotated = cachedRotatedImage ?? rotatedImage()
         let displayRect = aspectFitRect(for: rotated.size, in: containerSize)
 
         return ZStack(alignment: .topLeading) {
@@ -146,7 +161,7 @@ internal struct CropImageView: View {
     // MARK: - Cropping
 
     private func confirm() {
-        let rotated = rotatedImage()
+        let rotated = cachedRotatedImage ?? rotatedImage()
         guard let cropped = crop(image: rotated, normalizedRect: cropRect) else {
             onConfirm(rotated)
             return
@@ -175,28 +190,49 @@ internal struct CropImageView: View {
     }
 
     private func rotatedImage() -> UIImage {
+        let base = normalizedOrientation(image)
+
         let normalizedDegrees = ((rotationAngle.truncatingRemainder(dividingBy: 360)) + 360)
             .truncatingRemainder(dividingBy: 360)
-        guard normalizedDegrees != 0 else { return image }
+        guard normalizedDegrees != 0 else { return base }
 
         let radians = normalizedDegrees * .pi / 180
-        let originalSize = image.size
+        let originalSize = base.size
         let rotatedSize: CGSize = (Int(normalizedDegrees) % 180 == 0)
             ? originalSize
             : CGSize(width: originalSize.height, height: originalSize.width)
 
-        let renderer = UIGraphicsImageRenderer(size: rotatedSize)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: rotatedSize, format: format)
         return renderer.image { ctx in
             let context = ctx.cgContext
             context.translateBy(x: rotatedSize.width / 2, y: rotatedSize.height / 2)
             context.rotate(by: radians)
-            image.draw(in: CGRect(
+            base.draw(in: CGRect(
                 x: -originalSize.width / 2,
                 y: -originalSize.height / 2,
                 width: originalSize.width,
                 height: originalSize.height
             ))
         }
+    }
+
+    private func rotatedCropRect(_ rect: CGRect) -> CGRect {
+        CGRect(
+            x: 1.0 - rect.maxY,
+            y: rect.minX,
+            width: rect.height,
+            height: rect.width
+        )
+    }
+
+    private func normalizedOrientation(_ image: UIImage) -> UIImage {
+        guard image.imageOrientation != .up else { return image }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
+        return renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: image.size)) }
     }
 
     private func aspectFitRect(for imageSize: CGSize, in containerSize: CGSize) -> CGRect {
@@ -230,6 +266,7 @@ internal struct CropImageView: View {
 
             Button {
                 rotationAngle = (rotationAngle + 90).truncatingRemainder(dividingBy: 360)
+                cropRect = rotatedCropRect(cropRect)
             } label: {
                 Image(systemName: "rotate.right")
                     .font(.system(size: 22, weight: .medium))
