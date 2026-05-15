@@ -105,11 +105,19 @@ public struct ImagePickerView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
-        .sheet(isPresented: $showCamera) {
-            CameraPickerRepresentable { url in
-                onImageSelected(url)
+        .background(
+            Group {
+                if showCamera {
+                    CameraPickerRepresentable(
+                        onImagePicked: { url in
+                            showCamera = false
+                            onImageSelected(url)
+                        },
+                        onCancel: { showCamera = false }
+                    )
+                }
             }
-        }
+        )
         .sheet(isPresented: $showPhotoPicker) {
             PHPickerRepresentable { url in
                 onImageSelected(url)
@@ -194,27 +202,41 @@ struct PHPickerRepresentable: UIViewControllerRepresentable {
 
 // MARK: - Camera Picker
 
-struct CameraPickerRepresentable: UIViewControllerRepresentable {
+struct CameraPickerRepresentable: UIViewRepresentable {
     let onImagePicked: (URL?) -> Void
+    let onCancel: () -> Void
 
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = context.coordinator
-        return picker
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isHidden = true
+        DispatchQueue.main.async {
+            guard let scene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+                  let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+            else { return }
+            var top = root
+            while let presented = top.presentedViewController { top = presented }
+            let picker = UIImagePickerController()
+            picker.sourceType = .camera
+            picker.delegate = context.coordinator
+            top.present(picker, animated: true)
+        }
+        return view
     }
 
-    func updateUIViewController(_: UIImagePickerController, context _: Context) {}
+    func updateUIView(_: UIView, context _: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onImagePicked: onImagePicked)
+        Coordinator(onImagePicked: onImagePicked, onCancel: onCancel)
     }
 
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let onImagePicked: (URL?) -> Void
+        let onCancel: () -> Void
 
-        init(onImagePicked: @escaping (URL?) -> Void) {
+        init(onImagePicked: @escaping (URL?) -> Void, onCancel: @escaping () -> Void) {
             self.onImagePicked = onImagePicked
+            self.onCancel = onCancel
         }
 
         func imagePickerController(
@@ -237,7 +259,7 @@ struct CameraPickerRepresentable: UIViewControllerRepresentable {
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             picker.dismiss(animated: true)
-            onImagePicked(nil)
+            onCancel()
         }
     }
 }

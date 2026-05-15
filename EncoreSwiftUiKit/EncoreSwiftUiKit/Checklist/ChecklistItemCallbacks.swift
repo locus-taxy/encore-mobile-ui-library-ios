@@ -41,9 +41,16 @@ public struct UrlItemCallbacks {
 public struct ImageItemCallbacks {
     /// Optional callback to get caption text to add to image before saving
     public let onGetCaptionText: (() -> String?)?
+    /// Optional delegate notified when the POD image processing pipeline
+    /// completes or fails for an image item.
+    public var podDelegate: (any PODImageProcessingDelegate)?
 
-    public init(onGetCaptionText: (() -> String?)? = nil) {
+    public init(
+        onGetCaptionText: (() -> String?)? = nil,
+        podDelegate: (any PODImageProcessingDelegate)? = nil
+    ) {
         self.onGetCaptionText = onGetCaptionText
+        self.podDelegate = podDelegate
     }
 }
 
@@ -52,9 +59,16 @@ public struct ImageItemCallbacks {
 public struct SignatureItemCallbacks {
     /// Optional callback to get caption text to add to signature before saving
     public let onGetCaptionText: (() -> String?)?
+    /// Optional delegate notified when the POD image processing pipeline
+    /// completes or fails for a signature item.
+    public var podDelegate: (any PODImageProcessingDelegate)?
 
-    public init(onGetCaptionText: (() -> String?)? = nil) {
+    public init(
+        onGetCaptionText: (() -> String?)? = nil,
+        podDelegate: (any PODImageProcessingDelegate)? = nil
+    ) {
         self.onGetCaptionText = onGetCaptionText
+        self.podDelegate = podDelegate
     }
 }
 
