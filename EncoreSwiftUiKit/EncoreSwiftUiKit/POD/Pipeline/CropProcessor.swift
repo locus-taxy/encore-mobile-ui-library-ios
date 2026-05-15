@@ -21,6 +21,7 @@ internal final class CropProcessor: ImageProcessor {
             presentCrop(image, continuation)
         }
 
-        return .success(cropped ?? image, metadata)
+        guard let cropped else { throw CancellationError() }
+        return .success(cropped, metadata)
     }
 }

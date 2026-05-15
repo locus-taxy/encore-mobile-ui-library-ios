@@ -23,7 +23,9 @@ internal final class ScaleDownProcessor: ImageProcessor {
         let scale = min(widthRatio, heightRatio)
         let scaledSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
 
-        let renderer = UIGraphicsImageRenderer(size: scaledSize)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: scaledSize, format: format)
         let scaled = renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: scaledSize))
         }

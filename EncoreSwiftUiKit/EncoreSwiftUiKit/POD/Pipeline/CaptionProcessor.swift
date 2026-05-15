@@ -20,12 +20,12 @@ internal final class CaptionProcessor: ImageProcessor {
 
         let locationStr: String
         if let coord = context.location {
-            locationStr = "Location:\(coord.latitude),\(coord.longitude)"
+            locationStr = "\(coord.latitude), \(coord.longitude)"
         } else {
-            locationStr = "Location: Unknown"
+            locationStr = "Location unavailable"
         }
 
-        let captionText = [dateStr, locationStr].joined(separator: "\n")
+        let captionText = [context.itemId, dateStr, locationStr].joined(separator: "\n")
 
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font,
@@ -42,7 +42,9 @@ internal final class CaptionProcessor: ImageProcessor {
             height: textSize.height + padding * 2
         )
 
-        let renderer = UIGraphicsImageRenderer(size: image.size)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
         let captioned = renderer.image { ctx in
             image.draw(at: .zero)
             UIColor.black.withAlphaComponent(0.5).setFill()

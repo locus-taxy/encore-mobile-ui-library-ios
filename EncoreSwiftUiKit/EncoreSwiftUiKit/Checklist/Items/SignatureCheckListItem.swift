@@ -74,11 +74,10 @@ public struct SignatureCheckListItem: View {
             let action = CallbackValidationAction()
             action.onRetry = {
                 validationState = nil
-                runPipeline(on: state.image)
             }
             action.onContinueAnyway = {
                 validationState = nil
-                deliverProcessedURL(state.metadata.savedURL)
+                pipeline?.resume(image: state.image, metadata: state.metadata)
             }
             return PODValidationView(
                 errorMessage: errorMessage(for: state.errorType),
