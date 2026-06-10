@@ -189,7 +189,12 @@ public struct LTextField: View {
                     .resizable()
                     .frame(width: 24, height: 24)
                     .foregroundColor(Color.encore("Error/Main"))
-            case .success, .normal:
+            case .success:
+                Image(systemName: "checkmark.circle.fill")
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(Color.encore("Success/Main"))
+            case .normal:
                 EmptyView()
             }
 
