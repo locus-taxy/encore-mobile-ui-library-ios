@@ -110,6 +110,7 @@ struct SignatureDrawingCanvas: View {
 
     @State private var lines: [[CGPoint]] = []
     @State private var currentLine: [CGPoint] = []
+    @State private var canvasSize: CGSize = .zero
 
     var body: some View {
         NavigationView {
@@ -119,45 +120,49 @@ struct SignatureDrawingCanvas: View {
                     .padding(.top, 16)
 
                 // Drawing area
-                Canvas { context, _ in
-                    for line in lines {
-                        var path = Path()
-                        guard let firstPoint = line.first else { continue }
-                        path.move(to: firstPoint)
-                        for point in line.dropFirst() {
-                            path.addLine(to: point)
+                GeometryReader { geo in
+                    Canvas { context, _ in
+                        for line in lines {
+                            var path = Path()
+                            guard let firstPoint = line.first else { continue }
+                            path.move(to: firstPoint)
+                            for point in line.dropFirst() {
+                                path.addLine(to: point)
+                            }
+                            context.stroke(path, with: .color(.primary), lineWidth: 2)
                         }
-                        context.stroke(path, with: .color(.primary), lineWidth: 2)
-                    }
 
-                    if !currentLine.isEmpty {
-                        var path = Path()
-                        path.move(to: currentLine[0])
-                        for point in currentLine.dropFirst() {
-                            path.addLine(to: point)
+                        if !currentLine.isEmpty {
+                            var path = Path()
+                            path.move(to: currentLine[0])
+                            for point in currentLine.dropFirst() {
+                                path.addLine(to: point)
+                            }
+                            context.stroke(path, with: .color(.primary), lineWidth: 2)
                         }
-                        context.stroke(path, with: .color(.primary), lineWidth: 2)
                     }
+                    .background(Color.white)
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                currentLine.append(value.location)
+                            }
+                            .onEnded { _ in
+                                lines.append(currentLine)
+                                currentLine = []
+                            }
+                    )
+                    .onAppear { canvasSize = geo.size }
+                    .onChange(of: geo.size) { canvasSize = $0 }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 300)
-                .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
                 )
                 .padding()
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            currentLine.append(value.location)
-                        }
-                        .onEnded { _ in
-                            lines.append(currentLine)
-                            currentLine = []
-                        }
-                )
 
                 HStack(spacing: 16) {
                     Button("Clear") {
@@ -180,27 +185,29 @@ struct SignatureDrawingCanvas: View {
                 }
                 .padding()
             }
-            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 
     private func saveSignature() {
-        let canvasSize = CGSize(width: 600, height: 600) // 300pt * 2x scale
-        let renderer = UIGraphicsImageRenderer(size: canvasSize)
+        let renderSize = canvasSize == .zero
+            ? CGSize(width: 390, height: 300)
+            : canvasSize
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: renderSize, format: format)
         let uiImage = renderer.image { ctx in
-            // White background
             UIColor.white.setFill()
-            ctx.fill(CGRect(origin: .zero, size: canvasSize))
+            ctx.fill(CGRect(origin: .zero, size: renderSize))
 
-            // Draw signature lines
             UIColor.black.setStroke()
             for line in lines {
                 guard let firstPoint = line.first else { continue }
                 let bezier = UIBezierPath()
-                bezier.lineWidth = 4 // 2pt * 2x
-                bezier.move(to: CGPoint(x: firstPoint.x * 2, y: firstPoint.y * 2))
+                bezier.lineWidth = 2
+                bezier.move(to: firstPoint)
                 for point in line.dropFirst() {
-                    bezier.addLine(to: CGPoint(x: point.x * 2, y: point.y * 2))
+                    bezier.addLine(to: point)
                 }
                 bezier.stroke()
             }
@@ -210,8 +217,12 @@ struct SignatureDrawingCanvas: View {
             let tempURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent(UUID().uuidString)
                 .appendingPathExtension("png")
-            try? data.write(to: tempURL)
-            onSignatureSaved(tempURL)
+            do {
+                try data.write(to: tempURL)
+                onSignatureSaved(tempURL)
+            } catch {
+                // Write failed
+            }
         }
     }
 }
