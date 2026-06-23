@@ -12,6 +12,7 @@ public struct EncoreDateView: View {
     var showRelativeDayPrefix: Bool
 
     @State private var showDatePicker = false
+    @State private var isSheetVisible = false
     @State private var selectedDate = Date()
 
     public init(
@@ -76,7 +77,11 @@ public struct EncoreDateView: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                showDatePicker = true
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    showDatePicker = true
+                }
             } label: {
                 HStack(spacing: 8) {
                     Text(displayText)
@@ -91,13 +96,22 @@ public struct EncoreDateView: View {
             .buttonStyle(.plain)
             .fullScreenCover(isPresented: $showDatePicker) {
                 ZStack(alignment: .bottom) {
-                    Color.clear
-                    Color.encore("Backdrop/Fill").opacity(0.5)
+                    Color.encore("Backdrop/Fill")
+                        .opacity(isSheetVisible ? 0.5 : 0)
                         .ignoresSafeArea()
+                        .animation(.easeInOut(duration: 0.22), value: isSheetVisible)
                     pickerSheet
                         .background(Color.encore("Background/Default"))
+                        .offset(y: isSheetVisible ? 0 : 1000)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.9), value: isSheetVisible)
+                        .allowsHitTesting(isSheetVisible)
                 }
                 .background(TransparentBackground())
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        isSheetVisible = true
+                    }
+                }
             }
         }
         .onAppear { syncSelectedDate(from: dateValue) }
@@ -105,6 +119,13 @@ public struct EncoreDateView: View {
     }
 
     // MARK: - Helpers
+
+    private func closeSheet() {
+        isSheetVisible = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.none) { showDatePicker = false }
+        }
+    }
 
     private func syncSelectedDate(from value: String) {
         guard !value.isEmpty else { return }
@@ -122,7 +143,7 @@ public struct EncoreDateView: View {
             // Header
             HStack(alignment: .center, spacing: 0) {
                 Button {
-                    showDatePicker = false
+                    closeSheet()
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 16, weight: .medium))
@@ -184,7 +205,7 @@ public struct EncoreDateView: View {
             VStack(spacing: 0) {
                 EncoreButton(label: "Apply") {
                     onDateSelected(selectedDate)
-                    showDatePicker = false
+                    closeSheet()
                 }
                 .padding(16)
             }
