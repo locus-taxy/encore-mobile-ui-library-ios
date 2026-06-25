@@ -203,7 +203,9 @@ public struct EncoreDateView: View {
 
             // Actions
             VStack(spacing: 0) {
-                EncoreButton(label: "Apply") {
+                EncoreButton(label: "Apply",
+                             endIconName: nil,
+                             size: .large) {
                     onDateSelected(selectedDate)
                     closeSheet()
                 }
