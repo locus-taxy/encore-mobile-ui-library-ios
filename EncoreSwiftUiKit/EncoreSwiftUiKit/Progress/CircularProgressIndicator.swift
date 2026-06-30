@@ -3,7 +3,7 @@ import SwiftUI
 public enum CircularProgressIndicatorSize {
     case small
 
-    var dimension: CGFloat { 20 }
+    var dimension: CGFloat { 15 }
     var lineWidth: CGFloat { 2 }
 }
 
