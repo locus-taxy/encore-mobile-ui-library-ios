@@ -16,10 +16,17 @@ public struct EncoreDatePickerModifier: ViewModifier {
 
     @State private var isSheetVisible = false
     @State private var selectedDate = Date()
+    @State private var internalIsPresented = false
 
     public func body(content: Content) -> some View {
         content
-            .fullScreenCover(isPresented: $isPresented) {
+            // Present from the internal mirror, not the public binding: the
+            // mirror is only ever set inside a disable-animations transaction
+            // (below), which suppresses the system slide-up cover transition —
+            // so callers can set `isPresented = true` plainly and still get the
+            // intended backdrop fade + sheet spring instead of the whole layer
+            // sliding up.
+            .fullScreenCover(isPresented: $internalIsPresented) {
                 ZStack(alignment: .bottom) {
                     Color.encore("Backdrop/Fill")
                         .opacity(isSheetVisible ? 0.5 : 0)
@@ -37,6 +44,17 @@ public struct EncoreDatePickerModifier: ViewModifier {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         isSheetVisible = true
                     }
+                }
+            }
+            .onChange(of: isPresented) { newValue in
+                if newValue {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) { internalIsPresented = true }
+                } else {
+                    // Keep programmatic dismissal (`isPresented = false` from a
+                    // caller) working now that the cover is driven by the mirror.
+                    internalIsPresented = false
                 }
             }
     }
@@ -64,7 +82,10 @@ public struct EncoreDatePickerModifier: ViewModifier {
     private func closeSheet() {
         isSheetVisible = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            withAnimation(.none) { isPresented = false }
+            withAnimation(.none) {
+                internalIsPresented = false
+                isPresented = false
+            }
         }
     }
 

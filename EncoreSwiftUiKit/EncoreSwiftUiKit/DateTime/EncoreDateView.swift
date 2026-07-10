@@ -69,11 +69,7 @@ public struct EncoreDateView: View {
 
     public var body: some View {
         Button {
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) {
-                showDatePicker = true
-            }
+            showDatePicker = true
         } label: {
             HStack(spacing: 8) {
                 Text(displayText)
