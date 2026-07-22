@@ -76,6 +76,7 @@ public struct EncoreButton: View {
             .padding(.horizontal, hPadding)
             .frame(maxWidth: .infinity)
             .frame(height: 48)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .background(backgroundColor)

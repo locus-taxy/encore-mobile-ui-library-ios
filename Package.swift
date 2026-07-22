@@ -21,6 +21,7 @@ let package = Package(
         .target(
             name: "EncoreSwiftUiKit",
             path: "EncoreSwiftUiKit/EncoreSwiftUiKit",
+            exclude: ["Previews"],
             resources: [
                 .process("Assets"),
                 .process("Fonts")
