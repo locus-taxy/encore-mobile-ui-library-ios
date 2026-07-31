@@ -37,7 +37,7 @@ public struct UrlCheckListItem: View {
         VStack(alignment: .leading, spacing: 0) {
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && url.isEmpty,
+                isRequired: isRequired,
                 helperText: helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,

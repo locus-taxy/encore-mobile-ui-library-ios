@@ -43,7 +43,7 @@ public struct MultiChoiceCheckListItem: View {
         VStack(alignment: .leading, spacing: 0) {
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && selectedIndices.isEmpty,
+                isRequired: isRequired,
                 helperText: helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,

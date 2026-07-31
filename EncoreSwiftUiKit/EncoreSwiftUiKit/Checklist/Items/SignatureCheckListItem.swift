@@ -62,7 +62,7 @@ public struct SignatureCheckListItem: View {
         VStack(alignment: .leading, spacing: 0) {
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && !isValid,
+                isRequired: isRequired,
                 helperText: helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,

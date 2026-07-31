@@ -48,7 +48,7 @@ public struct BooleanCheckListItem: View {
 
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && !checked,
+                isRequired: isRequired,
                 helperText: helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,

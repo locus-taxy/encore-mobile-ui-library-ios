@@ -55,24 +55,30 @@ public struct ChecklistHeader: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: Spacing.spacing2) {
-            if let itemIndex, let totalItems {
-                Text("\(itemIndex)/\(totalItems)")
-                    .typography(Typography.Input.helper)
-                    .foregroundColor(Color.encore("Text/Secondary"))
-            }
+            // Row 1: counter + completion tick
             HStack(spacing: Spacing.spacing4) {
+                if let itemIndex, let totalItems {
+                    Text("\(itemIndex)/\(totalItems)")
+                        .typography(Typography.Input.helper)
+                        .foregroundColor(Color.encore("Text/Secondary"))
+                }
+                if isCompleted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color.encore("Success/Main"))
+                }
+            }
+            // Row 2: title + persistent required asterisk
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.spacing2) {
                 Text(title)
                     .font(.system(size: ChecklistItemConstants.titleFontSize, weight: .medium))
                     .foregroundColor(.primary)
                     .lineSpacing(ChecklistItemConstants.titleLineHeight - ChecklistItemConstants.titleFontSize)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                if isCompleted {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color.encore("Success/Main"))
-                } else if showRequiredIndicator {
-                    RequiredIndicator(isVisible: isRequired, requiredText: requiredText)
+                if isRequired && showRequiredIndicator {
+                    Text("*").foregroundColor(Color.encore("Error/Main"))
                 }
             }
+            // Row 3: helper text
             if let helperText {
                 Text(helperText)
                     .typography(Typography.Input.helper)
