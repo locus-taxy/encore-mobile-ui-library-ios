@@ -16,12 +16,15 @@ public class ChecklistStateManager: ObservableObject {
     private var items: [ChecklistItem]
 
     /// Optional callback fired whenever a value is written via `updateValue`.
-    private let onValueChange: ((String, Any?) -> Void)?
+    /// Emits the full current state dictionary (key -> value) so the consumer
+    /// can drive visibility / persistence from a single source of truth without
+    /// maintaining a parallel answer store.
+    private let onValueChange: (([String: Any]) -> Void)?
 
     public init(
         items: [ChecklistItem],
         initialValues: [String: Any] = [:],
-        onValueChange: ((String, Any?) -> Void)? = nil
+        onValueChange: (([String: Any]) -> Void)? = nil
     ) {
         self.items = items
         self.onValueChange = onValueChange
@@ -63,7 +66,7 @@ public class ChecklistStateManager: ObservableObject {
             stateMap.removeValue(forKey: key)
         }
         validationMap[key] = validateItem(key: key, value: value)
-        onValueChange?(key, value)
+        onValueChange?(stateMap)
     }
 
     /// Gets the current value for a specific item.

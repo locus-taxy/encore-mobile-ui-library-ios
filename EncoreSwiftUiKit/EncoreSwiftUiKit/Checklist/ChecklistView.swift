@@ -18,7 +18,7 @@ public struct ChecklistView<Header: View>: View {
     let header: Header
     let items: [ChecklistItem]
     let initialValues: [String: Any]
-    let onValueChange: ((String, Any?) -> Void)?
+    let onValueChange: (([String: Any]) -> Void)?
     let onSubmit: ([String: ChecklistItemValue]) -> Void
     var submitButtonText: String
     var itemCallbacks: ChecklistItemCallbackProvider?
@@ -30,7 +30,7 @@ public struct ChecklistView<Header: View>: View {
         @ViewBuilder header: () -> Header,
         items: [ChecklistItem],
         initialValues: [String: Any] = [:],
-        onValueChange: ((String, Any?) -> Void)? = nil,
+        onValueChange: (([String: Any]) -> Void)? = nil,
         onSubmit: @escaping ([String: ChecklistItemValue]) -> Void,
         submitButtonText: String = "Submit",
         itemCallbacks: ChecklistItemCallbackProvider? = nil
@@ -97,7 +97,7 @@ public extension ChecklistView {
         header headerText: String,
         items: [ChecklistItem],
         initialValues: [String: Any] = [:],
-        onValueChange: ((String, Any?) -> Void)? = nil,
+        onValueChange: (([String: Any]) -> Void)? = nil,
         onSubmit: @escaping ([String: ChecklistItemValue]) -> Void,
         submitButtonText: String = "Submit",
         itemCallbacks: ChecklistItemCallbackProvider? = nil

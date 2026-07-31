@@ -25,16 +25,15 @@ final class ChecklistStateManagerTests: XCTestCase {
         XCTAssertFalse(sm.areAllRequiredItemsValid())
     }
 
-    func testUpdateValueFiresOnValueChange() {
-        var seen: [(String, Any?)] = []
+    func testUpdateValueFiresOnValueChangeWithFullState() {
+        var seen: [[String: Any]] = []
         let sm = ChecklistStateManager(
             items: [requiredText("name")],
-            onValueChange: { key, value in seen.append((key, value)) }
+            onValueChange: { state in seen.append(state) }
         )
         sm.updateValue(key: "name", value: "Grace")
         XCTAssertEqual(seen.count, 1)
-        XCTAssertEqual(seen.first?.0, "name")
-        XCTAssertEqual(seen.first?.1 as? String, "Grace")
+        XCTAssertEqual(seen.first?["name"] as? String, "Grace")
     }
 
     func testIsValidReflectsUpdates() {
