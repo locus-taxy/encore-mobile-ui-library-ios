@@ -28,30 +28,52 @@ public struct ChecklistHeader: View {
     var isRequired: Bool = false
     var showRequiredIndicator: Bool = true
     var requiredText: String = "Required"
+    var helperText: String? = nil
+    var itemIndex: Int? = nil
+    var totalItems: Int? = nil
+    var isCompleted: Bool = false
 
     public init(
         title: String,
         isRequired: Bool = false,
         showRequiredIndicator: Bool = true,
-        requiredText: String = "Required"
+        requiredText: String = "Required",
+        helperText: String? = nil,
+        itemIndex: Int? = nil,
+        totalItems: Int? = nil,
+        isCompleted: Bool = false
     ) {
         self.title = title
         self.isRequired = isRequired
         self.showRequiredIndicator = showRequiredIndicator
         self.requiredText = requiredText
+        self.helperText = helperText
+        self.itemIndex = itemIndex
+        self.totalItems = totalItems
+        self.isCompleted = isCompleted
     }
 
     public var body: some View {
-        HStack(alignment: .center) {
-            Text(title)
-                .font(.system(size: ChecklistItemConstants.titleFontSize, weight: .medium))
-                .foregroundColor(.primary)
-                .lineSpacing(ChecklistItemConstants.titleLineHeight - ChecklistItemConstants.titleFontSize)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 8)
-
-            if showRequiredIndicator {
-                RequiredIndicator(isVisible: isRequired, requiredText: requiredText)
+        VStack(alignment: .leading, spacing: Spacing.spacing2) {
+            if let itemIndex, let totalItems {
+                Text("\(itemIndex)/\(totalItems)")
+                    .typography(Typography.Input.helper)
+                    .foregroundColor(Color.encore("Text/Secondary"))
+            }
+            HStack(spacing: Spacing.spacing4) {
+                Text(title)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if isCompleted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color.encore("Success/Main"))
+                } else if showRequiredIndicator {
+                    RequiredIndicator(isVisible: isRequired, requiredText: requiredText)
+                }
+            }
+            if let helperText {
+                Text(helperText)
+                    .typography(Typography.Input.helper)
+                    .foregroundColor(Color.encore("Text/Secondary"))
             }
         }
     }
