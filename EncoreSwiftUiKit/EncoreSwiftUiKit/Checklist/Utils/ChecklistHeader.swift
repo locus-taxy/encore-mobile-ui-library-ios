@@ -62,6 +62,9 @@ public struct ChecklistHeader: View {
             }
             HStack(spacing: Spacing.spacing4) {
                 Text(title)
+                    .font(.system(size: ChecklistItemConstants.titleFontSize, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineSpacing(ChecklistItemConstants.titleLineHeight - ChecklistItemConstants.titleFontSize)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if isCompleted {
                     Image(systemName: "checkmark.circle.fill")
