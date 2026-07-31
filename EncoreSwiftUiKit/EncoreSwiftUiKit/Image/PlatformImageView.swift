@@ -17,10 +17,17 @@ public final class PlatformImageView: UIView {
         return imageView
     }()
 
-    public init(imageName: String) {
+    /// - Parameter tintColor: when set, the image renders as a template in
+    ///   this colour (asset icons ship un-templated, so tinting must force
+    ///   template rendering); when nil, the image keeps its own colours.
+    public init(imageName: String, tintColor: UIColor? = nil) {
         super.init(frame: .zero)
         setupView()
         loadImage(named: imageName)
+        if let tintColor {
+            imageView.image = imageView.image?.withRenderingMode(.alwaysTemplate)
+            imageView.tintColor = tintColor
+        }
     }
 
     @available(*, unavailable)
