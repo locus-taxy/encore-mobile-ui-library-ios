@@ -76,6 +76,54 @@ public class ChecklistStateManager: ObservableObject {
         validationMap[key] == true
     }
 
+    /// Whether the item has been answered (has a non-empty/meaningful value).
+    /// Used by the per-item completion tick so the tick reflects user interaction,
+    /// not validity. For example, an optional text field is always valid but
+    /// `isAnswered` is false until the user types something.
+    public func isAnswered(key: String) -> Bool {
+        guard let item = items.first(where: { $0.key == key }) else { return false }
+        let value = stateMap[key]
+
+        switch item.format {
+        case .boolean:
+            // Checked = answered; unchecked (or unset) = not answered.
+            return (value as? Bool) == true
+
+        case .singleChoice:
+            // A real selection is index >= 0; -1 or nil means no selection.
+            return (value as? Int).map { $0 >= 0 } ?? false
+
+        case .multiChoice:
+            // At least one option must be selected.
+            return !((value as? Set<Int>) ?? []).isEmpty
+
+        case .rating:
+            // A rating > 0 means the user has rated.
+            return (value as? Int).map { $0 > 0 } ?? false
+
+        case .pin, .textField, .date, .time, .dateTime:
+            // A non-empty string means the user has entered something.
+            return !((value as? String) ?? "").isEmpty
+
+        case .url:
+            // .url is a read-only link — the URL lives in possibleValues, nothing
+            // is written to stateMap by user interaction, so it cannot be "answered".
+            return false
+
+        case .urlWithFeedback:
+            // The default onUrlClick closure writes `true` to stateMap on tap.
+            return (value as? Bool) == true
+
+        case .photo, .photoGallery, .multiPhoto:
+            // At least one image URL must be present.
+            return !((value as? [URL]) ?? []).isEmpty
+
+        case .signature:
+            // A non-nil URL means a signature has been drawn.
+            return (value as? URL) != nil
+        }
+    }
+
     /// Checks if all required items are valid.
     public func areAllRequiredItemsValid() -> Bool {
         items

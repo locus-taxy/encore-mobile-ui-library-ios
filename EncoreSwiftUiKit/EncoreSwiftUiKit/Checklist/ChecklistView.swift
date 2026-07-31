@@ -140,7 +140,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialChecked: currentValue,
                 onCheckedChange: { newValue in
                     stateManager.updateValue(key: item.key, value: newValue)
@@ -161,7 +161,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 options: options,
                 initialSelectedIndex: currentValue,
                 onSelectionChange: { index, _ in
@@ -183,7 +183,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 options: options,
                 initialSelectedIndices: currentValue,
                 onSelectionChanged: { selectedIndices in
@@ -202,7 +202,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialPinValue: currentValue,
                 onPinChange: { newPin in
                     stateManager.updateValue(key: item.key, value: newPin)
@@ -223,7 +223,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialRating: currentValue,
                 onRatingChange: { newRating in
                     stateManager.updateValue(key: item.key, value: newRating)
@@ -239,7 +239,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialDateValue: currentValue,
                 onDateSelected: { date in
                     let formattedDate = DateTimeHelper.formatDate(date, format: dateFormat)
@@ -257,7 +257,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialTimeValue: currentValue,
                 onTimeSelected: { hour, minute in
                     let formattedTime = DateTimeHelper.formatTime(hour: hour, minute: minute)
@@ -289,7 +289,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialDateValue: dateValue,
                 initialTimeValue: timeValue,
                 onDateTimeChanged: { combinedDateTime in
@@ -310,7 +310,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialImageURLs: currentValue,
                 onImageListChanged: { imageURLs in
                     stateManager.updateValue(key: item.key, value: imageURLs)
@@ -330,7 +330,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialImageURLs: currentValue,
                 onImageListChanged: { imageURLs in
                     stateManager.updateValue(key: item.key, value: imageURLs)
@@ -350,7 +350,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialSignatureURL: currentValue,
                 onSignatureSelected: { url in
                     stateManager.updateValue(key: item.key, value: url)
@@ -369,7 +369,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 initialValue: currentValue,
                 onValueChange: { stateManager.updateValue(key: item.key, value: $0) },
                 isRequired: item.isRequired,
@@ -386,7 +386,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 url: url,
                 onUrlClick: urlCallbacks?.onUrlClick,
                 isRequired: item.isRequired
@@ -401,7 +401,7 @@ struct ChecklistItemRenderer: View {
                 helperText: item.helperText,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
-                isCompleted: stateManager.isValid(key: item.key),
+                isCompleted: stateManager.isAnswered(key: item.key),
                 url: url,
                 onUrlClick: urlCallbacks?.onUrlClick ?? {
                     stateManager.updateValue(key: item.key, value: true)
