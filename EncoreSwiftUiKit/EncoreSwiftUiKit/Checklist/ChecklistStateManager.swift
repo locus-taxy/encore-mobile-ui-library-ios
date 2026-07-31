@@ -15,11 +15,20 @@ public class ChecklistStateManager: ObservableObject {
     /// The current list of items
     private var items: [ChecklistItem]
 
-    public init(items: [ChecklistItem]) {
+    /// Optional callback fired whenever a value is written via `updateValue`.
+    private let onValueChange: ((String, Any?) -> Void)?
+
+    public init(
+        items: [ChecklistItem],
+        initialValues: [String: Any] = [:],
+        onValueChange: ((String, Any?) -> Void)? = nil
+    ) {
         self.items = items
-        // Initialize validation state for all items
+        self.onValueChange = onValueChange
         for item in items {
-            validationMap[item.key] = validateItem(key: item.key, value: nil)
+            let seeded = initialValues[item.key]
+            if let seeded { stateMap[item.key] = seeded }
+            validationMap[item.key] = validateItem(key: item.key, value: seeded)
         }
     }
 
@@ -54,11 +63,17 @@ public class ChecklistStateManager: ObservableObject {
             stateMap.removeValue(forKey: key)
         }
         validationMap[key] = validateItem(key: key, value: value)
+        onValueChange?(key, value)
     }
 
     /// Gets the current value for a specific item.
     public func getValue(key: String) -> Any? {
         stateMap[key]
+    }
+
+    /// Whether the item's current value passes validation — drives the per-item completion tick.
+    public func isValid(key: String) -> Bool {
+        validationMap[key] == true
     }
 
     /// Checks if all required items are valid.
