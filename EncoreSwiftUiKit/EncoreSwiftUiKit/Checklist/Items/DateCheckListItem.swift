@@ -5,6 +5,10 @@ import SwiftUI
 /// Mirrors Android's `DateCheckListItem` composable.
 public struct DateCheckListItem: View {
     let title: String
+    var helperText: String? = nil
+    var itemIndex: Int? = nil
+    var totalItems: Int? = nil
+    var isCompleted: Bool = false
     let initialDateValue: String
     let onDateSelected: (Date) -> Void
     let isRequired: Bool
@@ -14,12 +18,20 @@ public struct DateCheckListItem: View {
 
     public init(
         title: String,
+        helperText: String? = nil,
+        itemIndex: Int? = nil,
+        totalItems: Int? = nil,
+        isCompleted: Bool = false,
         initialDateValue: String,
         onDateSelected: @escaping (Date) -> Void,
         isRequired: Bool,
         dateFormat: String = "MM/dd/yyyy"
     ) {
         self.title = title
+        self.helperText = helperText
+        self.itemIndex = itemIndex
+        self.totalItems = totalItems
+        self.isCompleted = isCompleted
         self.initialDateValue = initialDateValue
         self.onDateSelected = onDateSelected
         self.isRequired = isRequired
@@ -35,7 +47,11 @@ public struct DateCheckListItem: View {
         VStack(alignment: .leading, spacing: 0) {
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && !isValid
+                isRequired: isRequired && !isValid,
+                helperText: helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: isCompleted
             )
 
             EncoreDateView(

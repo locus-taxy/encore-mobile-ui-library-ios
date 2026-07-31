@@ -5,6 +5,10 @@ import SwiftUI
 /// Mirrors Android's `SingleChoiceCheckListItem` composable.
 public struct SingleChoiceCheckListItem: View {
     let title: String
+    var helperText: String? = nil
+    var itemIndex: Int? = nil
+    var totalItems: Int? = nil
+    var isCompleted: Bool = false
     let options: [String]
     let initialSelectedIndex: Int
     let onSelectionChange: (Int, Bool) -> Void
@@ -14,12 +18,20 @@ public struct SingleChoiceCheckListItem: View {
 
     public init(
         title: String,
+        helperText: String? = nil,
+        itemIndex: Int? = nil,
+        totalItems: Int? = nil,
+        isCompleted: Bool = false,
         options: [String],
         initialSelectedIndex: Int,
         onSelectionChange: @escaping (Int, Bool) -> Void,
         isRequired: Bool
     ) {
         self.title = title
+        self.helperText = helperText
+        self.itemIndex = itemIndex
+        self.totalItems = totalItems
+        self.isCompleted = isCompleted
         self.options = options
         self.initialSelectedIndex = initialSelectedIndex
         self.onSelectionChange = onSelectionChange
@@ -31,7 +43,11 @@ public struct SingleChoiceCheckListItem: View {
         VStack(alignment: .leading, spacing: 0) {
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && selectedIndex == -1
+                isRequired: isRequired && selectedIndex == -1,
+                helperText: helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: isCompleted
             )
 
             SingleChoiceView(

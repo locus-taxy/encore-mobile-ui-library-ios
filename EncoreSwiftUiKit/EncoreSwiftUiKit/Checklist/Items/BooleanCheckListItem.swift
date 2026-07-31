@@ -5,6 +5,10 @@ import SwiftUI
 /// Mirrors Android's `BooleanCheckListItem` composable.
 public struct BooleanCheckListItem: View {
     let title: String
+    var helperText: String? = nil
+    var itemIndex: Int? = nil
+    var totalItems: Int? = nil
+    var isCompleted: Bool = false
     let initialChecked: Bool
     let onCheckedChange: (Bool) -> Void
     let isRequired: Bool
@@ -13,11 +17,19 @@ public struct BooleanCheckListItem: View {
 
     public init(
         title: String,
+        helperText: String? = nil,
+        itemIndex: Int? = nil,
+        totalItems: Int? = nil,
+        isCompleted: Bool = false,
         initialChecked: Bool,
         onCheckedChange: @escaping (Bool) -> Void,
         isRequired: Bool
     ) {
         self.title = title
+        self.helperText = helperText
+        self.itemIndex = itemIndex
+        self.totalItems = totalItems
+        self.isCompleted = isCompleted
         self.initialChecked = initialChecked
         self.onCheckedChange = onCheckedChange
         self.isRequired = isRequired
@@ -36,7 +48,11 @@ public struct BooleanCheckListItem: View {
 
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && !checked
+                isRequired: isRequired && !checked,
+                helperText: helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: isCompleted
             )
         }
         .padding(EdgeInsets(top: 15, leading: 0, bottom: 15, trailing: 15))

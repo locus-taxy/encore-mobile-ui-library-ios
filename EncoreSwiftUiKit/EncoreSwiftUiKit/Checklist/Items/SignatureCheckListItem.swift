@@ -6,6 +6,10 @@ import UIKit
 /// Mirrors Android's `SignatureCheckListItem` composable.
 public struct SignatureCheckListItem: View {
     let title: String
+    var helperText: String? = nil
+    var itemIndex: Int? = nil
+    var totalItems: Int? = nil
+    var isCompleted: Bool = false
     let initialSignatureURL: URL?
     let onSignatureSelected: (URL?) -> Void
     var onRemoveSignature: (() -> Void)?
@@ -21,6 +25,10 @@ public struct SignatureCheckListItem: View {
 
     public init(
         title: String,
+        helperText: String? = nil,
+        itemIndex: Int? = nil,
+        totalItems: Int? = nil,
+        isCompleted: Bool = false,
         initialSignatureURL: URL?,
         onSignatureSelected: @escaping (URL?) -> Void,
         onRemoveSignature: (() -> Void)? = nil,
@@ -31,6 +39,10 @@ public struct SignatureCheckListItem: View {
         podDelegate: (any PODImageProcessingDelegate)? = nil
     ) {
         self.title = title
+        self.helperText = helperText
+        self.itemIndex = itemIndex
+        self.totalItems = totalItems
+        self.isCompleted = isCompleted
         self.initialSignatureURL = initialSignatureURL
         self.onSignatureSelected = onSignatureSelected
         self.onRemoveSignature = onRemoveSignature
@@ -50,7 +62,11 @@ public struct SignatureCheckListItem: View {
         VStack(alignment: .leading, spacing: 0) {
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && !isValid
+                isRequired: isRequired && !isValid,
+                helperText: helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: isCompleted
             )
 
             SignatureCanvasView(

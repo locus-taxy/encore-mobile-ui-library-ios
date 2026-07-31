@@ -17,6 +17,8 @@ import SwiftUI
 public struct ChecklistView<Header: View>: View {
     let header: Header
     let items: [ChecklistItem]
+    let initialValues: [String: Any]
+    let onValueChange: ((String, Any?) -> Void)?
     let onSubmit: ([String: ChecklistItemValue]) -> Void
     var submitButtonText: String
     var itemCallbacks: ChecklistItemCallbackProvider?
@@ -27,16 +29,22 @@ public struct ChecklistView<Header: View>: View {
     public init(
         @ViewBuilder header: () -> Header,
         items: [ChecklistItem],
+        initialValues: [String: Any] = [:],
+        onValueChange: ((String, Any?) -> Void)? = nil,
         onSubmit: @escaping ([String: ChecklistItemValue]) -> Void,
         submitButtonText: String = "Submit",
         itemCallbacks: ChecklistItemCallbackProvider? = nil
     ) {
         self.header = header()
         self.items = items
+        self.initialValues = initialValues
+        self.onValueChange = onValueChange
         self.onSubmit = onSubmit
         self.submitButtonText = submitButtonText
         self.itemCallbacks = itemCallbacks
-        self._stateManager = StateObject(wrappedValue: ChecklistStateManager(items: items))
+        self._stateManager = StateObject(wrappedValue: ChecklistStateManager(
+            items: items, initialValues: initialValues, onValueChange: onValueChange
+        ))
     }
 
     public var body: some View {
@@ -47,9 +55,11 @@ public struct ChecklistView<Header: View>: View {
             // Checklist items list
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(items) { item in
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         ChecklistItemRenderer(
                             item: item,
+                            itemIndex: index + 1,
+                            totalItems: items.count,
                             stateManager: stateManager,
                             itemCallbacks: itemCallbacks
                         )
@@ -57,22 +67,19 @@ public struct ChecklistView<Header: View>: View {
                 }
             }
 
-            // Submit button
-            Button(action: {
-                let submissionMap = stateManager.buildSubmissionMap()
-                onSubmit(submissionMap)
-            }) {
-                Text(submitButtonText)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(stateManager.areAllRequiredItemsValid() ? Color.accentColor : Color.gray)
-                    )
+            // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
+            VStack(spacing: Spacing.spacing4) {
+                SlidingButtonView(label: submitButtonText, onSlideComplete: {
+                    onSubmit(stateManager.buildSubmissionMap())
+                })
+                .disabled(!stateManager.areAllRequiredItemsValid())
+
+                if !stateManager.areAllRequiredItemsValid() {
+                    Text("Finish mandatory (*) checklist items to complete task")
+                        .typography(Typography.Input.helper)
+                        .foregroundColor(Color.encore("Text/Secondary"))
+                }
             }
-            .disabled(!stateManager.areAllRequiredItemsValid())
             .padding(16)
         }
         .onChange(of: items) { newItems in
@@ -88,6 +95,8 @@ public extension ChecklistView {
     init(
         header headerText: String,
         items: [ChecklistItem],
+        initialValues: [String: Any] = [:],
+        onValueChange: ((String, Any?) -> Void)? = nil,
         onSubmit: @escaping ([String: ChecklistItemValue]) -> Void,
         submitButtonText: String = "Submit",
         itemCallbacks: ChecklistItemCallbackProvider? = nil
@@ -102,6 +111,8 @@ public extension ChecklistView {
                 )
             },
             items: items,
+            initialValues: initialValues,
+            onValueChange: onValueChange,
             onSubmit: onSubmit,
             submitButtonText: submitButtonText,
             itemCallbacks: itemCallbacks
@@ -115,6 +126,8 @@ public extension ChecklistView {
 /// Mirrors Android's `ChecklistItemRenderer` composable.
 struct ChecklistItemRenderer: View {
     let item: ChecklistItem
+    let itemIndex: Int
+    let totalItems: Int
     @ObservedObject var stateManager: ChecklistStateManager
     var itemCallbacks: ChecklistItemCallbackProvider?
 
@@ -124,6 +137,10 @@ struct ChecklistItemRenderer: View {
             let currentValue = stateManager.getValue(key: item.key) as? Bool ?? false
             BooleanCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialChecked: currentValue,
                 onCheckedChange: { newValue in
                     stateManager.updateValue(key: item.key, value: newValue)
@@ -141,6 +158,10 @@ struct ChecklistItemRenderer: View {
             let currentValue = stateManager.getValue(key: item.key) as? Int ?? -1
             SingleChoiceCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 options: options,
                 initialSelectedIndex: currentValue,
                 onSelectionChange: { index, _ in
@@ -159,6 +180,10 @@ struct ChecklistItemRenderer: View {
             let currentValue = stateManager.getValue(key: item.key) as? Set<Int> ?? []
             MultiChoiceCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 options: options,
                 initialSelectedIndices: currentValue,
                 onSelectionChanged: { selectedIndices in
@@ -174,6 +199,10 @@ struct ChecklistItemRenderer: View {
             let pinCallbacks = callbacks?.pinCallbacks
             PinCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialPinValue: currentValue,
                 onPinChange: { newPin in
                     stateManager.updateValue(key: item.key, value: newPin)
@@ -191,6 +220,10 @@ struct ChecklistItemRenderer: View {
             let currentValue = stateManager.getValue(key: item.key) as? Int ?? 0
             RatingCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialRating: currentValue,
                 onRatingChange: { newRating in
                     stateManager.updateValue(key: item.key, value: newRating)
@@ -203,6 +236,10 @@ struct ChecklistItemRenderer: View {
             let currentValue = stateManager.getValue(key: item.key) as? String ?? ""
             DateCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialDateValue: currentValue,
                 onDateSelected: { date in
                     let formattedDate = DateTimeHelper.formatDate(date, format: dateFormat)
@@ -217,6 +254,10 @@ struct ChecklistItemRenderer: View {
             let currentValue = stateManager.getValue(key: item.key) as? String ?? ""
             TimeCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialTimeValue: currentValue,
                 onTimeSelected: { hour, minute in
                     let formattedTime = DateTimeHelper.formatTime(hour: hour, minute: minute)
@@ -245,6 +286,10 @@ struct ChecklistItemRenderer: View {
             }()
             DateTimeCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialDateValue: dateValue,
                 initialTimeValue: timeValue,
                 onDateTimeChanged: { combinedDateTime in
@@ -262,6 +307,10 @@ struct ChecklistItemRenderer: View {
             let imageCallbacks = callbacks?.imageCallbacks
             ImageCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialImageURLs: currentValue,
                 onImageListChanged: { imageURLs in
                     stateManager.updateValue(key: item.key, value: imageURLs)
@@ -278,6 +327,10 @@ struct ChecklistItemRenderer: View {
             let imageCallbacks = callbacks?.imageCallbacks
             ImageCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialImageURLs: currentValue,
                 onImageListChanged: { imageURLs in
                     stateManager.updateValue(key: item.key, value: imageURLs)
@@ -294,6 +347,10 @@ struct ChecklistItemRenderer: View {
             let signatureCallbacks = callbacks?.signatureCallbacks
             SignatureCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialSignatureURL: currentValue,
                 onSignatureSelected: { url in
                     stateManager.updateValue(key: item.key, value: url)
@@ -306,17 +363,18 @@ struct ChecklistItemRenderer: View {
             )
 
         case .textField:
-            let regexPattern = item.additionalOptions?["regex"]
             let currentValue = stateManager.getValue(key: item.key) as? String ?? ""
             TextFieldCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 initialValue: currentValue,
-                onValueChange: { newValue in
-                    stateManager.updateValue(key: item.key, value: newValue)
-                },
+                onValueChange: { stateManager.updateValue(key: item.key, value: $0) },
                 isRequired: item.isRequired,
                 hint: item.additionalOptions?["hint"] ?? "",
-                regexPattern: regexPattern
+                regexPattern: item.additionalOptions?["regex"]
             )
 
         case .url:
@@ -325,6 +383,10 @@ struct ChecklistItemRenderer: View {
             let urlCallbacks = callbacks?.urlCallbacks
             UrlCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 url: url,
                 onUrlClick: urlCallbacks?.onUrlClick,
                 isRequired: item.isRequired
@@ -336,6 +398,10 @@ struct ChecklistItemRenderer: View {
             let urlCallbacks = callbacks?.urlCallbacks
             UrlCheckListItem(
                 title: item.item,
+                helperText: item.helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: stateManager.isValid(key: item.key),
                 url: url,
                 onUrlClick: urlCallbacks?.onUrlClick ?? {
                     stateManager.updateValue(key: item.key, value: true)
