@@ -54,7 +54,7 @@ public struct ChecklistView<Header: View>: View {
 
             // Checklist items list
             ScrollView {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         ChecklistItemRenderer(
                             item: item,
@@ -63,6 +63,7 @@ public struct ChecklistView<Header: View>: View {
                             stateManager: stateManager,
                             itemCallbacks: itemCallbacks
                         )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
             }
