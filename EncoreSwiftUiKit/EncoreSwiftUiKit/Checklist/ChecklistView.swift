@@ -63,7 +63,7 @@ public struct ChecklistView<Header: View>: View {
                             stateManager: stateManager,
                             itemCallbacks: itemCallbacks
                         )
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(.move(edge: .top))
                     }
                 }
             }
