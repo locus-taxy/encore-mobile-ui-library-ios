@@ -53,6 +53,19 @@ public struct ChecklistHeader: View {
         self.isCompleted = isCompleted
     }
 
+    private var titleFont: Font {
+        .system(size: ChecklistItemConstants.titleFontSize, weight: .medium)
+    }
+
+    /// Title text with the required asterisk concatenated inline, so `*` sits
+    /// immediately after the label (and wraps with it) rather than being pushed
+    /// to the trailing edge by a full-width title frame.
+    private var titleWithAsterisk: Text {
+        let base = Text(title).font(titleFont).foregroundColor(.primary)
+        guard isRequired && showRequiredIndicator else { return base }
+        return base + Text(" *").font(titleFont).foregroundColor(Color.encore("Error/Main"))
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: Spacing.spacing2) {
             // Row 1: counter + completion tick
@@ -67,17 +80,11 @@ public struct ChecklistHeader: View {
                         .foregroundColor(Color.encore("Success/Main"))
                 }
             }
-            // Row 2: title + persistent required asterisk
-            HStack(alignment: .firstTextBaseline, spacing: Spacing.spacing2) {
-                Text(title)
-                    .font(.system(size: ChecklistItemConstants.titleFontSize, weight: .medium))
-                    .foregroundColor(.primary)
-                    .lineSpacing(ChecklistItemConstants.titleLineHeight - ChecklistItemConstants.titleFontSize)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if isRequired && showRequiredIndicator {
-                    Text("*").foregroundColor(Color.encore("Error/Main"))
-                }
-            }
+            // Row 2: title with the persistent required asterisk inline, right
+            // after the label text (not pushed to the trailing edge).
+            titleWithAsterisk
+                .lineSpacing(ChecklistItemConstants.titleLineHeight - ChecklistItemConstants.titleFontSize)
+                .frame(maxWidth: .infinity, alignment: .leading)
             // Row 3: helper text
             if let helperText {
                 Text(helperText)
