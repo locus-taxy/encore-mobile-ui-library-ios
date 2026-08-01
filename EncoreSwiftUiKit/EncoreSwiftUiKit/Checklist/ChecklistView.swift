@@ -52,7 +52,10 @@ public struct ChecklistView<Header: View>: View {
             // Header
             header
 
-            // Checklist items list
+            // Checklist items list. The submit bar is a bottom safe-area inset of
+            // the ScrollView (not a sibling in the VStack) so the ScrollView owns
+            // keyboard avoidance and scrolls a focused text field above BOTH the
+            // bar and the keyboard.
             ScrollView {
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
@@ -67,21 +70,24 @@ public struct ChecklistView<Header: View>: View {
                     }
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
+                VStack(spacing: Spacing.spacing4) {
+                    SlidingButtonView(label: submitButtonText, onSlideComplete: {
+                        onSubmit(stateManager.buildSubmissionMap())
+                    })
+                    .disabled(!stateManager.areAllRequiredItemsValid())
 
-            // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
-            VStack(spacing: Spacing.spacing4) {
-                SlidingButtonView(label: submitButtonText, onSlideComplete: {
-                    onSubmit(stateManager.buildSubmissionMap())
-                })
-                .disabled(!stateManager.areAllRequiredItemsValid())
-
-                if !stateManager.areAllRequiredItemsValid() {
-                    Text("Finish mandatory (*) checklist items to complete task")
-                        .typography(Typography.Input.helper)
-                        .foregroundColor(Color.encore("Text/Secondary"))
+                    if !stateManager.areAllRequiredItemsValid() {
+                        Text("Finish mandatory (*) checklist items to complete task")
+                            .typography(Typography.Input.helper)
+                            .foregroundColor(Color.encore("Text/Secondary"))
+                    }
                 }
+                .padding(16)
+                .frame(maxWidth: .infinity)
+                .background(Color.encore("Background/Default"))
             }
-            .padding(16)
         }
         .onChange(of: items) { newItems in
             stateManager.updateItems(newItems)
