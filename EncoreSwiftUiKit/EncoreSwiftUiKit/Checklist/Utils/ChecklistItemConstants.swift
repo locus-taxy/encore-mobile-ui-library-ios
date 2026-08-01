@@ -28,9 +28,9 @@ public enum ChecklistItemConstants {
     /// Line height for required indicator text
     public static let requiredTextLineHeight: CGFloat = 20
 
-    /// Standard item padding
-    public static let itemPadding: CGFloat = 15
+    /// Standard item padding (Figma p-16)
+    public static let itemPadding: CGFloat = 16
 
-    /// Standard top padding for inner component
-    public static let innerTopPadding: CGFloat = 8
+    /// Gap between the header block and the control below it (Figma gap-16)
+    public static let innerTopPadding: CGFloat = 16
 }

@@ -53,26 +53,24 @@ public struct ChecklistHeader: View {
         self.isCompleted = isCompleted
     }
 
-    private var titleFont: Font {
-        .system(size: ChecklistItemConstants.titleFontSize, weight: .medium)
-    }
-
     /// Title text with the required asterisk concatenated inline, so `*` sits
     /// immediately after the label (and wraps with it) rather than being pushed
-    /// to the trailing edge by a full-width title frame.
+    /// to the trailing edge by a full-width title frame. Title is h6
+    /// (Inter SemiBold 16, line-height 24) in Text/Primary per Figma.
     private var titleWithAsterisk: Text {
-        let base = Text(title).font(titleFont).foregroundColor(.primary)
+        let base = Text(title).font(Typography.h6.font).foregroundColor(Color.encore("Text/Primary"))
         guard isRequired && showRequiredIndicator else { return base }
-        return base + Text(" *").font(titleFont).foregroundColor(Color.encore("Error/Main"))
+        return base + Text(" *").font(Typography.h6.font).foregroundColor(Color.encore("Error/Main"))
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.spacing2) {
-            // Row 1: counter + completion tick
-            HStack(spacing: Spacing.spacing4) {
+        VStack(alignment: .leading, spacing: Spacing.spacing4) {
+            // Row 1: counter (overline2, uppercase) + completion tick
+            HStack(spacing: Spacing.spacing8) {
                 if let itemIndex, let totalItems {
                     Text("\(itemIndex)/\(totalItems)")
-                        .typography(Typography.Input.helper)
+                        .typography(Typography.overline2)
+                        .textCase(.uppercase)
                         .foregroundColor(Color.encore("Text/Secondary"))
                 }
                 if isCompleted {
@@ -80,16 +78,17 @@ public struct ChecklistHeader: View {
                         .foregroundColor(Color.encore("Success/Main"))
                 }
             }
-            // Row 2: title with the persistent required asterisk inline, right
-            // after the label text (not pushed to the trailing edge).
+            // Row 2: title (h6) with the persistent required asterisk inline.
             titleWithAsterisk
-                .lineSpacing(ChecklistItemConstants.titleLineHeight - ChecklistItemConstants.titleFontSize)
+                .lineSpacing(24 - 16) // Figma h6 line-height 24
                 .frame(maxWidth: .infinity, alignment: .leading)
-            // Row 3: helper text
+            // Row 3: helper text (body1)
             if let helperText {
                 Text(helperText)
-                    .typography(Typography.Input.helper)
+                    .typography(Typography.body1)
                     .foregroundColor(Color.encore("Text/Secondary"))
+                    .lineSpacing(20 - 14) // Figma body1 line-height 20
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
