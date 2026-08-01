@@ -17,7 +17,7 @@ public struct SignatureCanvasView: View {
         signatureURL: URL?,
         onSignatureSelected: @escaping (URL?) -> Void,
         onRemoveSignature: (() -> Void)? = nil,
-        addSignatureText: String = "Add Signature",
+        addSignatureText: String = "Add",
         onGetCaptionText: (() -> String?)? = nil
     ) {
         self.signatureURL = signatureURL
@@ -63,22 +63,28 @@ public struct SignatureCanvasView: View {
                     .offset(x: 4, y: -4)
                 }
             } else {
-                // Placeholder button
+                // Empty state — compact "Add" box (Figma 2751:168791): a content-hugging,
+                // left-aligned box with a 0.5pt Primary/Main border, 8pt radius, Primary/Main
+                // @ 4% fill, the Draw icon above an "Add" label (both Primary/Main).
                 Button {
                     showSignatureCanvas = true
                 } label: {
-                    HStack {
-                        Image(systemName: "pencil.tip")
-                            .font(.system(size: 20))
+                    VStack(spacing: 0) {
+                        EncoreIcon(iconName: "LDraw", size: 24)
+                            .foregroundColor(Color.encore("Primary/Main"))
                         Text(addSignatureText)
+                            .typography(Typography.Button.medium)
+                            .foregroundColor(Color.encore("Primary/Main"))
                     }
-                    .foregroundColor(.accentColor)
-                    .padding(10)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 120)
+                    .padding(.horizontal, 26)
+                    .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1, dash: [5]))
+                            .fill(Color.encore("Primary/Main").opacity(0.04))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.encore("Primary/Main"), lineWidth: 0.5)
                     )
                 }
                 .buttonStyle(.plain)
