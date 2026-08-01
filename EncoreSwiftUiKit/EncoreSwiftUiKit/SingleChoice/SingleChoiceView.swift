@@ -19,7 +19,7 @@ public struct SingleChoiceView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 1) {
             ForEach(Array(options.enumerated()), id: \.offset) { index, option in
                 SingleChoiceOptionRow(
                     option: option,
@@ -40,23 +40,38 @@ struct SingleChoiceOptionRow: View {
     let onCheckedChange: (Bool) -> Void
 
     var body: some View {
-        Button {
-            onCheckedChange(!isSelected)
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
-                    .foregroundColor(isSelected ? .accentColor : .secondary)
-                    .font(.system(size: 20))
-
-                Text(option)
-                    .font(.system(size: ChecklistItemConstants.optionFontSize))
-                    .foregroundColor(.primary)
-                    .lineSpacing(ChecklistItemConstants.optionLineHeight - ChecklistItemConstants.optionFontSize)
+        HStack(spacing: 0) {
+            // 48×48 touch target containing the 20×20 radio glyph centered within it
+            ZStack {
+                if isSelected {
+                    ZStack {
+                        Circle()
+                            .strokeBorder(Color.encore("Primary/Main"), lineWidth: 1.67)
+                        Circle()
+                            .fill(Color.encore("Primary/Main"))
+                            .frame(width: 10, height: 10)
+                    }
+                    .frame(width: 20, height: 20)
+                } else {
+                    Circle()
+                        .strokeBorder(Color.encore("Text/Secondary"), lineWidth: 1.67)
+                        .frame(width: 20, height: 20)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .padding(.vertical, 4)
+            .frame(width: 48, height: 48)
+
+            Text(option)
+                .typography(Typography.body1)
+                .foregroundColor(Color.encore("Text/Primary"))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.leading, -8)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .padding(.vertical, 4)
+        .background(Color.encore("Background/Default"))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onCheckedChange(!isSelected)
+        }
     }
 }
