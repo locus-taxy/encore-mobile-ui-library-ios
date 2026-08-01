@@ -1,5 +1,5 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="star / filled">
-<path id="Path" d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z" fill="#67718E"/>
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g transform="translate(3.3333 3.3333)">
+<path d="M16.6667 25.45L26.9667 31.6667L24.2333 19.95L33.3333 12.0667L21.35 11.05L16.6667 0L11.9833 11.05L0 12.0667L9.1 19.95L6.36667 31.6667L16.6667 25.45Z" fill="#266EF1"/>
 </g>
 </svg>

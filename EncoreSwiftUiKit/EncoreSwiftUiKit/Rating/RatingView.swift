@@ -19,14 +19,16 @@ public struct RatingView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 4) {
+        // Figma 2751-169320: five 40pt stars, no gap (each glyph is inset in its
+        // 40pt box). Filled = Primary/Main, outline = Divider.
+        HStack(spacing: 0) {
             ForEach(1 ... maxStars, id: \.self) { index in
+                let filled = index <= rating
                 Button {
                     onRatingChange(index)
                 } label: {
-                    Image(systemName: index <= rating ? "star.fill" : "star")
-                        .foregroundColor(index <= rating ? .yellow : .gray)
-                        .font(.system(size: 28))
+                    EncoreIcon(iconName: filled ? "LStarFilled" : "LStarOutline", size: 40)
+                        .foregroundColor(filled ? Color.encore("Primary/Main") : Color.encore("Divider"))
                 }
                 .buttonStyle(.plain)
             }
