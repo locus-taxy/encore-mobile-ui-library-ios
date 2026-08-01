@@ -45,34 +45,40 @@ public struct TextFieldCheckListItem: View {
         self._textValue = State(initialValue: initialValue)
     }
 
-    private var isValid: Bool {
-        ChecklistValidator.validateTextField(textValue, isRequired: isRequired, regexPattern: regexPattern)
-    }
-
-    private var validationState: TextFieldValidationState {
-        isValid ? .normal : .error
+    /// Maps the item's keyboard type to the LTextField variant that drives the
+    /// keyboard + numeric filtering.
+    private var fieldVariant: LTextFieldVariant {
+        switch keyboardType {
+        case .numberPad: return .number
+        case .decimalPad: return .decimal
+        default: return .standard
+        }
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Helper text is NOT passed to the header for text fields — it renders
+            // below the input (with an info icon) inside LTextField, per Figma.
             ChecklistHeader(
                 title: title,
                 isRequired: isRequired,
-                helperText: helperText,
+                helperText: nil,
                 itemIndex: itemIndex,
                 totalItems: totalItems,
                 isCompleted: isCompleted
             )
 
-            TextFieldView(
+            LTextField(
                 value: $textValue,
                 onValueChange: { newValue in
                     onValueChange(newValue)
                 },
-                label: hint.isEmpty ? nil : hint,
-                validationState: validationState,
-                isRequired: isRequired,
-                keyboardType: keyboardType
+                variant: fieldVariant,
+                label: nil,
+                isRequired: false,
+                placeholder: hint.isEmpty ? nil : hint,
+                helperText: helperText,
+                validationState: .normal
             )
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }
