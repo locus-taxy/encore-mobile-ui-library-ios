@@ -88,7 +88,7 @@ public struct LTextField: View {
             }
 
             helperRow
-                .padding(.top, Spacing.spacing2)
+                .padding(.top, Spacing.spacing8)
         }
     }
 
@@ -169,6 +169,7 @@ public struct LTextField: View {
                 .typography(Typography.Input.value)
                 .foregroundColor(textColor)
                 .keyboardType(keyboardType)
+                .submitLabel(.done)
                 .disabled(isDisabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
