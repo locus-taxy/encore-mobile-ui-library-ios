@@ -63,7 +63,7 @@ public struct ChecklistView<Header: View>: View {
                             stateManager: stateManager,
                             itemCallbacks: itemCallbacks
                         )
-                        .transition(.move(edge: .top))
+                        .transition(.checklistReveal)
                     }
                 }
             }
@@ -118,6 +118,44 @@ public extension ChecklistView {
             submitButtonText: submitButtonText,
             itemCallbacks: itemCallbacks
         )
+    }
+}
+
+// MARK: - Reveal transition
+
+extension AnyTransition {
+    /// Conditional-item reveal. The row keeps its full layout height the whole
+    /// time (so the rows below reflow down as it appears), and its content is
+    /// unclipped top-to-bottom in place — it grows out of the field above it
+    /// instead of translating in over it the way `.move(edge:)` does. No fade.
+    static var checklistReveal: AnyTransition {
+        .modifier(
+            active: ChecklistRevealModifier(progress: 0),
+            identity: ChecklistRevealModifier(progress: 1)
+        )
+    }
+}
+
+private struct ChecklistRevealModifier: ViewModifier {
+    let progress: CGFloat
+    func body(content: Content) -> some View {
+        content.clipShape(TopDownRevealShape(progress: progress))
+    }
+}
+
+/// A top-anchored rectangle whose height grows 0 → full as `progress` goes
+/// 0 → 1, wiping the clipped content in from the top edge (and back out on
+/// removal). `animatableData` lets the clip height interpolate with the
+/// ambient `withAnimation`.
+private struct TopDownRevealShape: Shape {
+    var progress: CGFloat
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        Path(CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height * max(0, progress)))
     }
 }
 
