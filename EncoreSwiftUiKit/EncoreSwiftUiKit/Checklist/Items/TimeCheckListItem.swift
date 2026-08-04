@@ -5,6 +5,10 @@ import SwiftUI
 /// Mirrors Android's `TimeCheckListItem` composable.
 public struct TimeCheckListItem: View {
     let title: String
+    var helperText: String? = nil
+    var itemIndex: Int? = nil
+    var totalItems: Int? = nil
+    var isCompleted: Bool = false
     let initialTimeValue: String
     let onTimeSelected: (Int, Int) -> Void
     let isRequired: Bool
@@ -14,12 +18,20 @@ public struct TimeCheckListItem: View {
 
     public init(
         title: String,
+        helperText: String? = nil,
+        itemIndex: Int? = nil,
+        totalItems: Int? = nil,
+        isCompleted: Bool = false,
         initialTimeValue: String,
         onTimeSelected: @escaping (Int, Int) -> Void,
         isRequired: Bool,
         timeFormat: String = "HH:mm"
     ) {
         self.title = title
+        self.helperText = helperText
+        self.itemIndex = itemIndex
+        self.totalItems = totalItems
+        self.isCompleted = isCompleted
         self.initialTimeValue = initialTimeValue
         self.onTimeSelected = onTimeSelected
         self.isRequired = isRequired
@@ -35,7 +47,11 @@ public struct TimeCheckListItem: View {
         VStack(alignment: .leading, spacing: 0) {
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && !isValid
+                isRequired: isRequired,
+                helperText: helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: isCompleted
             )
 
             EncoreTimeView(

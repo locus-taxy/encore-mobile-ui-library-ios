@@ -5,6 +5,10 @@ import SwiftUI
 /// Mirrors Android's `PinCheckListItem` composable.
 public struct PinCheckListItem: View {
     let title: String
+    var helperText: String? = nil
+    var itemIndex: Int? = nil
+    var totalItems: Int? = nil
+    var isCompleted: Bool = false
     let initialPinValue: String
     let onPinChange: (String) -> Void
     let isRequired: Bool
@@ -19,6 +23,10 @@ public struct PinCheckListItem: View {
 
     public init(
         title: String,
+        helperText: String? = nil,
+        itemIndex: Int? = nil,
+        totalItems: Int? = nil,
+        isCompleted: Bool = false,
         initialPinValue: String,
         onPinChange: @escaping (String) -> Void,
         isRequired: Bool,
@@ -30,6 +38,10 @@ public struct PinCheckListItem: View {
         showResendOtp: Bool = false
     ) {
         self.title = title
+        self.helperText = helperText
+        self.itemIndex = itemIndex
+        self.totalItems = totalItems
+        self.isCompleted = isCompleted
         self.initialPinValue = initialPinValue
         self.onPinChange = onPinChange
         self.isRequired = isRequired
@@ -50,7 +62,11 @@ public struct PinCheckListItem: View {
         VStack(alignment: .leading, spacing: 0) {
             ChecklistHeader(
                 title: title,
-                isRequired: isRequired && !isValid
+                isRequired: isRequired,
+                helperText: helperText,
+                itemIndex: itemIndex,
+                totalItems: totalItems,
+                isCompleted: isCompleted
             )
 
             PinView(

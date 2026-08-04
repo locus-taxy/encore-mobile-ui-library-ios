@@ -8,6 +8,8 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
     public let key: String
     /// Title/label text
     public let item: String
+    /// Optional gray subtitle shown under the title (wire key `helperText`).
+    public let helperText: String?
     /// If true, item is not required (isRequired = !optional)
     public let optional: Bool
     /// The format/type of this checklist item
@@ -32,6 +34,7 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
     public init(
         key: String,
         item: String,
+        helperText: String? = nil,
         optional: Bool = false,
         format: ChecklistItemFormat,
         possibleValues: [String]? = nil,
@@ -40,6 +43,7 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
     ) {
         self.key = key
         self.item = item
+        self.helperText = helperText
         self.optional = optional
         self.format = format
         self.possibleValues = possibleValues

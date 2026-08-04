@@ -65,7 +65,7 @@ public struct SlidingButtonView: View {
         let iconName = progress >= 0.8 ? "LCheck" : "LKeyboardDoubleArrowRight"
         return ZStack {
             EncoreIcon(iconName: iconName, size: Spacing.spacing20)
-                .foregroundColor(Color.encore("Primary/Main"))
+                .foregroundColor(isEnabled ? Color.encore("Primary/Main") : Color.encore("Text/Disabled"))
         }
         .frame(width: Spacing.spacing40, height: Spacing.spacing40)
         .background(Color.encore("Background/Default"))

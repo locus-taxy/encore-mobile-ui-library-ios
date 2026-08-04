@@ -36,64 +36,41 @@ public struct ImagePickerView: View {
         self.onGetCaptionText = onGetCaptionText
     }
 
+    // MARK: - Grid layout constants
+    private let cellSize: CGFloat = 80
+    private let gridSpacing: CGFloat = 16
+    private let gridColumns = Array(repeating: GridItem(.fixed(80), spacing: 16), count: 3)
+
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Display existing images
-            if !imageURLs.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(Array(imageURLs.enumerated()), id: \.offset) { index, url in
-                            ZStack(alignment: .topTrailing) {
-                                AsyncImage(url: url) { image in
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                } placeholder: {
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.secondary.opacity(0.2))
-                                        .overlay(
-                                            ProgressView()
-                                        )
-                                }
-                                .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .onTapGesture {
-                                    fullScreenImageURL = url
-                                }
+        let showAddCTA = imageURLs.isEmpty || allowMultiple
 
-                                Button {
-                                    onRemoveImage?(index)
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.white)
-                                        .background(Circle().fill(Color.black.opacity(0.5)))
-                                }
-                                .offset(x: 4, y: -4)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Add image button (show if no images or if multiple allowed)
-            if imageURLs.isEmpty || allowMultiple {
+        LazyVGrid(columns: gridColumns, alignment: .leading, spacing: gridSpacing) {
+            // Add CTA cell — always first, hidden when !allowMultiple && one image exists
+            if showAddCTA {
                 Button {
                     launchImageSource()
                 } label: {
-                    HStack {
-                        Image(systemName: "camera")
-                            .font(.system(size: 20))
-                        Text(addImageText)
-                    }
-                    .foregroundColor(.accentColor)
-                    .padding(10)
-                    .frame(maxWidth: .infinity)
-                    .background(
+                    ZStack {
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1, dash: [5]))
-                    )
+                            .fill(Color.encore("Primary/Main").opacity(0.04))
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.encore("Primary/Main"), lineWidth: 0.5)
+                        VStack(spacing: 0) {
+                            EncoreIcon(iconName: "LCameraAlt", size: 24)
+                                .foregroundColor(Color.encore("Primary/Main"))
+                            Text("Add")
+                                .typography(Typography.Button.medium)
+                                .foregroundColor(Color.encore("Primary/Main"))
+                        }
+                    }
+                    .frame(width: cellSize, height: cellSize)
                 }
                 .buttonStyle(.plain)
+            }
+
+            // Thumbnail cells — one per uploaded image
+            ForEach(Array(imageURLs.enumerated()), id: \.offset) { index, url in
+                thumbnailCell(url: url, index: index)
             }
         }
         .confirmationDialog("Select Image Source", isPresented: $showActionSheet) {
@@ -125,6 +102,50 @@ public struct ImagePickerView: View {
         }
         .fullScreenCover(item: $fullScreenImageURL) { url in
             FullScreenImageViewer(imageURL: url, onDismiss: { fullScreenImageURL = nil })
+        }
+    }
+
+    @ViewBuilder
+    private func thumbnailCell(url: URL, index: Int) -> some View {
+        ZStack {
+            // Background behind image while loading
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.encore("Background/ColumnHeading"))
+
+            AsyncImage(url: url) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: cellSize, height: cellSize)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } placeholder: {
+                ProgressView()
+                    .frame(width: cellSize, height: cellSize)
+            }
+        }
+        .frame(width: cellSize, height: cellSize)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.encore("Divider"), lineWidth: 0.5)
+        )
+        .overlay(alignment: .topTrailing) {
+            // Remove button — sits on the top-trailing corner, offset outside the cell
+            Button {
+                onRemoveImage?(index)
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(Color.encore("Action/Active"))
+                    EncoreIcon(iconName: "LClose", size: 16)
+                        .foregroundColor(.white)
+                }
+                .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .offset(x: 6, y: -6)
+        }
+        .onTapGesture {
+            fullScreenImageURL = url
         }
     }
 

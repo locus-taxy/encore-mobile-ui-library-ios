@@ -88,7 +88,7 @@ public struct LTextField: View {
             }
 
             helperRow
-                .padding(.top, Spacing.spacing2)
+                .padding(.top, Spacing.spacing8)
         }
     }
 
@@ -169,6 +169,7 @@ public struct LTextField: View {
                 .typography(Typography.Input.value)
                 .foregroundColor(textColor)
                 .keyboardType(keyboardType)
+                .submitLabel(.done)
                 .disabled(isDisabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -190,7 +191,18 @@ public struct LTextField: View {
                     .frame(width: 24, height: 24)
                     .foregroundColor(Color.encore("Error/Main"))
             case .success, .normal:
-                EmptyView()
+                if !value.isEmpty, !isDisabled, !isReadOnly {
+                    Button {
+                        value = ""
+                        onValueChange("")
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(Color.encore("Action/Active"))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             if variant == .password {
@@ -424,7 +436,8 @@ public struct LTextField: View {
         switch validationState {
         case .success: return "checkmark.circle.fill"
         case .error: return "exclamationmark.circle.fill"
-        case .normal, .validating: return nil
+        case .normal: return "info.circle.fill" // Figma FormHelperText shows an info icon
+        case .validating: return nil
         }
     }
 }

@@ -1,0 +1,8 @@
+{
+  "images" : [
+    { "filename" : "CameraAlt.svg", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "CameraAlt 1.svg", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "CameraAlt 2.svg", "idiom" : "universal", "scale" : "3x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}
