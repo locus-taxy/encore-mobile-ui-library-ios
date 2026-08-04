@@ -59,6 +59,14 @@ public struct ChecklistView<Header: View>: View {
             ScrollView {
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        if index > 0 {
+                            // 1px divider between fields — matches the Figma
+                            // container `gap-px` (Background/ColumnHeading showing
+                            // between the white field blocks). Full-bleed, no inset.
+                            Color.encore("Background/ColumnHeading")
+                                .frame(height: 1)
+                                .frame(maxWidth: .infinity)
+                        }
                         ChecklistItemRenderer(
                             item: item,
                             itemIndex: index + 1,

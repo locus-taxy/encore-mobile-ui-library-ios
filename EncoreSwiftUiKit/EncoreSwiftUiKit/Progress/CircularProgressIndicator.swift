@@ -9,18 +9,20 @@ public enum CircularProgressIndicatorSize {
 
 public struct CircularProgressIndicator: View {
     public let size: CircularProgressIndicatorSize
+    public let color: Color
 
     @State private var rotation: Double = 0
 
-    public init(size: CircularProgressIndicatorSize = .small) {
+    public init(size: CircularProgressIndicatorSize = .small, color: Color = Color.encore("Primary/Dark")) {
         self.size = size
+        self.color = color
     }
 
     public var body: some View {
         Circle()
             .trim(from: 0, to: 0.66)
             .stroke(
-                Color.encore("Primary/Dark"),
+                color,
                 style: StrokeStyle(lineWidth: size.lineWidth, lineCap: .round)
             )
             .frame(width: size.dimension, height: size.dimension)
