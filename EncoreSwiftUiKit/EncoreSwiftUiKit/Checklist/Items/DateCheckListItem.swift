@@ -11,6 +11,7 @@ public struct DateCheckListItem: View {
     var isCompleted: Bool = false
     let initialDateValue: String
     let onDateSelected: (Date) -> Void
+    var onClear: (() -> Void)? = nil
     let isRequired: Bool
     let dateFormat: String
 
@@ -24,6 +25,7 @@ public struct DateCheckListItem: View {
         isCompleted: Bool = false,
         initialDateValue: String,
         onDateSelected: @escaping (Date) -> Void,
+        onClear: (() -> Void)? = nil,
         isRequired: Bool,
         dateFormat: String = "MM/dd/yyyy"
     ) {
@@ -34,6 +36,7 @@ public struct DateCheckListItem: View {
         self.isCompleted = isCompleted
         self.initialDateValue = initialDateValue
         self.onDateSelected = onDateSelected
+        self.onClear = onClear
         self.isRequired = isRequired
         self.dateFormat = dateFormat
         self._dateValue = State(initialValue: initialDateValue)
@@ -59,6 +62,12 @@ public struct DateCheckListItem: View {
                 onDateSelected: { date in
                     dateValue = DateTimeHelper.formatDate(date, format: dateFormat)
                     onDateSelected(date)
+                },
+                onClear: onClear.map { clear in
+                    {
+                        dateValue = ""
+                        clear()
+                    }
                 },
                 dateFormat: dateFormat
             )

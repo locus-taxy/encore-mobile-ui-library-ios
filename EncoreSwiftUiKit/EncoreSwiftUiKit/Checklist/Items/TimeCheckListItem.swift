@@ -11,6 +11,7 @@ public struct TimeCheckListItem: View {
     var isCompleted: Bool = false
     let initialTimeValue: String
     let onTimeSelected: (Int, Int) -> Void
+    var onClear: (() -> Void)? = nil
     let isRequired: Bool
     let timeFormat: String
 
@@ -24,6 +25,7 @@ public struct TimeCheckListItem: View {
         isCompleted: Bool = false,
         initialTimeValue: String,
         onTimeSelected: @escaping (Int, Int) -> Void,
+        onClear: (() -> Void)? = nil,
         isRequired: Bool,
         timeFormat: String = "HH:mm"
     ) {
@@ -34,6 +36,7 @@ public struct TimeCheckListItem: View {
         self.isCompleted = isCompleted
         self.initialTimeValue = initialTimeValue
         self.onTimeSelected = onTimeSelected
+        self.onClear = onClear
         self.isRequired = isRequired
         self.timeFormat = timeFormat
         self._timeValue = State(initialValue: initialTimeValue)
@@ -59,6 +62,12 @@ public struct TimeCheckListItem: View {
                 onTimeSelected: { hour, minute in
                     timeValue = DateTimeHelper.formatTime(hour: hour, minute: minute)
                     onTimeSelected(hour, minute)
+                },
+                onClear: onClear.map { clear in
+                    {
+                        timeValue = ""
+                        clear()
+                    }
                 },
                 timeFormat: timeFormat
             )

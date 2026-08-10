@@ -134,6 +134,16 @@ public class ChecklistStateManager: ObservableObject {
             .allSatisfy { validationMap[$0.key] == true }
     }
 
+    /// Labels of required items that are still unanswered / invalid — drives the
+    /// "what's missing" note (AC-6, RFC §3.6 "surfacing ≠ gating"). `items` is the
+    /// visible set (the caller re-supplies it as visibility changes), so this is
+    /// inherently visible-only and stays consistent with `areAllRequiredItemsValid()`.
+    public func missingRequiredLabels() -> [String] {
+        items
+            .filter { !$0.optional && validationMap[$0.key] != true }
+            .map(\.item)
+    }
+
     /// Builds the final submission map matching LOTR structure.
     public func buildSubmissionMap() -> [String: ChecklistItemValue] {
         var result: [String: ChecklistItemValue] = [:]

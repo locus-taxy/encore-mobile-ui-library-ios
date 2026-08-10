@@ -54,19 +54,17 @@ public struct SingleChoiceCheckListItem: View {
                 options: options,
                 selectedIndex: selectedIndex,
                 onCheckedChange: { index, checked in
-                    if checked {
-                        let previousIndex = selectedIndex
-                        selectedIndex = index
-                        if previousIndex != -1, previousIndex != index {
-                            onSelectionChange(previousIndex, false)
-                        }
-                        onSelectionChange(index, true)
-                    } else {
-                        if selectedIndex == index {
-                            selectedIndex = -1
-                            onSelectionChange(index, false)
-                        }
+                    // Radio semantics: a selection is final. Tapping the already-
+                    // selected option does NOT clear it — select-type fields have
+                    // no clear (consistent with rating and the single-select
+                    // dropdown). Only switching to a different option changes it.
+                    guard checked, index != selectedIndex else { return }
+                    let previousIndex = selectedIndex
+                    selectedIndex = index
+                    if previousIndex != -1 {
+                        onSelectionChange(previousIndex, false)
                     }
+                    onSelectionChange(index, true)
                 }
             )
             .padding(.top, ChecklistItemConstants.innerTopPadding)

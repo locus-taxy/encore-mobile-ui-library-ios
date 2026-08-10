@@ -78,18 +78,24 @@ public struct ChecklistView<Header: View>: View {
                     }
                 }
             }
+            // Swipe down to dismiss the keyboard for text/number/PIN fields — the
+            // bottom submit bar occupies the keyboard-accessory slot, so a Done
+            // toolbar can't surface there.
+            .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
                 // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
                 VStack(spacing: Spacing.spacing4) {
+                    let missing = stateManager.missingRequiredLabels()
                     SlidingButtonView(label: submitButtonText, onSlideComplete: {
                         onSubmit(stateManager.buildSubmissionMap())
                     })
-                    .disabled(!stateManager.areAllRequiredItemsValid())
+                    .disabled(!missing.isEmpty)
 
-                    if !stateManager.areAllRequiredItemsValid() {
-                        Text("Finish mandatory (*) checklist items to complete task")
+                    if !missing.isEmpty {
+                        Text(missingItemsNote(missing))
                             .typography(Typography.Input.helper)
                             .foregroundColor(Color.encore("Text/Secondary"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 .padding(16)
@@ -100,6 +106,15 @@ public struct ChecklistView<Header: View>: View {
         .onChange(of: items) { newItems in
             stateManager.updateItems(newItems)
         }
+    }
+
+    /// "What's missing" note (AC-6) — names the still-unfilled required items,
+    /// capped so a long list stays readable.
+    private func missingItemsNote(_ missing: [String]) -> String {
+        let shown = missing.prefix(3).joined(separator: ", ")
+        let extra = missing.count - min(3, missing.count)
+        let list = extra > 0 ? "\(shown) +\(extra) more" : shown
+        return "Still needed: \(list)"
     }
 }
 
@@ -209,19 +224,38 @@ struct ChecklistItemRenderer: View {
                 return item.possibleValues ?? []
             }()
             let currentValue = stateManager.getValue(key: item.key) as? Int ?? -1
-            SingleChoiceCheckListItem(
-                title: item.item,
-                helperText: item.helperText,
-                itemIndex: itemIndex,
-                totalItems: totalItems,
-                isCompleted: stateManager.isAnswered(key: item.key),
-                options: options,
-                initialSelectedIndex: currentValue,
-                onSelectionChange: { index, _ in
-                    stateManager.updateValue(key: item.key, value: index)
-                },
-                isRequired: item.isRequired
-            )
+            if options.count > ChecklistItemConstants.dropdownThreshold {
+                // Long option lists render as an anchored dropdown (Figma Menu),
+                // not inline radios.
+                DropdownChoiceCheckListItem(
+                    title: item.item,
+                    helperText: item.helperText,
+                    itemIndex: itemIndex,
+                    totalItems: totalItems,
+                    isCompleted: stateManager.isAnswered(key: item.key),
+                    options: options,
+                    mode: .single,
+                    initialSelection: currentValue >= 0 ? [currentValue] : [],
+                    onCommit: { selection in
+                        stateManager.updateValue(key: item.key, value: selection.first ?? -1)
+                    },
+                    isRequired: item.isRequired
+                )
+            } else {
+                SingleChoiceCheckListItem(
+                    title: item.item,
+                    helperText: item.helperText,
+                    itemIndex: itemIndex,
+                    totalItems: totalItems,
+                    isCompleted: stateManager.isAnswered(key: item.key),
+                    options: options,
+                    initialSelectedIndex: currentValue,
+                    onSelectionChange: { index, _ in
+                        stateManager.updateValue(key: item.key, value: index)
+                    },
+                    isRequired: item.isRequired
+                )
+            }
 
         case .multiChoice:
             let options: [String] = {
@@ -231,19 +265,38 @@ struct ChecklistItemRenderer: View {
                 return item.possibleValues ?? []
             }()
             let currentValue = stateManager.getValue(key: item.key) as? Set<Int> ?? []
-            MultiChoiceCheckListItem(
-                title: item.item,
-                helperText: item.helperText,
-                itemIndex: itemIndex,
-                totalItems: totalItems,
-                isCompleted: stateManager.isAnswered(key: item.key),
-                options: options,
-                initialSelectedIndices: currentValue,
-                onSelectionChanged: { selectedIndices in
-                    stateManager.updateValue(key: item.key, value: selectedIndices)
-                },
-                isRequired: item.isRequired
-            )
+            if options.count > ChecklistItemConstants.dropdownThreshold {
+                // Long option lists render as an anchored dropdown (Figma Menu),
+                // not inline checkboxes.
+                DropdownChoiceCheckListItem(
+                    title: item.item,
+                    helperText: item.helperText,
+                    itemIndex: itemIndex,
+                    totalItems: totalItems,
+                    isCompleted: stateManager.isAnswered(key: item.key),
+                    options: options,
+                    mode: .multi,
+                    initialSelection: currentValue,
+                    onCommit: { selection in
+                        stateManager.updateValue(key: item.key, value: selection)
+                    },
+                    isRequired: item.isRequired
+                )
+            } else {
+                MultiChoiceCheckListItem(
+                    title: item.item,
+                    helperText: item.helperText,
+                    itemIndex: itemIndex,
+                    totalItems: totalItems,
+                    isCompleted: stateManager.isAnswered(key: item.key),
+                    options: options,
+                    initialSelectedIndices: currentValue,
+                    onSelectionChanged: { selectedIndices in
+                        stateManager.updateValue(key: item.key, value: selectedIndices)
+                    },
+                    isRequired: item.isRequired
+                )
+            }
 
         case .pin:
             let expectedPin = item.possibleValues?.first
@@ -298,6 +351,7 @@ struct ChecklistItemRenderer: View {
                     let formattedDate = DateTimeHelper.formatDate(date, format: dateFormat)
                     stateManager.updateValue(key: item.key, value: formattedDate)
                 },
+                onClear: { stateManager.updateValue(key: item.key, value: nil) },
                 isRequired: item.isRequired,
                 dateFormat: dateFormat
             )
@@ -316,6 +370,7 @@ struct ChecklistItemRenderer: View {
                     let formattedTime = DateTimeHelper.formatTime(hour: hour, minute: minute)
                     stateManager.updateValue(key: item.key, value: formattedTime)
                 },
+                onClear: { stateManager.updateValue(key: item.key, value: nil) },
                 isRequired: item.isRequired,
                 timeFormat: timeFormat
             )
