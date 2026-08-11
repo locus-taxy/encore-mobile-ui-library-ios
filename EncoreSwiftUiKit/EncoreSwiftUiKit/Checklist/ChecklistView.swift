@@ -84,20 +84,10 @@ public struct ChecklistView<Header: View>: View {
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
                 // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
-                VStack(spacing: Spacing.spacing4) {
-                    let missing = stateManager.missingRequiredLabels()
-                    SlidingButtonView(label: submitButtonText, onSlideComplete: {
-                        onSubmit(stateManager.buildSubmissionMap())
-                    })
-                    .disabled(!missing.isEmpty)
-
-                    if !missing.isEmpty {
-                        Text(missingItemsNote(missing))
-                            .typography(Typography.Input.helper)
-                            .foregroundColor(Color.encore("Text/Secondary"))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
+                SlidingButtonView(label: submitButtonText, onSlideComplete: {
+                    onSubmit(stateManager.buildSubmissionMap())
+                })
+                .disabled(!stateManager.areAllRequiredItemsValid())
                 .padding(16)
                 .frame(maxWidth: .infinity)
                 .background(Color.encore("Background/Default"))
@@ -106,15 +96,6 @@ public struct ChecklistView<Header: View>: View {
         .onChange(of: items) { newItems in
             stateManager.updateItems(newItems)
         }
-    }
-
-    /// "What's missing" note (AC-6) — names the still-unfilled required items,
-    /// capped so a long list stays readable.
-    private func missingItemsNote(_ missing: [String]) -> String {
-        let shown = missing.prefix(3).joined(separator: ", ")
-        let extra = missing.count - min(3, missing.count)
-        let list = extra > 0 ? "\(shown) +\(extra) more" : shown
-        return "Still needed: \(list)"
     }
 }
 
