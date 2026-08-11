@@ -486,7 +486,8 @@ struct ChecklistItemRenderer: View {
             )
 
         case .url:
-            let url = item.possibleValues?.first ?? ""
+            // URL lives in additionalOptions.url on the wire; possibleValues is a legacy fallback.
+            let url = item.additionalOptions?["url"] ?? item.possibleValues?.first ?? ""
             let callbacks = itemCallbacks?(item.key, item.format)
             let urlCallbacks = callbacks?.urlCallbacks
             UrlCheckListItem(
@@ -501,7 +502,7 @@ struct ChecklistItemRenderer: View {
             )
 
         case .urlWithFeedback:
-            let url = item.possibleValues?.first ?? ""
+            let url = item.additionalOptions?["url"] ?? item.possibleValues?.first ?? ""
             let callbacks = itemCallbacks?(item.key, item.format)
             let urlCallbacks = callbacks?.urlCallbacks
             UrlCheckListItem(
