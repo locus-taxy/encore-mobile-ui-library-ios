@@ -21,6 +21,11 @@ public struct PinView: View {
     var showResendOtp: Bool
 
     @State private var remainingSeconds: Int?
+    @FocusState private var isFocused: Bool
+    /// Editable backing store the (transparent) capture field binds to directly.
+    /// Filtering/capping happens in `onChange`, so entered digits stay fully
+    /// editable (backspace + retype).
+    @State private var input: String
 
     public init(
         pinValue: String,
@@ -40,6 +45,7 @@ public struct PinView: View {
         self.onResendOtpClick = onResendOtpClick
         self.resendOtpCountdownDuration = resendOtpCountdownDuration
         self.showResendOtp = showResendOtp
+        self._input = State(initialValue: pinValue)
     }
 
     private var validationState: PinValidationState? {
@@ -58,54 +64,86 @@ public struct PinView: View {
     }
 
     public var body: some View {
-        // Hidden text field captures keyboard input; the visible slots render on top.
-        ZStack(alignment: .topLeading) {
-            TextField("", text: Binding(
-                get: { pinValue },
-                set: { newValue in
-                    let filtered = String(newValue.filter { $0.isNumber }.prefix(itemCount))
-                    onPinChange(filtered)
-                }
-            ))
-            .keyboardType(.numberPad)
-            .opacity(0)
-            .frame(width: 1, height: 1)
-
-            VStack(alignment: .leading, spacing: Spacing.spacing16) {
-                // Row 1: PIN slots + QR icon
-                HStack {
-                    // PIN slots
-                    HStack(spacing: Spacing.spacing4) {
-                        ForEach(0 ..< itemCount, id: \.self) { index in
-                            pinSlot(at: index)
-                        }
-                    }
-
-                    if onScanQrClick != nil {
-                        Spacer()
-                        Button {
-                            onScanQrClick?()
-                        } label: {
-                            EncoreIcon(iconName: "LQrCodeScanner", size: 32)
-                                .foregroundColor(Color.encore("Text/Secondary"))
-                        }
-                        .buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: Spacing.spacing16) {
+            // Row 1: PIN slots + QR icon
+            HStack {
+                // Visible slots with a transparent TextField overlaid on top: the
+                // field owns keyboard input + focus (tap to focus natively), while
+                // the slots render the digits. Text/caret are clear so only the
+                // slots show.
+                HStack(spacing: Spacing.spacing4) {
+                    ForEach(0 ..< itemCount, id: \.self) { index in
+                        pinSlot(at: index)
                     }
                 }
+                .overlay(captureField)
 
-                // Row 2: Resend OTP line
-                if showResendOtp {
-                    resendLine
+                if onScanQrClick != nil {
+                    Spacer()
+                    Button {
+                        onScanQrClick?()
+                    } label: {
+                        EncoreIcon(iconName: "LQrCodeScanner", size: 32)
+                            .foregroundColor(Color.encore("Text/Secondary"))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
+
+            // Row 2: Resend OTP line
+            if showResendOtp {
+                resendLine
+            }
         }
+    }
+
+    // MARK: - Capture field
+
+    // Design note — the 4-box look is rendered by `pinSlot` cells with ONE
+    // transparent `TextField` overlaid on top capturing all input. Keeping a
+    // single coherent value string means SMS one-time-code autofill + paste work
+    // natively and there's no inter-field focus choreography.
+    //
+    // PARKED ENHANCEMENT (preferred, pure SwiftUI) — replace the single overlay
+    // with 4 separate one-character `TextField`s (one per box) for a real per-box
+    // caret and direct tap-to-box focus. Deferred because it needs explicit
+    // handling for:
+    //   • backspace on an already-empty box (SwiftUI fires no `onChange`, so
+    //     focus-retreat needs a zero-width-space sentinel or equivalent),
+    //   • SMS autofill / paste delivering the whole code into one box,
+    //   • `@FocusState` auto-advance / retreat across the boxes.
+    // Until then, the single-field-behind-slots approach stays.
+    private var captureField: some View {
+        TextField("", text: $input)
+            .keyboardType(.numberPad)
+            .textContentType(.oneTimeCode)
+            .focused($isFocused)
+            .foregroundColor(.clear) // digits render in the slots, not here
+            .tint(.clear) // hide the caret
+            .contentShape(Rectangle())
+            .onChange(of: input) { newValue in
+                // Filter to digits, cap at itemCount. Every edit (incl. backspace)
+                // flows through here, so entered digits can always be changed.
+                let filtered = String(newValue.filter(\.isNumber).prefix(itemCount))
+                if filtered != newValue { input = filtered }
+                if filtered != pinValue { onPinChange(filtered) }
+                // Auto-dismiss once the code is complete. The checklist's bottom
+                // submit bar occupies the keyboard-accessory slot, so a Done
+                // toolbar can't show; swipe-to-dismiss (ChecklistView's
+                // `.scrollDismissesKeyboard`) covers the partial-entry case.
+                if filtered.count == itemCount { isFocused = false }
+            }
+            .onChange(of: pinValue) { newValue in
+                // Reflect external changes (draft restore / clear).
+                if newValue != input { input = newValue }
+            }
     }
 
     // MARK: - Slot
 
     @ViewBuilder
     private func pinSlot(at index: Int) -> some View {
-        let chars = Array(pinValue)
+        let chars = Array(input)
         let isFilled = index < chars.count
 
         let fillColor: Color = isFilled ? Color.encore("Background/Default") : Color.encore("Background/ColumnHeading")

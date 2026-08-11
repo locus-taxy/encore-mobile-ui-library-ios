@@ -231,7 +231,7 @@ public class ChecklistStateManager: ObservableObject {
                 }
 
             case .url, .urlWithFeedback:
-                let url = item.possibleValues?.first ?? ""
+                let url = item.additionalOptions?["url"] ?? item.possibleValues?.first ?? ""
                 if !url.isEmpty {
                     if item.format == .urlWithFeedback {
                         let urlClicked = (value as? Bool) ?? false

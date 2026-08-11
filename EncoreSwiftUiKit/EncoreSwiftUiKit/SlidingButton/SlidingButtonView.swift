@@ -102,7 +102,10 @@ public struct SlidingButtonView: View {
 
     private var labelColor: Color {
         if !isEnabled {
-            return Color.encore("Text/Disabled")
+            // Text/Disabled (#C2C2C2) on the disabled track (Action/DisabledBackground
+            // #E0E0E0) is ~1.3:1 — the label vanishes. Text/Secondary keeps the muted
+            // "disabled" read while staying legible.
+            return Color.encore("Text/Secondary")
         }
         return Color.encore("Primary/ContrastText")
     }

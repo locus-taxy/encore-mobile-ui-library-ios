@@ -78,6 +78,10 @@ public struct ChecklistView<Header: View>: View {
                     }
                 }
             }
+            // Swipe down to dismiss the keyboard for text/number/PIN fields — the
+            // bottom submit bar occupies the keyboard-accessory slot, so a Done
+            // toolbar can't surface there.
+            .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
                 // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
                 VStack(spacing: Spacing.spacing4) {
@@ -209,19 +213,38 @@ struct ChecklistItemRenderer: View {
                 return item.possibleValues ?? []
             }()
             let currentValue = stateManager.getValue(key: item.key) as? Int ?? -1
-            SingleChoiceCheckListItem(
-                title: item.item,
-                helperText: item.helperText,
-                itemIndex: itemIndex,
-                totalItems: totalItems,
-                isCompleted: stateManager.isAnswered(key: item.key),
-                options: options,
-                initialSelectedIndex: currentValue,
-                onSelectionChange: { index, _ in
-                    stateManager.updateValue(key: item.key, value: index)
-                },
-                isRequired: item.isRequired
-            )
+            if options.count > ChecklistItemConstants.dropdownThreshold {
+                // Long option lists render as an anchored dropdown (Figma Menu),
+                // not inline radios.
+                DropdownChoiceCheckListItem(
+                    title: item.item,
+                    helperText: item.helperText,
+                    itemIndex: itemIndex,
+                    totalItems: totalItems,
+                    isCompleted: stateManager.isAnswered(key: item.key),
+                    options: options,
+                    mode: .single,
+                    initialSelection: currentValue >= 0 ? [currentValue] : [],
+                    onCommit: { selection in
+                        stateManager.updateValue(key: item.key, value: selection.first ?? -1)
+                    },
+                    isRequired: item.isRequired
+                )
+            } else {
+                SingleChoiceCheckListItem(
+                    title: item.item,
+                    helperText: item.helperText,
+                    itemIndex: itemIndex,
+                    totalItems: totalItems,
+                    isCompleted: stateManager.isAnswered(key: item.key),
+                    options: options,
+                    initialSelectedIndex: currentValue,
+                    onSelectionChange: { index, _ in
+                        stateManager.updateValue(key: item.key, value: index)
+                    },
+                    isRequired: item.isRequired
+                )
+            }
 
         case .multiChoice:
             let options: [String] = {
@@ -231,19 +254,38 @@ struct ChecklistItemRenderer: View {
                 return item.possibleValues ?? []
             }()
             let currentValue = stateManager.getValue(key: item.key) as? Set<Int> ?? []
-            MultiChoiceCheckListItem(
-                title: item.item,
-                helperText: item.helperText,
-                itemIndex: itemIndex,
-                totalItems: totalItems,
-                isCompleted: stateManager.isAnswered(key: item.key),
-                options: options,
-                initialSelectedIndices: currentValue,
-                onSelectionChanged: { selectedIndices in
-                    stateManager.updateValue(key: item.key, value: selectedIndices)
-                },
-                isRequired: item.isRequired
-            )
+            if options.count > ChecklistItemConstants.dropdownThreshold {
+                // Long option lists render as an anchored dropdown (Figma Menu),
+                // not inline checkboxes.
+                DropdownChoiceCheckListItem(
+                    title: item.item,
+                    helperText: item.helperText,
+                    itemIndex: itemIndex,
+                    totalItems: totalItems,
+                    isCompleted: stateManager.isAnswered(key: item.key),
+                    options: options,
+                    mode: .multi,
+                    initialSelection: currentValue,
+                    onCommit: { selection in
+                        stateManager.updateValue(key: item.key, value: selection)
+                    },
+                    isRequired: item.isRequired
+                )
+            } else {
+                MultiChoiceCheckListItem(
+                    title: item.item,
+                    helperText: item.helperText,
+                    itemIndex: itemIndex,
+                    totalItems: totalItems,
+                    isCompleted: stateManager.isAnswered(key: item.key),
+                    options: options,
+                    initialSelectedIndices: currentValue,
+                    onSelectionChanged: { selectedIndices in
+                        stateManager.updateValue(key: item.key, value: selectedIndices)
+                    },
+                    isRequired: item.isRequired
+                )
+            }
 
         case .pin:
             let expectedPin = item.possibleValues?.first
@@ -298,6 +340,7 @@ struct ChecklistItemRenderer: View {
                     let formattedDate = DateTimeHelper.formatDate(date, format: dateFormat)
                     stateManager.updateValue(key: item.key, value: formattedDate)
                 },
+                onClear: { stateManager.updateValue(key: item.key, value: nil) },
                 isRequired: item.isRequired,
                 dateFormat: dateFormat
             )
@@ -316,6 +359,7 @@ struct ChecklistItemRenderer: View {
                     let formattedTime = DateTimeHelper.formatTime(hour: hour, minute: minute)
                     stateManager.updateValue(key: item.key, value: formattedTime)
                 },
+                onClear: { stateManager.updateValue(key: item.key, value: nil) },
                 isRequired: item.isRequired,
                 timeFormat: timeFormat
             )
@@ -431,7 +475,8 @@ struct ChecklistItemRenderer: View {
             )
 
         case .url:
-            let url = item.possibleValues?.first ?? ""
+            // URL lives in additionalOptions.url on the wire; possibleValues is a legacy fallback.
+            let url = item.additionalOptions?["url"] ?? item.possibleValues?.first ?? ""
             let callbacks = itemCallbacks?(item.key, item.format)
             let urlCallbacks = callbacks?.urlCallbacks
             UrlCheckListItem(
@@ -446,7 +491,7 @@ struct ChecklistItemRenderer: View {
             )
 
         case .urlWithFeedback:
-            let url = item.possibleValues?.first ?? ""
+            let url = item.additionalOptions?["url"] ?? item.possibleValues?.first ?? ""
             let callbacks = itemCallbacks?(item.key, item.format)
             let urlCallbacks = callbacks?.urlCallbacks
             UrlCheckListItem(

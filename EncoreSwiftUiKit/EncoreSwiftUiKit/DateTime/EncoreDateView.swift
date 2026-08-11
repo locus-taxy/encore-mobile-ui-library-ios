@@ -4,11 +4,16 @@ import SwiftUI
 /// Can be used standalone or within checklist items.
 /// Mirrors Android's `DateView` composable.
 ///
-/// The picker sheet itself is provided by `EncoreDatePickerModifier`; this view
-/// is the tappable date label that opens it.
+/// Renders as a bordered input box — value (or hint) on the leading edge, and a
+/// trailing icon cluster of an optional clear (×) button followed by the calendar
+/// glyph. Tapping the box opens the shared graphical date picker provided by
+/// `EncoreDatePickerModifier`.
 public struct EncoreDateView: View {
     let dateValue: String
     let onDateSelected: (Date) -> Void
+    /// When non-nil AND a value is present, a trailing clear (×) button is shown;
+    /// tapping it invokes this closure. Nil (default) hides the clear affordance.
+    var onClear: (() -> Void)?
     var dateFormat: String
     var dateHint: String
     var dateRange: ClosedRange<Date>?
@@ -20,6 +25,7 @@ public struct EncoreDateView: View {
     public init(
         dateValue: String,
         onDateSelected: @escaping (Date) -> Void,
+        onClear: (() -> Void)? = nil,
         dateFormat: String = "MM/dd/yyyy",
         dateHint: String = "Select date",
         dateRange: ClosedRange<Date>? = nil,
@@ -28,6 +34,7 @@ public struct EncoreDateView: View {
     ) {
         self.dateValue = dateValue
         self.onDateSelected = onDateSelected
+        self.onClear = onClear
         self.dateFormat = dateFormat
         self.dateHint = dateHint
         self.dateRange = dateRange
@@ -52,36 +59,45 @@ public struct EncoreDateView: View {
         return nil
     }
 
+    private var hasValue: Bool { !dateValue.isEmpty }
+
     private var displayText: String {
-        guard !dateValue.isEmpty else { return dateHint }
+        guard hasValue else { return dateHint }
         guard showRelativeDayPrefix, let relative = relativeDay else { return dateValue }
         return "\(relative.label), \(dateValue)"
     }
 
-    private var buttonTextColor: Color {
-        guard !dateValue.isEmpty else { return Color.encore("Text/Secondary") }
-        return relativeDay == .yesterday
-            ? Color.encore("Text/Secondary")
-            : Color.encore("Primary/Main")
+    private var valueColor: Color {
+        hasValue ? Color.encore("Text/Primary") : Color.encore("Text/Secondary")
     }
 
     // MARK: - Body
 
     public var body: some View {
-        Button {
-            showDatePicker = true
-        } label: {
-            HStack(spacing: 8) {
-                Text(displayText)
-                    .typography(Typography.Button.large)
-                EncoreIcon(iconName: "LEdit", size: 20)
+        HStack(spacing: 8) {
+            Text(displayText)
+                .typography(Typography.body1)
+                .foregroundColor(valueColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if hasValue, let onClear {
+                Button(action: onClear) {
+                    EncoreIcon(iconName: "LCrossCircle", size: 20)
+                        .foregroundColor(Color.encore("Text/Secondary"))
+                }
+                .buttonStyle(.plain)
             }
-            .foregroundColor(buttonTextColor)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .contentShape(RoundedRectangle(cornerRadius: 4))
+
+            EncoreIcon(iconName: "LCalendarToday", size: 20)
+                .foregroundColor(Color.encore("Text/Secondary"))
         }
-        .buttonStyle(.plain)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.encore("Input/OutlinedEnabledBorder"), lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { showDatePicker = true }
         .encoreDatePicker(
             isPresented: $showDatePicker,
             selectedDate: parsedDate ?? Date(),

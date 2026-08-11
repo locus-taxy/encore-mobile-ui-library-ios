@@ -33,4 +33,8 @@ public enum ChecklistItemConstants {
 
     /// Gap between the header block and the control below it (Figma gap-16)
     public static let innerTopPadding: CGFloat = 16
+
+    /// Option-count above which single/multi choice render as an anchored dropdown
+    /// (Figma Menu) instead of inline radios/checkboxes.
+    public static let dropdownThreshold: Int = 5
 }
