@@ -84,10 +84,18 @@ public struct ChecklistView<Header: View>: View {
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
                 // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
-                SlidingButtonView(label: submitButtonText, onSlideComplete: {
-                    onSubmit(stateManager.buildSubmissionMap())
-                })
-                .disabled(!stateManager.areAllRequiredItemsValid())
+                VStack(spacing: Spacing.spacing4) {
+                    SlidingButtonView(label: submitButtonText, onSlideComplete: {
+                        onSubmit(stateManager.buildSubmissionMap())
+                    })
+                    .disabled(!stateManager.areAllRequiredItemsValid())
+
+                    if !stateManager.areAllRequiredItemsValid() {
+                        Text("Finish mandatory (*) checklist items to complete task")
+                            .typography(Typography.Input.helper)
+                            .foregroundColor(Color.encore("Text/Secondary"))
+                    }
+                }
                 .padding(16)
                 .frame(maxWidth: .infinity)
                 .background(Color.encore("Background/Default"))
