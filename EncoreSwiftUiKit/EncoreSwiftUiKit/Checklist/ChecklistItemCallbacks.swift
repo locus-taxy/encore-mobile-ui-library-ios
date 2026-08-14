@@ -39,17 +39,29 @@ public struct UrlItemCallbacks {
 /// Callbacks for Image checklist items (PHOTO, PHOTO_GALLERY, MULTI_PHOTO).
 /// Mirrors Android's `ImageItemCallbacks` data class.
 public struct ImageItemCallbacks {
-    /// Optional callback to get caption text to add to image before saving
+    /// Optional callback to get caption text to add to image before saving.
+    /// Ignored when [processingConfig] is non-nil — the pipeline's CaptionProcessor handles it.
     public let onGetCaptionText: (() -> String?)?
+    /// POD image pipeline configuration (crop, blur, caption, EXIF) — the app plumbs this from its
+    /// settings (checklist HLD §5.4). Nil = no pipeline; the raw capture is saved as-is.
+    /// Mirrors Android's `ImageItemCallbacks.processingConfig`.
+    public let processingConfig: PODImageProcessingConfig?
+    /// Per-capture context supplier (itemId, timestamp, GPS fix). Required whenever
+    /// [processingConfig] is non-nil — `ImageCheckListItem.runPipeline` guards on both.
+    public let captureDataProvider: (() -> PODCaptureData)?
     /// Optional delegate notified when the POD image processing pipeline
     /// completes or fails for an image item.
     public var podDelegate: (any PODImageProcessingDelegate)?
 
     public init(
         onGetCaptionText: (() -> String?)? = nil,
+        processingConfig: PODImageProcessingConfig? = nil,
+        captureDataProvider: (() -> PODCaptureData)? = nil,
         podDelegate: (any PODImageProcessingDelegate)? = nil
     ) {
         self.onGetCaptionText = onGetCaptionText
+        self.processingConfig = processingConfig
+        self.captureDataProvider = captureDataProvider
         self.podDelegate = podDelegate
     }
 }
