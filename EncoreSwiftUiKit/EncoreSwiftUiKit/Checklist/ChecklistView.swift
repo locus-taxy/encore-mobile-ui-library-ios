@@ -425,7 +425,10 @@ struct ChecklistItemRenderer: View {
                 isRequired: item.isRequired,
                 allowMultiple: allowMultiple,
                 imageSourceType: item.format == .photo ? .cameraOnly : .cameraOrGallery,
-                onGetCaptionText: imageCallbacks?.onGetCaptionText
+                onGetCaptionText: imageCallbacks?.onGetCaptionText,
+                processingConfig: imageCallbacks?.processingConfig,
+                captureDataProvider: imageCallbacks?.captureDataProvider,
+                podDelegate: imageCallbacks?.podDelegate
             )
 
         case .multiPhoto:
@@ -445,7 +448,10 @@ struct ChecklistItemRenderer: View {
                 isRequired: item.isRequired,
                 allowMultiple: true,
                 imageSourceType: .cameraOrGallery,
-                onGetCaptionText: imageCallbacks?.onGetCaptionText
+                onGetCaptionText: imageCallbacks?.onGetCaptionText,
+                processingConfig: imageCallbacks?.processingConfig,
+                captureDataProvider: imageCallbacks?.captureDataProvider,
+                podDelegate: imageCallbacks?.podDelegate
             )
 
         case .signature:
