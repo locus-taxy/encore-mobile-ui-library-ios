@@ -134,6 +134,13 @@ public class ChecklistStateManager: ObservableObject {
             .allSatisfy { validationMap[$0.key] == true }
     }
 
+    /// The `id` of the first required item, in list order, that isn't yet valid —
+    /// the target the "finish mandatory items" hint scrolls to. Returns nil when
+    /// every required item is valid.
+    public func firstInvalidRequiredItemID() -> ChecklistItem.ID? {
+        items.first { !$0.optional && validationMap[$0.key] != true }?.id
+    }
+
     /// Builds the final submission map matching LOTR structure.
     public func buildSubmissionMap() -> [String: ChecklistItemValue] {
         var result: [String: ChecklistItemValue] = [:]

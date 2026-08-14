@@ -55,50 +55,60 @@ public struct ChecklistView<Header: View>: View {
             // Checklist items list. The submit bar is a bottom safe-area inset of
             // the ScrollView (not a sibling in the VStack) so the ScrollView owns
             // keyboard avoidance and scrolls a focused text field above BOTH the
-            // bar and the keyboard.
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        if index > 0 {
-                            // 1px divider between fields — matches the Figma
-                            // container `gap-px` (Background/ColumnHeading showing
-                            // between the white field blocks). Full-bleed, no inset.
-                            Color.encore("Background/ColumnHeading")
-                                .frame(height: 1)
-                                .frame(maxWidth: .infinity)
+            // bar and the keyboard. Wrapped in a ScrollViewReader so tapping the
+            // "finish mandatory items" hint can jump to the first unfilled one —
+            // each row is anchored by `item.id` (== key) via the ForEach id.
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                            if index > 0 {
+                                // 1px divider between fields — matches the Figma
+                                // container `gap-px` (Background/ColumnHeading showing
+                                // between the white field blocks). Full-bleed, no inset.
+                                Color.encore("Background/ColumnHeading")
+                                    .frame(height: 1)
+                                    .frame(maxWidth: .infinity)
+                            }
+                            ChecklistItemRenderer(
+                                item: item,
+                                itemIndex: index + 1,
+                                totalItems: items.count,
+                                stateManager: stateManager,
+                                itemCallbacks: itemCallbacks
+                            )
+                            .transition(.checklistReveal)
                         }
-                        ChecklistItemRenderer(
-                            item: item,
-                            itemIndex: index + 1,
-                            totalItems: items.count,
-                            stateManager: stateManager,
-                            itemCallbacks: itemCallbacks
-                        )
-                        .transition(.checklistReveal)
                     }
                 }
-            }
-            // Swipe down to dismiss the keyboard for text/number/PIN fields — the
-            // bottom submit bar occupies the keyboard-accessory slot, so a Done
-            // toolbar can't surface there.
-            .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom) {
-                // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
-                VStack(spacing: Spacing.spacing4) {
-                    SlidingButtonView(label: submitButtonText, onSlideComplete: {
-                        onSubmit(stateManager.buildSubmissionMap())
-                    })
-                    .disabled(!stateManager.areAllRequiredItemsValid())
+                // Swipe down to dismiss the keyboard for text/number/PIN fields — the
+                // bottom submit bar occupies the keyboard-accessory slot, so a Done
+                // toolbar can't surface there.
+                .scrollDismissesKeyboard(.interactively)
+                .safeAreaInset(edge: .bottom) {
+                    // Submit — swipe-to-confirm, disabled until all visible mandatory items are valid.
+                    VStack(spacing: Spacing.spacing4) {
+                        SlidingButtonView(label: submitButtonText, onSlideComplete: {
+                            onSubmit(stateManager.buildSubmissionMap())
+                        })
+                        .disabled(!stateManager.areAllRequiredItemsValid())
 
-                    if !stateManager.areAllRequiredItemsValid() {
-                        Text("Finish mandatory (*) checklist items to complete task")
-                            .typography(Typography.Input.helper)
-                            .foregroundColor(Color.encore("Text/Secondary"))
+                        if !stateManager.areAllRequiredItemsValid() {
+                            Text("Finish mandatory (*) checklist items to complete task")
+                                .typography(Typography.Input.helper)
+                                .foregroundColor(Color.encore("Text/Secondary"))
+                                // Tap the hint to jump to the first unfilled mandatory field.
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    guard let id = stateManager.firstInvalidRequiredItemID() else { return }
+                                    withAnimation { proxy.scrollTo(id, anchor: .top) }
+                                }
+                        }
                     }
+                    .padding(16)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.encore("Background/Default"))
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity)
-                .background(Color.encore("Background/Default"))
             }
         }
         .onChange(of: items) { newItems in
