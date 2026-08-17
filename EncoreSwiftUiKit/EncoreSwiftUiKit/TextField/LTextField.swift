@@ -179,12 +179,10 @@ public struct LTextField: View {
         HStack(spacing: Spacing.spacing4) {
             switch validationState {
             case .validating:
-                ProgressView()
-                    .controlSize(.small)
-                Image(systemName: "xmark.circle.fill")
-                    .resizable()
-                    .frame(width: 24, height: 24)
-                    .foregroundColor(Color.encore("Error/Main"))
+                // Figma (Rider App, node 3722:35292): the validating state shows only a
+                // Primary/Main spinner in the trailing slot — it replaces the clear button,
+                // no error glyph.
+                CircularProgressIndicator(size: .small, color: Color.encore("Primary/Main"))
             case .error:
                 Image(systemName: "xmark.circle.fill")
                     .resizable()
