@@ -34,6 +34,8 @@ public struct LTextField: View {
     public var errorMessage: String?
     public var isReadOnly: Bool
     public var isDisabled: Bool
+    /// When true, the field grabs focus (raising the keyboard) as soon as it appears.
+    public var autoFocus: Bool
 
     @FocusState private var isFocused: Bool
     @State private var isPasswordVisible: Bool = false
@@ -51,7 +53,8 @@ public struct LTextField: View {
         validationState: LTextFieldValidationState = .normal,
         errorMessage: String? = nil,
         isReadOnly: Bool = false,
-        isDisabled: Bool = false
+        isDisabled: Bool = false,
+        autoFocus: Bool = false
     ) {
         self._value = value
         self.onValueChange = onValueChange
@@ -64,6 +67,7 @@ public struct LTextField: View {
         self.errorMessage = errorMessage
         self.isReadOnly = isReadOnly
         self.isDisabled = isDisabled
+        self.autoFocus = autoFocus
     }
 
     public var body: some View {
@@ -89,6 +93,12 @@ public struct LTextField: View {
 
             helperRow
                 .padding(.top, Spacing.spacing8)
+        }
+        .onAppear {
+            guard autoFocus else { return }
+            // A run-loop hop lets the field mount before it claims first responder,
+            // so the keyboard reliably rises on presentation.
+            DispatchQueue.main.async { isFocused = true }
         }
     }
 
