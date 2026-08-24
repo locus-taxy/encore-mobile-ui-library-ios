@@ -1,0 +1,71 @@
+<svg width="125" height="120" viewBox="0 0 125 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="125" height="120" fill="#DFDFDF"/>
+<g id="Scan">
+<path d="M-60 -46C-60 -47.1046 -59.1046 -48 -58 -48H1202C1203.1 -48 1204 -47.1046 1204 -46V2591C1204 2592.1 1203.1 2593 1202 2593H-58C-59.1046 2593 -60 2592.1 -60 2591V-46Z" fill="white"/>
+<path d="M-58 -48V-47H1202V-48V-49H-58V-48ZM1204 -46H1203V2591H1204H1205V-46H1204ZM1202 2593V2592H-58V2593V2594H1202V2593ZM-60 2591H-59V-46H-60H-61V2591H-60ZM-58 2593V2592C-58.5523 2592 -59 2591.55 -59 2591H-60H-61C-61 2592.66 -59.6569 2594 -58 2594V2593ZM1204 2591H1203C1203 2591.55 1202.55 2592 1202 2592V2593V2594C1203.66 2594 1205 2592.66 1205 2591H1204ZM1202 -48V-47C1202.55 -47 1203 -46.5523 1203 -46H1204H1205C1205 -47.6568 1203.66 -49 1202 -49V-48ZM-58 -48V-49C-59.6568 -49 -61 -47.6569 -61 -46H-60H-59C-59 -46.5523 -58.5523 -47 -58 -47V-48Z" fill="black" fill-opacity="0.1"/>
+<g id="Empty state Illustration">
+<rect x="-7.5" y="-7.5" width="305" height="135" rx="4.5" stroke="#9747FF" stroke-dasharray="10 5"/>
+<g id="Property 1=To scan" clip-path="url(#clip0_5429_44483)">
+<g id="Group 3372">
+<g id="Group 3367">
+<path id="Vector" d="M86.9629 79.8155L43.7314 104.775V60.31L86.9629 35.3506V79.8155Z" fill="#FF9F00"/>
+<path id="Vector_2" d="M43.7337 104.775L0.5 79.8155V35.3506L43.7337 60.31V104.775Z" fill="#280A38"/>
+<path id="Vector_3" d="M86.9652 35.3501L43.7337 60.3095L0.5 35.3501L43.7337 10.3906L86.9652 35.3501Z" fill="#F3F4F6"/>
+<path id="Vector_4" d="M70.7066 26.0052L27.5243 50.9026L16.7598 44.6776L59.9442 19.7803L70.7066 26.0052Z" fill="#B066FF"/>
+<path id="Vector_5" d="M27.5222 50.9654L16.7598 44.6934V57.0831L27.5243 63.3551L27.5222 50.9654Z" fill="#8D52CC"/>
+</g>
+<g id="Group 3370">
+<rect id="Rectangle 30" width="29.5684" height="10.1377" transform="matrix(0.866025 -0.5 0 1 46.4839 62.4443)" fill="white"/>
+<rect id="Rectangle 31" width="1.68962" height="8.44812" transform="matrix(0.866025 -0.5 0 1 47.2163 62.8672)" fill="#2C073A"/>
+<rect id="Rectangle 32" width="0.844812" height="8.44812" transform="matrix(0.866025 -0.5 0 1 49.4072 61.6006)" fill="#2C073A"/>
+<rect id="Rectangle 41" width="0.844812" height="8.44812" transform="matrix(0.866025 -0.5 0 1 64.0435 53.1504)" fill="#2C073A"/>
+<rect id="Rectangle 33" width="0.844812" height="8.44812" transform="matrix(0.866025 -0.5 0 1 50.8721 60.7539)" fill="#2C073A"/>
+<rect id="Rectangle 42" width="0.844812" height="8.44812" transform="matrix(0.866025 -0.5 0 1 65.5083 52.3057)" fill="#2C073A"/>
+<rect id="Rectangle 34" width="1.68962" height="8.44812" transform="matrix(0.866025 -0.5 0 1 52.3374 59.9102)" fill="#2C073A"/>
+<rect id="Rectangle 43" width="0.844812" height="8.44812" transform="matrix(0.866025 -0.5 0 1 66.9673 51.4619)" fill="#2C073A"/>
+<rect id="Rectangle 46" width="0.844812" height="8.44812" transform="matrix(0.866025 -0.5 0 1 70.6294 49.3506)" fill="#2C073A"/>
+<rect id="Rectangle 45" width="1.68962" height="8.44812" transform="matrix(0.866025 -0.5 0 1 68.4321 50.6182)" fill="#2C073A"/>
+<rect id="Rectangle 38" width="1.68962" height="8.44812" transform="matrix(0.866025 -0.5 0 1 58.1904 56.5303)" fill="#2C073A"/>
+<rect id="Rectangle 37" width="1.68962" height="8.44812" transform="matrix(0.866025 -0.5 0 1 55.9932 57.7979)" fill="#2C073A"/>
+<rect id="Rectangle 39" width="1.68962" height="8.44812" transform="matrix(0.866025 -0.5 0 1 61.8462 54.4189)" fill="#2C073A"/>
+<rect id="Rectangle 35" width="0.844812" height="8.44812" transform="matrix(0.866025 -0.5 0 1 54.5342 58.6426)" fill="#2C073A"/>
+<rect id="Rectangle 40" width="0.844812" height="8.44812" transform="matrix(0.866025 -0.5 0 1 60.3877 55.2627)" fill="#2C073A"/>
+</g>
+<path id="Vector 5" opacity="0.5" d="M46.9658 67.9897L71.6509 53.9531L80.8472 75.9761L46.9658 67.9897Z" fill="#F7BAB6"/>
+<g id="Group 3369">
+<g id="Group">
+<path id="Vector_6" d="M118.005 88.3101L91.6044 72.9678L75.2717 82.397L101.673 97.7406L118.005 88.3101Z" fill="#3264FF"/>
+<path id="Vector_7" d="M122.189 92.001C123.558 91.2098 123.566 89.9528 122.24 89.1415L90.1864 70.5136C88.8235 69.7267 86.6201 69.743 85.2853 70.5138L71.0601 78.7265C69.6897 79.5173 69.7192 80.7947 71.044 81.5647L103.098 100.193C104.459 100.984 106.665 100.964 107.999 100.193L122.189 92.001ZM91.608 72.9673L118.007 88.3127L101.675 97.7425L75.2754 82.3966L91.608 72.9673Z" fill="#FF6429"/>
+<path id="Vector_8" d="M123.23 94.4985C123.232 95.02 122.887 95.5392 122.191 95.9383L108.008 104.132C106.674 104.903 104.468 104.922 103.107 104.132L71.0538 85.5045C70.3895 85.121 70.0525 84.6069 70.0507 84.0927L70.0374 80.1499C70.0388 80.6648 70.3794 81.1799 71.0398 81.5612L103.094 100.19C104.455 100.98 106.66 100.96 107.995 100.189L122.184 91.9975C122.878 91.5966 123.222 91.0761 123.224 90.5569L123.23 94.4985Z" fill="#280A38"/>
+<path id="Vector_9" d="M83.1962 75.347C83.4806 75.1823 83.482 74.9167 83.1999 74.7527C83.0417 74.6726 82.8668 74.6309 82.6895 74.6308C82.5122 74.6308 82.3373 74.6724 82.1791 74.7525L78.3926 76.9376C78.1081 77.1023 78.1067 77.3679 78.3888 77.5318C78.5476 77.6126 78.7233 77.6547 78.9015 77.6546C79.0797 77.6546 79.2553 77.6124 79.414 77.5315L83.1962 75.347Z" fill="#280A38"/>
+<g id="Group 3370_2">
+<rect id="Rectangle 30_2" width="15.01" height="5.14628" transform="matrix(0.866025 -0.5 0.866025 0.5 88.2505 87.8223)" fill="white"/>
+<rect id="Rectangle 31_2" width="0.857714" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 88.9951 87.8223)" fill="#2C073A"/>
+<rect id="Rectangle 32_2" width="0.428857" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 90.106 87.1797)" fill="#2C073A"/>
+<rect id="Rectangle 41_2" width="0.428857" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 97.5342 82.8896)" fill="#2C073A"/>
+<rect id="Rectangle 33_2" width="0.428857" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 90.8506 86.751)" fill="#2C073A"/>
+<rect id="Rectangle 42_2" width="0.428857" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 98.2783 82.4629)" fill="#2C073A"/>
+<rect id="Rectangle 34_2" width="0.857714" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 91.5952 86.3213)" fill="#2C073A"/>
+<rect id="Rectangle 43_2" width="0.428857" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 99.0234 82.0332)" fill="#2C073A"/>
+<rect id="Rectangle 46_2" width="0.428857" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 100.878 80.9609)" fill="#2C073A"/>
+<rect id="Rectangle 45_2" width="0.857714" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 99.7617 81.6045)" fill="#2C073A"/>
+<rect id="Rectangle 38_2" width="0.857714" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 94.5615 84.6064)" fill="#2C073A"/>
+<rect id="Rectangle 37_2" width="0.857714" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 93.4507 85.249)" fill="#2C073A"/>
+<rect id="Rectangle 39_2" width="0.857714" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 96.4233 83.5352)" fill="#2C073A"/>
+<rect id="Rectangle 35_2" width="0.428857" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 92.7061 85.6787)" fill="#2C073A"/>
+<rect id="Rectangle 40_2" width="0.428857" height="4.28857" transform="matrix(0.866025 -0.5 0.866025 0.5 95.6782 83.9629)" fill="#2C073A"/>
+</g>
+<rect id="Rectangle 47" width="5.80825" height="0.968041" rx="0.48402" transform="matrix(0.866025 0.5 3.99275e-09 1 76.0063 85.8984)" fill="#DC2518"/>
+</g>
+</g>
+<path id="Vector 6" d="M46.9658 67.8708L71.6509 53.9531" stroke="#DC2518" stroke-width="0.968041" stroke-linecap="round"/>
+</g>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_5429_44483">
+<rect width="125" height="120" fill="white"/>
+</clipPath>
+</defs>
+</svg>
