@@ -20,6 +20,9 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
     public let allowedValues: [ChecklistPossibleValue]?
     /// For TEXT_FIELD regex, date/time formats, etc.
     public let additionalOptions: [String: String]?
+    /// For SINGLE_CHOICE_DYNAMIC: the expression whose evaluation yields this item's options
+    /// (HLD §9). nil for every other format. Resolved options land in `allowedValues`.
+    public let optionsSource: OptionsSource?
 
     /// Conformance to Identifiable using key
     public var id: String {
@@ -39,7 +42,8 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
         format: ChecklistItemFormat,
         possibleValues: [String]? = nil,
         allowedValues: [ChecklistPossibleValue]? = nil,
-        additionalOptions: [String: String]? = nil
+        additionalOptions: [String: String]? = nil,
+        optionsSource: OptionsSource? = nil
     ) {
         self.key = key
         self.item = item
@@ -49,5 +53,6 @@ public struct ChecklistItem: Codable, Identifiable, Equatable {
         self.possibleValues = possibleValues
         self.allowedValues = allowedValues
         self.additionalOptions = additionalOptions
+        self.optionsSource = optionsSource
     }
 }

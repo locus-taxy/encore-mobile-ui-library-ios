@@ -5,6 +5,9 @@ import Foundation
 public enum ChecklistItemFormat: String, Codable, CaseIterable {
     case boolean = "BOOLEAN"
     case singleChoice = "SINGLE_CHOICE"
+    /// Single choice whose options are resolved dynamically from an `optionsSource` expression
+    /// (HLD §9). Behaves like `.singleChoice` once resolved.
+    case singleChoiceDynamic = "SINGLE_CHOICE_DYNAMIC"
     case multiChoice = "MULTI_CHOICE"
     case pin = "PIN"
     case rating = "RATING"
