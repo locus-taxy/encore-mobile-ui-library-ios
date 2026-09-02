@@ -21,6 +21,11 @@ public class ChecklistStateManager: ObservableObject {
     /// maintaining a parallel answer store.
     private let onValueChange: (([String: Any]) -> Void)?
 
+    /// Optional per-key change hook fired with the changed item key on every `updateValue`.
+    /// The `ChecklistTemplateView` driver sets this to run its visibility / dynamic-options
+    /// orchestration for the changed controller. Nil for plain `ChecklistView` usage.
+    public var onKeyChange: ((String) -> Void)?
+
     public init(
         items: [ChecklistItem],
         initialValues: [String: Any] = [:],
@@ -67,11 +72,17 @@ public class ChecklistStateManager: ObservableObject {
         }
         validationMap[key] = validateItem(key: key, value: value)
         onValueChange?(stateMap)
+        onKeyChange?(key)
     }
 
     /// Gets the current value for a specific item.
     public func getValue(key: String) -> Any? {
         stateMap[key]
+    }
+
+    /// Snapshot of every current answer, keyed by item key — the shape draft persistence consumes.
+    public func currentValues() -> [String: Any] {
+        stateMap
     }
 
     /// Whether the item's current value passes validation — drives the per-item completion tick.
@@ -92,7 +103,7 @@ public class ChecklistStateManager: ObservableObject {
             // Checked = answered; unchecked (or unset) = not answered.
             return (value as? Bool) == true
 
-        case .singleChoice:
+        case .singleChoice, .singleChoiceDynamic:
             // A real selection is index >= 0; -1 or nil means no selection.
             return (value as? Int).map { $0 >= 0 } ?? false
 
@@ -153,7 +164,7 @@ public class ChecklistStateManager: ObservableObject {
                 let boolValue = (value as? Bool) ?? false
                 result[item.key] = .text(String(boolValue))
 
-            case .singleChoice:
+            case .singleChoice, .singleChoiceDynamic:
                 let selectedIndex = (value as? Int) ?? -1
                 if selectedIndex >= 0 {
                     let allowedValues = item.allowedValues ?? []
@@ -263,7 +274,7 @@ public class ChecklistStateManager: ObservableObject {
             let boolValue = (value as? Bool) ?? false
             return ChecklistValidator.validateBoolean(boolValue, item: item)
 
-        case .singleChoice:
+        case .singleChoice, .singleChoiceDynamic:
             let index = (value as? Int) ?? -1
             return ChecklistValidator.validateSingleChoice(index, item: item)
 

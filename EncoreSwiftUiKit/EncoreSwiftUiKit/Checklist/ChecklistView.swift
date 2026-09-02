@@ -215,7 +215,9 @@ struct ChecklistItemRenderer: View {
                 isRequired: item.isRequired
             )
 
-        case .singleChoice:
+        case .singleChoice, .singleChoiceDynamic:
+            // A dynamic single choice renders identically once its options have been resolved into
+            // `allowedValues` by the driver (HLD §9).
             let options: [String] = {
                 if let allowed = item.allowedValues, !allowed.isEmpty {
                     return allowed.map(\.displayText)
