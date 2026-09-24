@@ -12,10 +12,10 @@ public struct ImagePickerView: View {
     var imageSourceType: ImageSourceType
     var addImageText: String
     var onGetCaptionText: (() -> String?)?
+    var onCameraUnavailable: (() -> Void)?
 
     @State private var showActionSheet = false
     @State private var showCamera = false
-    @State private var showCameraUnavailable = false
     @State private var showPhotoPicker = false
     @State private var fullScreenImageURL: URL?
 
@@ -26,7 +26,8 @@ public struct ImagePickerView: View {
         allowMultiple: Bool = false,
         imageSourceType: ImageSourceType = .cameraOrGallery,
         addImageText: String = "Add Image",
-        onGetCaptionText: (() -> String?)? = nil
+        onGetCaptionText: (() -> String?)? = nil,
+        onCameraUnavailable: (() -> Void)? = nil
     ) {
         self.imageURLs = imageURLs
         self.onImageSelected = onImageSelected
@@ -35,6 +36,7 @@ public struct ImagePickerView: View {
         self.imageSourceType = imageSourceType
         self.addImageText = addImageText
         self.onGetCaptionText = onGetCaptionText
+        self.onCameraUnavailable = onCameraUnavailable
     }
 
     // MARK: - Grid layout constants
@@ -96,9 +98,6 @@ public struct ImagePickerView: View {
                 }
             }
         )
-        .alert("No camera available on this device", isPresented: $showCameraUnavailable) {
-            Button("OK", role: .cancel) {}
-        }
         .sheet(isPresented: $showPhotoPicker) {
             PHPickerRepresentable { url in
                 onImageSelected(url)
@@ -169,7 +168,7 @@ public struct ImagePickerView: View {
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
             showCamera = true
         } else {
-            showCameraUnavailable = true
+            onCameraUnavailable?()
         }
     }
 }

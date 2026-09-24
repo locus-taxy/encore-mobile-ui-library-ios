@@ -19,6 +19,7 @@ public struct ImageCheckListItem: View {
     var processingConfig: PODImageProcessingConfig?
     var captureDataProvider: (() -> PODCaptureData)?
     var podDelegate: (any PODImageProcessingDelegate)?
+    var onCameraUnavailable: (() -> Void)?
 
     @State private var imageURLs: [URL]
     @State private var pipeline: PODImagePipeline?
@@ -49,7 +50,8 @@ public struct ImageCheckListItem: View {
         onGetCaptionText: (() -> String?)? = nil,
         processingConfig: PODImageProcessingConfig? = nil,
         captureDataProvider: (() -> PODCaptureData)? = nil,
-        podDelegate: (any PODImageProcessingDelegate)? = nil
+        podDelegate: (any PODImageProcessingDelegate)? = nil,
+        onCameraUnavailable: (() -> Void)? = nil
     ) {
         self.title = title
         self.helperText = helperText
@@ -65,6 +67,7 @@ public struct ImageCheckListItem: View {
         self.processingConfig = processingConfig
         self.captureDataProvider = captureDataProvider
         self.podDelegate = podDelegate
+        self.onCameraUnavailable = onCameraUnavailable
         self._imageURLs = State(initialValue: initialImageURLs)
     }
 
@@ -101,7 +104,8 @@ public struct ImageCheckListItem: View {
                 },
                 allowMultiple: allowMultiple,
                 imageSourceType: imageSourceType,
-                onGetCaptionText: onGetCaptionText
+                onGetCaptionText: onGetCaptionText,
+                onCameraUnavailable: onCameraUnavailable
             )
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }

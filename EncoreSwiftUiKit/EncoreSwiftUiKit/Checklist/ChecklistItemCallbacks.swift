@@ -52,17 +52,21 @@ public struct ImageItemCallbacks {
     /// Optional delegate notified when the POD image processing pipeline
     /// completes or fails for an image item.
     public var podDelegate: (any PODImageProcessingDelegate)?
+    /// Called when the worker picks the camera on a device that has none; the host shows the toast.
+    public var onCameraUnavailable: (() -> Void)?
 
     public init(
         onGetCaptionText: (() -> String?)? = nil,
         processingConfig: PODImageProcessingConfig? = nil,
         captureDataProvider: (() -> PODCaptureData)? = nil,
-        podDelegate: (any PODImageProcessingDelegate)? = nil
+        podDelegate: (any PODImageProcessingDelegate)? = nil,
+        onCameraUnavailable: (() -> Void)? = nil
     ) {
         self.onGetCaptionText = onGetCaptionText
         self.processingConfig = processingConfig
         self.captureDataProvider = captureDataProvider
         self.podDelegate = podDelegate
+        self.onCameraUnavailable = onCameraUnavailable
     }
 }
 
