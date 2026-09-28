@@ -12,6 +12,7 @@ public struct ImagePickerView: View {
     var imageSourceType: ImageSourceType
     var addImageText: String
     var onGetCaptionText: (() -> String?)?
+    var onCameraUnavailable: (() -> Void)?
 
     @State private var showActionSheet = false
     @State private var showCamera = false
@@ -25,7 +26,8 @@ public struct ImagePickerView: View {
         allowMultiple: Bool = false,
         imageSourceType: ImageSourceType = .cameraOrGallery,
         addImageText: String = "Add Image",
-        onGetCaptionText: (() -> String?)? = nil
+        onGetCaptionText: (() -> String?)? = nil,
+        onCameraUnavailable: (() -> Void)? = nil
     ) {
         self.imageURLs = imageURLs
         self.onImageSelected = onImageSelected
@@ -34,6 +36,7 @@ public struct ImagePickerView: View {
         self.imageSourceType = imageSourceType
         self.addImageText = addImageText
         self.onGetCaptionText = onGetCaptionText
+        self.onCameraUnavailable = onCameraUnavailable
     }
 
     // MARK: - Grid layout constants
@@ -75,7 +78,7 @@ public struct ImagePickerView: View {
         }
         .confirmationDialog("Select Image Source", isPresented: $showActionSheet) {
             Button("Take Photo") {
-                showCamera = true
+                openCamera()
             }
             Button("Choose from Gallery") {
                 showPhotoPicker = true
@@ -152,11 +155,20 @@ public struct ImagePickerView: View {
     private func launchImageSource() {
         switch imageSourceType {
         case .cameraOnly:
-            showCamera = true
+            openCamera()
         case .galleryOnly:
             showPhotoPicker = true
         case .cameraOrGallery:
             showActionSheet = true
+        }
+    }
+
+    // DP-6850: presenting UIImagePickerController with .camera where none exists throws.
+    private func openCamera() {
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            showCamera = true
+        } else {
+            onCameraUnavailable?()
         }
     }
 }
@@ -235,6 +247,10 @@ struct CameraPickerRepresentable: UIViewRepresentable {
                 .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
                   let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
             else { return }
+            guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+                context.coordinator.onCancel()
+                return
+            }
             var top = root
             while let presented = top.presentedViewController { top = presented }
             let picker = UIImagePickerController()

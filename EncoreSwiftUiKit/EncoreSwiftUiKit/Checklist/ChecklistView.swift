@@ -430,7 +430,8 @@ struct ChecklistItemRenderer: View {
                 onGetCaptionText: imageCallbacks?.onGetCaptionText,
                 processingConfig: imageCallbacks?.processingConfig,
                 captureDataProvider: imageCallbacks?.captureDataProvider,
-                podDelegate: imageCallbacks?.podDelegate
+                podDelegate: imageCallbacks?.podDelegate,
+                onCameraUnavailable: imageCallbacks?.onCameraUnavailable
             )
 
         case .multiPhoto:
@@ -453,7 +454,8 @@ struct ChecklistItemRenderer: View {
                 onGetCaptionText: imageCallbacks?.onGetCaptionText,
                 processingConfig: imageCallbacks?.processingConfig,
                 captureDataProvider: imageCallbacks?.captureDataProvider,
-                podDelegate: imageCallbacks?.podDelegate
+                podDelegate: imageCallbacks?.podDelegate,
+                onCameraUnavailable: imageCallbacks?.onCameraUnavailable
             )
 
         case .signature:
