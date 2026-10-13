@@ -7,6 +7,7 @@ public struct SlidingButtonView: View {
 
     private let label: String
     private let isLoading: Bool
+    private let tint: Color?
     private let onSlideComplete: () -> Void
 
     @State private var thumbOffset: CGFloat = 0
@@ -15,10 +16,12 @@ public struct SlidingButtonView: View {
     public init(
         label: String,
         isLoading: Bool = false,
+        tint: Color? = nil,
         onSlideComplete: @escaping () -> Void
     ) {
         self.label = label
         self.isLoading = isLoading
+        self.tint = tint
         self.onSlideComplete = onSlideComplete
     }
 
@@ -55,8 +58,10 @@ public struct SlidingButtonView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity)
+        // 48 overall with the 40pt thumb inset 4 (Figma <SwipeButton>). The thumb's own 4pt offset
+        // supplies the inset, so the track takes no extra padding — padding here made it 56 tall.
+        // Track r8 to match every other button; the thumb stays r4, concentric inside it.
         .frame(height: Spacing.spacing48)
-        .padding(Spacing.spacing4)
         .background(backgroundColor)
         .cornerRadius(Spacing.spacing8)
     }
@@ -65,7 +70,7 @@ public struct SlidingButtonView: View {
         let iconName = progress >= 0.8 ? "LCheck" : "LKeyboardDoubleArrowRight"
         return ZStack {
             EncoreIcon(iconName: iconName, size: Spacing.spacing20)
-                .foregroundColor(isEnabled ? Color.encore("Primary/Main") : Color.encore("Text/Disabled"))
+                .foregroundColor(isEnabled ? (tint ?? Color.encore("Primary/Main")) : Color.encore("Text/Disabled"))
         }
         .frame(width: Spacing.spacing40, height: Spacing.spacing40)
         .background(Color.encore("Background/Default"))
@@ -97,7 +102,7 @@ public struct SlidingButtonView: View {
         if isLoading || !isEnabled {
             return Color.encore("Action/DisabledBackground")
         }
-        return Color.encore("Primary/Main")
+        return tint ?? Color.encore("Primary/Main")
     }
 
     private var labelColor: Color {

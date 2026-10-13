@@ -43,6 +43,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.SnapshotTestHost
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        # Receive trackpad / mouse scroll as real scroll events, so a two-finger swipe scrolls
+        # lists in the Simulator (without this, only click-and-drag does).
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
       groups:
         - signing
     scheme: {}
