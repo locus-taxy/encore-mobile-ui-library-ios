@@ -71,6 +71,8 @@ enum V2Route: Equatable {
     case tripList
     case trip
     case profile
+    /// DP-2956 — the notification inbox, a sibling page like Profile.
+    case inbox
     /// Law 2 — a stop is a subset of the trip, so it rises as a sheet over it.
     case stop(Int)
     /// Law 3 — the task dissolves into the sheet's own real estate.
@@ -90,7 +92,7 @@ enum V2Route: Equatable {
     /// A base page owns the screen; everything else is layered over one.
     var isBasePage: Bool {
         switch self {
-        case .home, .tripList, .trip, .profile: return true
+        case .home, .tripList, .trip, .profile, .inbox: return true
         default: return false
         }
     }
@@ -200,7 +202,7 @@ struct V2Router {
     mutating func repair(against trip: V2Trip) {
         stack = stack.filter { route in
             switch route {
-            case .home, .tripList, .trip, .profile, .tripDetails, .tripSummary, .clockIn, .clockOut, .logOut:
+            case .home, .tripList, .trip, .profile, .inbox, .tripDetails, .tripSummary, .clockIn, .clockOut, .logOut:
                 return true
             case .stop(let s), .exceptionSheet(let s):
                 return trip.stops.contains { $0.id == s }

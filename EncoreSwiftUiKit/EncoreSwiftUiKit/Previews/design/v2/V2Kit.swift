@@ -457,10 +457,11 @@ struct V2AppBar: View {
     /// Trailing inset: 16 on Home (07), 12 on Delivery (112) — the two app bars differ in Figma.
     var trailingInset: CGFloat = Spacing.spacing12
     var onAvatar: () -> Void = {}
+    @Environment(\.v2InboxEntry) private var inbox
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: Spacing.spacing4) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title)
                         .v2Label(V2Font.navTitle)
@@ -472,6 +473,9 @@ struct V2AppBar: View {
                     }
                 }
                 Spacer()
+                if let inbox {
+                    V2BellButton(unread: inbox.unread, action: inbox.open)
+                }
                 Button(action: onAvatar) { HFAvatar() }
                     .buttonStyle(.plain)
             }

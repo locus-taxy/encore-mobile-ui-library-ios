@@ -57,6 +57,27 @@ enum V2Severity: String, CaseIterable {
         }
     }
 
+    /// Inbox chip — tinted + outlined like the SLA chip (severity is an attribute, not a lifecycle
+    /// state, so it doesn't take the filled status-chip look). Hues follow the web inbox
+    /// (destructive / warning / caution / muted), so MEDIUM is amber there, not the info blue the
+    /// banner uses.
+    var chipBg: Color {
+        switch self {
+        case .critical: return Color.encore("Red/50")
+        case .high:     return Color.encore("Orange/50")
+        case .medium:   return Color.encore("Yellow/50")
+        case .low:      return Color.encore("Grey/100")
+        }
+    }
+    var chipStroke: Color {
+        switch self {
+        case .critical: return Color.encore("Red/500")
+        case .high:     return Color.encore("Orange/500")
+        case .medium:   return Color.encore("Yellow/500")
+        case .low:      return Color.encore("Grey/400")
+        }
+    }
+
     var icon: String {
         switch self {
         case .critical: return "LError"
@@ -101,7 +122,9 @@ struct V2Notification: Identifiable, Equatable {
     var kind: V2NotificationKind
     var subject: String
     var body: String
-    var receivedAt: Date = Date()
+    /// The entity's `createdAt` (the story says `receivedAt`; the entity and the web inbox use
+    /// `createdAt` — open question for the dev team).
+    var createdAt: Date = Date()
     var read: Bool = false
     var target: V2NotificationTarget = .none
     /// The target no longer exists or is no longer this worker's (reassigned). The entry stays.
@@ -116,6 +139,8 @@ final class V2NotificationCenter: ObservableObject {
     @Published private(set) var queue: [Int] = []
     /// The medium banner on screen.
     @Published private(set) var banner: Int? = nil
+    /// The inbox is online-only (Story 5.4.5 AC-8). Prototype toggle from the push panel.
+    @Published var offline = false
 
     /// A medium that lands while a takeover is up waits for it to clear rather than sliding in under
     /// the scrim, where it would expire unseen. Only the newest waits — banners are moment-in-time.
@@ -130,6 +155,13 @@ final class V2NotificationCenter: ObservableObject {
     func entry(_ id: Int?) -> V2Notification? { id.flatMap { i in entries.first { $0.id == i } } }
 
     // MARK: Arrival
+
+    /// History that was already in the inbox before this session — no surfacing, just entries.
+    func seed(_ history: [V2Notification]) {
+        guard entries.isEmpty else { return }
+        entries = history.sorted { $0.createdAt > $1.createdAt }
+        nextId = (entries.map(\.id).max() ?? 0) + 1
+    }
 
     @discardableResult
     func receive(_ severity: V2Severity, _ kind: V2NotificationKind, subject: String, body: String,
@@ -213,6 +245,10 @@ final class V2NotificationCenter: ObservableObject {
     func markRead(_ ids: [Int], _ read: Bool = true) {
         for i in entries.indices where ids.contains(entries[i].id) { entries[i].read = read }
     }
+
+    func clear() { entries = [] }
+
+    func markAllRead() { markRead(entries.filter { !$0.read }.map(\.id)) }
 }
 
 // MARK: - Surfaces
@@ -398,7 +434,7 @@ extension UIWindow {
 
 /// The kinds of push the panel can fire — written against the seeded trip so targets are real.
 enum V2PushSample: String, CaseIterable, Identifiable {
-    case critical, high, medium, low, gone, pair
+    case critical, high, medium, low, gone, pair, connection
     var id: String { rawValue }
 
     var title: String {
@@ -409,6 +445,7 @@ enum V2PushSample: String, CaseIterable, Identifiable {
         case .low:      return "Low · hub message"
         case .gone:     return "High · trip reassigned (target gone)"
         case .pair:     return "Two important at once"
+        case .connection: return "Lose / restore the connection"
         }
     }
 }

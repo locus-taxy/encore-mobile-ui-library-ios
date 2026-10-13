@@ -20,6 +20,8 @@ struct V2NavAction: Identifiable {
     var icon: String
     /// Held "pressed" while the thing it opened is showing — the ⋮ behind its menu (frame 21).
     var selected: Bool = false
+    /// Count on the icon — Figma's applied-filter badge (also the bell's unread count).
+    var badge: Int? = nil
     var action: () -> Void = {}
 }
 
@@ -56,6 +58,9 @@ struct V2Navbar: View {
                     HStack(spacing: V2Space.tagGap) {
                         ForEach(actions) { a in
                             button(icon: a.icon, selected: a.selected, action: a.action)
+                                .overlay(alignment: .topTrailing) {
+                                    if let n = a.badge, n > 0 { V2CountBadge(count: n).offset(x: -6, y: 8) }
+                                }
                         }
                     }
                 }

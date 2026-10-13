@@ -16,6 +16,10 @@ public struct V2Flow: View {
     @StateObject private var notes = V2NotificationCenter()
     /// Prototype-only push panel (shake the device).
     @State private var showsPushPanel = false
+    /// DP-2956 — where the inbox was opened from (Back returns there), and its applied filter.
+    @State private var inboxOrigin: V2Route = .home
+    @State private var inboxFilter = V2InboxFilter()
+    @State private var showsInboxFilter = false
     @State private var router = V2Router()
 
     private let demo: String
@@ -55,8 +59,11 @@ public struct V2Flow: View {
             }
         }
         .environment(\.hfToast, toast)
+        // History first, so a demo state can then reshape it.
+        .onAppear { notes.seed(V2NotificationCenter.history()) }
         .onAppear(perform: applyDemo)
         .onAppear(perform: scheduleLaunchPushes)
+        .environment(\.v2InboxEntry, V2InboxEntry(unread: notes.unread, open: { openInbox() }))
         .onReceive(NotificationCenter.default.publisher(for: .v2DeviceShaken)) { _ in
             guard session == .signedIn else { return }
             V2Motion.txSurface { showsPushPanel = true }
@@ -232,6 +239,17 @@ public struct V2Flow: View {
                             onClose: { V2Motion.txSurface { showsPushPanel = false } })
             }
         }
+        .overlay {
+            HFBottomSheet(isPresented: showsInboxFilter,
+                          onDismiss: { V2Motion.txSurface { showsInboxFilter = false } }) {
+                V2InboxFilterSheet(entries: notes.entries,
+                                   applied: inboxFilter,
+                                   onApply: { f in
+                                       V2Motion.txSurface { inboxFilter = f; showsInboxFilter = false }
+                                   },
+                                   onClose: { V2Motion.txSurface { showsInboxFilter = false } })
+            }
+        }
         // Top of the stack: an important notification shows over any sheet, cover or the scanner.
         .overlay {
             V2NotificationLayer(center: notes, onOpen: { openNotification($0) })
@@ -239,6 +257,13 @@ public struct V2Flow: View {
     }
 
     // MARK: Notifications — DP-2959
+
+    /// The bell, from whichever app bar it was tapped on. A sibling page like Profile: pushed in from
+    /// the trailing edge, Back returns to the origin.
+    private func openInbox() {
+        if router.page != .inbox { inboxOrigin = router.page }
+        V2Motion.txSurface { router.setPage(.inbox) }
+    }
 
     /// Tap-through opens the target in its current state, through the same routing as a push tap
     /// (Story 5.4.2). Whatever was open is closed first; a target that's gone lands where the driver
@@ -299,6 +324,8 @@ public struct V2Flow: View {
         case .pair:
             fire(.critical)
             fire(.high)
+        case .connection:
+            withAnimation(V2Motion.standard) { notes.offline.toggle() }
         }
     }
 
@@ -323,6 +350,16 @@ public struct V2Flow: View {
                            onTab: selectTab)
                     .transition(.opacity)
                     .zIndex(0)
+            }
+            if router.page == .inbox {
+                V2InboxPage(center: notes,
+                            onBack: { V2Motion.txSurface { router.setPage(inboxOrigin) } },
+                            onOpen: { openNotification($0) },
+                            onFilter: { V2Motion.txSurface { showsInboxFilter = true } },
+                            filter: inboxFilter,
+                            onResetFilter: { withAnimation(V2Motion.standard) { inboxFilter = V2InboxFilter() } })
+                    .transition(V2Motion.pushFromTrailing)
+                    .zIndex(2)
             }
             if router.page == .profile {
                 V2ProfilePage(onBack: { V2Motion.txSurface { router.setPage(profileOrigin) } },
@@ -758,6 +795,15 @@ public struct V2Flow: View {
         case "logout":   router.setPage(.profile); router.push(.logOut)
         case "clockin":  router.setPage(.home); router.push(.clockIn)
         case "workspace": session = .workspace
+        // DP-2956 inbox states.
+        case "inbox":          router.setPage(.inbox)
+        case "inbox-offline":  notes.offline = true; router.setPage(.inbox)
+        case "inbox-empty":    notes.clear(); router.setPage(.inbox)
+        case "inbox-filter":   router.setPage(.inbox); showsInboxFilter = true
+        case "inbox-nomatch":
+            inboxFilter = V2InboxFilter(status: [.unread], severity: [.low, .critical])
+            notes.markRead(notes.entries.filter { $0.severity == .critical || $0.severity == .low }.map(\.id))
+            router.setPage(.inbox)
         // Shift card states (Components → Shift card states). Multi-leg so the rail, GAP and HUB OPS show.
         case "shift-draft", "shift-locked", "shift-late", "shift-ongoing", "shift-noshow", "shift-collapsed":
             // The board's legs (Components → Shift card states), and its marker positions.
