@@ -12,6 +12,10 @@ import SwiftUI
 public struct V2Flow: View {
     @StateObject private var engine = V2Engine()
     @StateObject private var toast = HFToastCenter()
+    /// DP-2959 — inbox entries and what they put on screen.
+    @StateObject private var notes = V2NotificationCenter()
+    /// Prototype-only push panel (shake the device).
+    @State private var showsPushPanel = false
     @State private var router = V2Router()
 
     private let demo: String
@@ -52,6 +56,11 @@ public struct V2Flow: View {
         }
         .environment(\.hfToast, toast)
         .onAppear(perform: applyDemo)
+        .onAppear(perform: scheduleLaunchPushes)
+        .onReceive(NotificationCenter.default.publisher(for: .v2DeviceShaken)) { _ in
+            guard session == .signedIn else { return }
+            V2Motion.txSurface { showsPushPanel = true }
+        }
         // One clock for the whole prototype. Dwell runs at `dwellSpeed`× so the partner wait (8:23 in
         // frame 81) can be walked through in under a minute; the copy still shows real minutes.
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
@@ -211,6 +220,94 @@ public struct V2Flow: View {
                 V2LogOutSheet(onLogOut: { logOut() },
                               onCancel: { V2Motion.txSurface { router.dismissModal() } })
             }
+        }
+        .overlay {
+            HFBottomSheet(isPresented: showsPushPanel,
+                          onDismiss: { V2Motion.txSurface { showsPushPanel = false } }) {
+                V2PushPanel(onFire: { sample in
+                                V2Motion.txSurface { showsPushPanel = false }
+                                // Let the panel sink first, so the arrival reads as its own event.
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { fire(sample) }
+                            },
+                            onClose: { V2Motion.txSurface { showsPushPanel = false } })
+            }
+        }
+        // Top of the stack: an important notification shows over any sheet, cover or the scanner.
+        .overlay {
+            V2NotificationLayer(center: notes, onOpen: { openNotification($0) })
+        }
+    }
+
+    // MARK: Notifications — DP-2959
+
+    /// Tap-through opens the target in its current state, through the same routing as a push tap
+    /// (Story 5.4.2). Whatever was open is closed first; a target that's gone lands where the driver
+    /// is with a toast (E-07).
+    private func openNotification(_ n: V2Notification) {
+        if n.targetGone {
+            toast.show("This \(n.target.noun) is no longer available")
+            return
+        }
+        V2Motion.txSurface {
+            switch n.target {
+            case .none:
+                break
+            case .shift:
+                router.setPage(.home)
+            case .trip:
+                router.setPage(.trip)
+            case .stop(let s):
+                router.setPage(.trip)
+                router.push(.stop(s))
+            case .task(let s, let t):
+                router.setPage(.trip)
+                router.push(.stop(s))
+                router.push(.task(stop: s, task: t))
+            }
+        }
+    }
+
+    /// Stand-ins for what the platform would send, written against the seeded trip.
+    private func fire(_ sample: V2PushSample) {
+        let cancelled = trip.stops.first { $0.id == 3 }?.tasks.first { $0.id == 31 }
+        switch sample {
+        case .critical:
+            notes.receive(.critical, .alert,
+                          subject: "Task cancelled at stop 3",
+                          body: "Order \(cancelled?.orderRef ?? "") for \(cancelled?.contactName ?? "the customer") "
+                              + "was cancelled by dispatch. Don't hand it over.",
+                          target: .task(stop: 3, task: 31))
+        case .high:
+            notes.receive(.high, .notification,
+                          subject: "Delivery window changed at stop 4",
+                          body: "Costa Coffee now accepts deliveries until 12:30 PM. Your route order is unchanged.",
+                          target: .stop(4))
+        case .medium:
+            notes.receive(.medium, .notification,
+                          subject: "Shift ends in 30 minutes",
+                          body: "Your shift ends at 02:00 PM. Finish the stop you're on, then head back to the hub.",
+                          target: .shift)
+        case .low:
+            notes.receive(.low, .notification,
+                          subject: "Message from your hub",
+                          body: "Gate 1 is closed today. Use Gate 2 when you return.")
+        case .gone:
+            notes.receive(.high, .notification,
+                          subject: "Trip 2 reassigned",
+                          body: "Trip 2 was moved to another driver. You don't need to do anything.",
+                          target: .trip, targetGone: true)
+        case .pair:
+            fire(.critical)
+            fire(.high)
+        }
+    }
+
+    /// `POC_PUSH=critical,high,medium` — fired after launch so a recording can capture the arrival.
+    private func scheduleLaunchPushes() {
+        let raw = ProcessInfo.processInfo.environment["POC_PUSH"] ?? ""
+        let samples = raw.split(separator: ",").compactMap { V2PushSample(rawValue: String($0)) }
+        for (i, s) in samples.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5 + Double(i) * 0.4) { fire(s) }
         }
     }
 
