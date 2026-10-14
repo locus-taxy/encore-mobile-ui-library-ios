@@ -22,6 +22,11 @@ struct V2NotificationRowVars: Equatable {
     var severityLabel: String
     var severityBg: Color
     var severityStroke: Color
+    /// Off under the `actionRequired` variant — rows carry no severity, only the action label.
+    var showsSeverity: Bool = true
+    /// "Action required", in the severity's tone — the scan page's "• Damaged" label.
+    var actionLabel: String? = nil
+    var actionTone: Color = .clear
     var isUnread: Bool
     /// Shown when the target is gone — "The row stays and says so" (DP-2956).
     var goneLabel: String?
@@ -34,6 +39,9 @@ struct V2NotificationRowVars: Equatable {
                               severityLabel: n.severity.label,
                               severityBg: n.severity.chipBg,
                               severityStroke: n.severity.chipStroke,
+                              showsSeverity: !V2Variant.isOn(.actionRequired),
+                              actionLabel: V2Variant.isOn(.actionRequired) && n.actionRequired ? "Action required" : nil,
+                              actionTone: n.severity.tone,
                               isUnread: !n.read,
                               goneLabel: n.targetGone ? "This \(n.target.noun) is no longer available" : nil)
     }
@@ -48,17 +56,24 @@ struct V2NotificationRowCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.spacing4) {
             HStack(spacing: Spacing.spacing8) {
-                Text(vars.severityLabel)
-                    .typography(HFType.badge12)
-                    .foregroundColor(HFColor.textPrimary)
-                    .padding(.horizontal, 6)
-                    .frame(height: V2Metrics.chip)
-                    .background(vars.severityBg)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(vars.severityStroke, lineWidth: V2Space.hairline))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                if vars.showsSeverity {
+                    Text(vars.severityLabel)
+                        .typography(HFType.badge12)
+                        .foregroundColor(HFColor.textPrimary)
+                        .padding(.horizontal, 6)
+                        .frame(height: V2Metrics.chip)
+                        .background(vars.severityBg)
+                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(vars.severityStroke, lineWidth: V2Space.hairline))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
                 Text(vars.typeLabel.uppercased())
                     .v2Label(V2Font.overline2)
                     .foregroundColor(HFColor.textSecondary)
+                if let action = vars.actionLabel {
+                    Text("• \(action)")
+                        .v2Label(V2Font.label2)
+                        .foregroundColor(vars.actionTone)
+                }
                 Spacer(minLength: 0)
                 Text(vars.timeLabel)
                     .v2Label(V2Font.label2)
@@ -138,6 +153,8 @@ enum V2Ago {
 /// Read state is the All / Unread tab (the scan page's counted tabs); the sheet holds type + severity.
 struct V2InboxFilter: Equatable {
     var unreadOnly = false
+    /// The "Action required" tab (`actionRequired` variant only).
+    var actionOnly = false
     var kind: Set<V2NotificationKind> = []
     var severity: Set<V2Severity> = []
 
@@ -151,7 +168,14 @@ struct V2InboxFilter: Equatable {
             && (severity.isEmpty || severity.contains(n.severity))
     }
 
-    func matches(_ n: V2Notification) -> Bool { matchesFacets(n) && (!unreadOnly || !n.read) }
+    func matches(_ n: V2Notification) -> Bool {
+        matchesFacets(n) && (!unreadOnly || !n.read) && (!actionOnly || n.actionRequired)
+    }
+
+    var tab: String { actionOnly ? "action" : unreadOnly ? "unread" : "all" }
+    func with(tab: String) -> Self {
+        var f = self; f.unreadOnly = tab == "unread"; f.actionOnly = tab == "action"; return f
+    }
 }
 
 /// Figma's list filter sheet (Trip + Search › Search and filter): category rail on the left,
@@ -171,7 +195,7 @@ struct V2InboxFilterSheet: View {
             HFSheetTitle(title: "Notification filter", onClose: onClose)
             HStack(alignment: .top, spacing: 0) {
                 VStack(spacing: 0) {
-                    ForEach(Facet.allCases, id: \.self) { f in
+                    ForEach(facets, id: \.self) { f in
                         let n = picked(f)
                         Button { facet = f } label: {
                             Text(n > 0 ? "\(f.rawValue.uppercased()) (\(n))" : f.rawValue.uppercased())
@@ -214,13 +238,16 @@ struct V2InboxFilterSheet: View {
                 VStack(spacing: Spacing.spacing8) {
                     V2Button(label: "Apply", enabled: draft != applied) { onApply(draft) }
                     V2Button(label: "Reset all", role: .text, enabled: !draft.isEmpty) {
-                        draft = V2InboxFilter(unreadOnly: applied.unreadOnly)
+                        draft = V2InboxFilter().with(tab: applied.tab)
                     }
                 }
             }
         }
         .onAppear { draft = applied }
     }
+
+    /// Severity leaves the sheet under `actionRequired` — the tab replaces it.
+    private var facets: [Facet] { V2Variant.isOn(.actionRequired) ? [.type] : Facet.allCases }
 
     private func picked(_ f: Facet) -> Int {
         switch f {
@@ -260,8 +287,8 @@ struct V2InboxPage: View {
     var onFilter: () -> Void
     var filter: V2InboxFilter
     var onResetFilter: () -> Void
-    /// All / Unread tab → `filter.unreadOnly`, kept by the flow so it survives the filter sheet.
-    var onUnreadOnly: (Bool) -> Void
+    /// All / Unread (/ Action required) tab, kept by the flow so it survives the filter sheet.
+    var onTab: (String) -> Void
     /// Demo states only: open already selecting these ids.
     var demoSelection: Set<Int>? = nil
 
@@ -294,6 +321,8 @@ struct V2InboxPage: View {
                 HFSeam()
                 if !matching.isEmpty {
                     list
+                } else if filter.actionOnly && filter.isEmpty {
+                    state(title: "Nothing needs you", body: "Anything you need to act on will show here.")
                 } else if filter.unreadOnly && filter.isEmpty {
                     state(title: "You're all caught up", body: "You've read all your notifications.")
                 } else {
@@ -328,10 +357,15 @@ struct V2InboxPage: View {
 
     /// The scan page's counted tabs. The unread count lives here, never as a "0 unread" line.
     private var tabs: some View {
-        V2Tabs(tabs: [V2Tab(id: "all", label: "All", count: faceted.count),
-                      V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count)],
-               selection: Binding(get: { filter.unreadOnly ? "unread" : "all" },
-                                  set: { id in withAnimation(V2Motion.standard) { onUnreadOnly(id == "unread") } }))
+        var tabs = [V2Tab(id: "all", label: "All", count: faceted.count),
+                    V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count)]
+        // The scan page's "Exceptions (n)" tab, for the things that still need the rider.
+        if V2Variant.isOn(.actionRequired) {
+            tabs.append(V2Tab(id: "action", label: "Action required", count: faceted.filter(\.actionRequired).count))
+        }
+        return V2Tabs(tabs: tabs,
+                      selection: Binding(get: { filter.tab },
+                                         set: { id in withAnimation(V2Motion.standard) { onTab(id) } }))
     }
 
     /// Frame 13 / the scan page's select-all row: a 48 checkbox target, then the label.
@@ -402,15 +436,18 @@ struct V2InboxPage: View {
     private var list: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
+                // `actionRequired` variant: open critical/high rows sit above the day groups until done.
+                if !pinned.isEmpty {
+                    groupHeader("ACTION REQUIRED (\(pinned.count))")
+                    VStack(spacing: Spacing.spacing8) {
+                        ForEach(pinned) { row($0) }
+                    }
+                    .padding(.horizontal, V2Space.pageMargin)
+                }
                 ForEach(V2Ago.Group.allCases, id: \.self) { g in
-                    let rows = visible.filter { V2Ago.group($0.createdAt, now: now) == g }
+                    let rows = visible.filter { V2Ago.group($0.createdAt, now: now) == g && !isPinned($0) }
                     if !rows.isEmpty {
-                        Text("\(g.title.uppercased()) (\(matching.filter { V2Ago.group($0.createdAt, now: now) == g }.count))")
-                            .v2Label(V2Font.section)
-                            .foregroundColor(HFColor.textSecondary)
-                            .padding(.horizontal, V2Space.pageMargin)
-                            .padding(.top, Spacing.spacing16)
-                            .padding(.bottom, Spacing.spacing8)
+                        groupHeader("\(g.title.uppercased()) (\(matching.filter { V2Ago.group($0.createdAt, now: now) == g && !isPinned($0) }.count))")
                         VStack(spacing: Spacing.spacing8) {
                             ForEach(rows) { row($0) }
                         }
@@ -426,6 +463,20 @@ struct V2InboxPage: View {
                 Color.clear.frame(height: Spacing.spacing16)
             }
         }
+    }
+
+    private var pinned: [V2Notification] {
+        V2Variant.isOn(.actionRequired) ? matching.filter(\.actionRequired) : []
+    }
+    private func isPinned(_ n: V2Notification) -> Bool { V2Variant.isOn(.actionRequired) && n.actionRequired }
+
+    private func groupHeader(_ text: String) -> some View {
+        Text(text)
+            .v2Label(V2Font.section)
+            .foregroundColor(HFColor.textSecondary)
+            .padding(.horizontal, V2Space.pageMargin)
+            .padding(.top, Spacing.spacing16)
+            .padding(.bottom, Spacing.spacing8)
     }
 
     private func loadMore() {
@@ -578,7 +629,7 @@ extension V2NotificationCenter {
             V2Notification(id: 108, severity: .high, kind: .alert,
                            subject: "Stop skipped by dispatch",
                            body: "Stop 6 on trip 3 was skipped by dispatch. Don't go to Brigade Road; continue to your next stop.",
-                           createdAt: ago(4 * day), read: true),
+                           createdAt: ago(4 * day), read: true, resolved: true),
             V2Notification(id: 109, severity: .low, kind: .notification,
                            subject: "Message from your hub",
                            body: "The hub closes at 08:00 PM on Saturday for stock-taking.",
@@ -594,7 +645,7 @@ extension V2NotificationCenter {
             V2Notification(id: 112, severity: .high, kind: .alert,
                            subject: "Delivery cancelled at stop 3",
                            body: "Order IKEA-UK-2026-00098712 for Anil Kumar was cancelled by dispatch. You handed it back at the hub.",
-                           createdAt: ago(15 * day), read: true),
+                           createdAt: ago(15 * day), read: true, resolved: true),
         ]
     }
 }

@@ -359,9 +359,9 @@ public struct V2Flow: View {
                             onFilter: { V2Motion.txSurface { showsInboxFilter = true } },
                             filter: inboxFilter,
                             onResetFilter: { withAnimation(V2Motion.standard) {
-                                inboxFilter = V2InboxFilter(unreadOnly: inboxFilter.unreadOnly)
+                                inboxFilter = V2InboxFilter().with(tab: inboxFilter.tab)
                             } },
-                            onUnreadOnly: { inboxFilter.unreadOnly = $0 },
+                            onTab: { inboxFilter = inboxFilter.with(tab: $0) },
                             demoSelection: inboxDemoSelection)
                     .transition(V2Motion.pushFromTrailing)
                     .zIndex(2)
@@ -806,6 +806,7 @@ public struct V2Flow: View {
         case "inbox-empty":    notes.clear(); router.setPage(.inbox)
         case "inbox-filter":   router.setPage(.inbox); showsInboxFilter = true
         case "inbox-unread":   inboxFilter.unreadOnly = true; router.setPage(.inbox)
+        case "inbox-action":   inboxFilter.actionOnly = true; router.setPage(.inbox)
         case "inbox-select":   inboxDemoSelection = [101, 103]; router.setPage(.inbox)
         case "inbox-caughtup": notes.markAllRead(); inboxFilter.unreadOnly = true; router.setPage(.inbox)
         case "inbox-nomatch":
