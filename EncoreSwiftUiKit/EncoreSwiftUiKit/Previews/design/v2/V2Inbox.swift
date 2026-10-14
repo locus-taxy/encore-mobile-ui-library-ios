@@ -39,8 +39,9 @@ struct V2NotificationRowVars: Equatable {
     }
 }
 
-/// Unread = primary tint + SemiBold subject; read = white + Medium subject, secondary message. No
-/// dot — the web inbox dropped it as too small, and the shade is what both surfaces share.
+/// Unread = primary dot after the time + SemiBold subject; read = Medium subject, secondary message.
+/// The dot is the common mobile unread mark (Mobbin: ~13 of 20 inboxes); the row shade is kept for
+/// selection, so the two never mean the same thing. (The web inbox uses shade only.)
 struct V2NotificationRowCard: View {
     let vars: V2NotificationRowVars
 
@@ -62,6 +63,12 @@ struct V2NotificationRowCard: View {
                 Text(vars.timeLabel)
                     .v2Label(V2Font.label2)
                     .foregroundColor(HFColor.textSecondary)
+                if vars.isUnread {
+                    Circle()
+                        .fill(HFColor.primary)
+                        .frame(width: 8, height: 8)
+                        .accessibilityLabel("Unread")
+                }
             }
             .padding(.bottom, Spacing.spacing4)
             Text(vars.subject)
@@ -128,21 +135,23 @@ enum V2Ago {
 
 // MARK: Filter
 
+/// Read state is the All / Unread tab (the scan page's counted tabs); the sheet holds type + severity.
 struct V2InboxFilter: Equatable {
-    enum Status: String, CaseIterable { case unread = "Unread", read = "Read" }
-    var status: Set<Status> = []
+    var unreadOnly = false
     var kind: Set<V2NotificationKind> = []
     var severity: Set<V2Severity> = []
 
-    var count: Int { status.count + kind.count + severity.count }
+    /// Sheet facets only — the tab is not a filter and never badges the filter icon.
+    var count: Int { kind.count + severity.count }
     var isEmpty: Bool { count == 0 }
 
     /// Empty set = no constraint on that facet.
-    func matches(_ n: V2Notification) -> Bool {
-        (status.isEmpty || status.contains(n.read ? .read : .unread))
-            && (kind.isEmpty || kind.contains(n.kind))
+    func matchesFacets(_ n: V2Notification) -> Bool {
+        (kind.isEmpty || kind.contains(n.kind))
             && (severity.isEmpty || severity.contains(n.severity))
     }
+
+    func matches(_ n: V2Notification) -> Bool { matchesFacets(n) && (!unreadOnly || !n.read) }
 }
 
 /// Figma's list filter sheet (Trip + Search › Search and filter): category rail on the left,
@@ -153,8 +162,8 @@ struct V2InboxFilterSheet: View {
     var onApply: (V2InboxFilter) -> Void
     var onClose: () -> Void
 
-    enum Facet: String, CaseIterable { case status = "Status", type = "Type", severity = "Severity" }
-    @State private var facet: Facet = .status
+    enum Facet: String, CaseIterable { case type = "Type", severity = "Severity" }
+    @State private var facet: Facet = .type
     @State private var draft = V2InboxFilter()
 
     var body: some View {
@@ -204,7 +213,9 @@ struct V2InboxFilterSheet: View {
             HFSheetFooter {
                 VStack(spacing: Spacing.spacing8) {
                     V2Button(label: "Apply", enabled: draft != applied) { onApply(draft) }
-                    V2Button(label: "Reset all", role: .text, enabled: !draft.isEmpty) { draft = V2InboxFilter() }
+                    V2Button(label: "Reset all", role: .text, enabled: !draft.isEmpty) {
+                        draft = V2InboxFilter(unreadOnly: applied.unreadOnly)
+                    }
                 }
             }
         }
@@ -213,7 +224,6 @@ struct V2InboxFilterSheet: View {
 
     private func picked(_ f: Facet) -> Int {
         switch f {
-        case .status:   return draft.status.count
         case .type:     return draft.kind.count
         case .severity: return draft.severity.count
         }
@@ -223,13 +233,6 @@ struct V2InboxFilterSheet: View {
 
     private var options: [Option] {
         switch facet {
-        case .status:
-            return V2InboxFilter.Status.allCases.map { s in
-                Option(label: s.rawValue,
-                       count: entries.filter { ($0.read ? .read : .unread) == s }.count,
-                       on: draft.status.contains(s),
-                       toggle: { draft.status.formSymmetricDifference([s]) })
-            }
         case .type:
             return [V2NotificationKind.alert, .notification].map { k in
                 Option(label: k == .alert ? "Alerts" : "Notifications",
@@ -257,6 +260,10 @@ struct V2InboxPage: View {
     var onFilter: () -> Void
     var filter: V2InboxFilter
     var onResetFilter: () -> Void
+    /// All / Unread tab → `filter.unreadOnly`, kept by the flow so it survives the filter sheet.
+    var onUnreadOnly: (Bool) -> Void
+    /// Demo states only: open already selecting these ids.
+    var demoSelection: Set<Int>? = nil
 
     @Environment(\.hfToast) private var toast
     /// Paging: the first page, then one more each time the end of the list comes into view.
@@ -267,6 +274,8 @@ struct V2InboxPage: View {
     static let pageSize = 8
 
     private var now: Date { Date() }
+    /// Sheet facets applied, tab ignored — what the tab counts are taken from.
+    private var faceted: [V2Notification] { center.entries.filter(filter.matchesFacets) }
     private var matching: [V2Notification] { center.entries.filter(filter.matches) }
     private var visible: [V2Notification] { Array(matching.prefix(shown)) }
 
@@ -279,27 +288,25 @@ struct V2InboxPage: View {
                       body: "Your notifications need a connection. They'll show here once you're back online.")
             } else if center.entries.isEmpty {
                 state(title: "No notifications yet", body: "Anything you're sent will show here.")
-            } else if matching.isEmpty {
-                state(title: "No results found", body: "Try adjusting or clearing your filters",
-                      action: ("Reset all", onResetFilter))
             } else {
-                list
-            }
-            if let selecting {
-                HFSheetFooter {
-                    HStack(spacing: Spacing.spacing8) {
-                        V2Button(label: "Mark unread", role: .text, enabled: !selecting.isEmpty) {
-                            finishSelection(read: false)
-                        }
-                        V2Button(label: "Mark read", enabled: !selecting.isEmpty) { finishSelection(read: true) }
-                    }
+                // Frame 13: "Select all" replaces the tabs while selecting.
+                if selecting != nil { selectAllRow } else { tabs }
+                HFSeam()
+                if !matching.isEmpty {
+                    list
+                } else if filter.unreadOnly && filter.isEmpty {
+                    state(title: "You're all caught up", body: "You've read all your notifications.")
+                } else {
+                    state(title: "No results found", body: "Try adjusting or clearing your filters",
+                          action: ("Reset all", onResetFilter))
                 }
-                .transition(.move(edge: .bottom))
             }
+            footer
         }
         .background(HFColor.screen)
         .ignoresSafeArea(.container, edges: .bottom)
         .onChange(of: filter) { _ in shown = Self.pageSize }
+        .onAppear { if let demoSelection { selecting = demoSelection } }
     }
 
     // MARK: Navbar — back · title · filter (count badge); select mode swaps in ✕ · "n selected"
@@ -319,6 +326,66 @@ struct V2InboxPage: View {
         }
     }
 
+    /// The scan page's counted tabs. The unread count lives here, never as a "0 unread" line.
+    private var tabs: some View {
+        V2Tabs(tabs: [V2Tab(id: "all", label: "All", count: faceted.count),
+                      V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count)],
+               selection: Binding(get: { filter.unreadOnly ? "unread" : "all" },
+                                  set: { id in withAnimation(V2Motion.standard) { onUnreadOnly(id == "unread") } }))
+    }
+
+    /// Frame 13 / the scan page's select-all row: a 48 checkbox target, then the label.
+    private var selectAllRow: some View {
+        let ids = Set(matching.map(\.id))
+        let all = !ids.isEmpty && ids.isSubset(of: selecting ?? [])
+        return Button {
+            withAnimation(V2Motion.standard) { selecting = all ? [] : ids }
+        } label: {
+            HStack(spacing: -Spacing.spacing8) {
+                V2Checkbox(checked: all)
+                Text("Select all")
+                    .v2Label(V2Font.chipLabel)
+                    .foregroundColor(HFColor.textPrimary)
+                Spacer(minLength: 0)
+            }
+            .frame(height: V2Metrics.tabBar)
+            .background(HFColor.surface)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Frame 13's footer while selecting: one hug-right action. It reads "Mark read" while any picked
+    /// row is unread, else "Mark unread". Otherwise an empty band, so feedback toasts still have a
+    /// footer to rise from (the toast channel lives on footers).
+    private var footer: some View {
+        HFToastFooter {
+            if let selecting {
+                let ids = Array(selecting)
+                let markRead = selecting.isEmpty || center.entries.contains { selecting.contains($0.id) && !$0.read }
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    V2Button(label: markRead ? "Mark read" : "Mark unread",
+                             enabled: !ids.isEmpty,
+                             leadingIcon: markRead ? "LCheck" : nil,
+                             hug: true) { finishSelection(ids, read: markRead) }
+                }
+                .padding(.horizontal, V2Space.headerInset)
+                .frame(height: V2Metrics.dialogActions)
+                .padding(.bottom, max(0, HFLayout.bottomInset - Spacing.spacing16))
+                .frame(maxWidth: .infinity)
+                .background(
+                    Rectangle()
+                        .fill(HFColor.surface)
+                        .shadow(color: Color(.sRGB, red: 17/255, green: 19/255, blue: 24/255, opacity: 0.16),
+                                radius: 2, x: 0, y: 0)
+                )
+                .transition(.move(edge: .bottom))
+            } else {
+                Color.clear.frame(maxWidth: .infinity).frame(height: HFLayout.bottomInset)
+            }
+        }
+    }
+
     private var offlineStrip: some View {
         HStack(spacing: Spacing.spacing8) {
             EncoreIcon(iconName: "LWarning", size: 20)
@@ -335,26 +402,6 @@ struct V2InboxPage: View {
     private var list: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                if selecting == nil {
-                    HStack {
-                        Text(center.unread == 1 ? "1 unread" : "\(center.unread) unread")
-                            .v2Label(V2Font.label2)
-                            .foregroundColor(HFColor.textSecondary)
-                        Spacer()
-                        Button {
-                            center.markAllRead()
-                            toast?.show("All marked as read")
-                        } label: {
-                            Text("Mark all as read")
-                                .v2Label(V2Font.label1)
-                                .foregroundColor(center.unread == 0 ? HFColor.textSecondary.opacity(0.5) : HFColor.primary)
-                                .frame(height: V2Metrics.touchTarget)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(center.unread == 0)
-                    }
-                    .padding(.horizontal, V2Space.pageMargin)
-                }
                 ForEach(V2Ago.Group.allCases, id: \.self) { g in
                     let rows = visible.filter { V2Ago.group($0.createdAt, now: now) == g }
                     if !rows.isEmpty {
@@ -376,7 +423,7 @@ struct V2InboxPage: View {
                         .frame(height: 64)
                         .onAppear(perform: loadMore)
                 }
-                Color.clear.frame(height: HFLayout.bottomInset + Spacing.spacing16)
+                Color.clear.frame(height: Spacing.spacing16)
             }
         }
     }
@@ -390,7 +437,8 @@ struct V2InboxPage: View {
         }
     }
 
-    /// Host chrome around one SDUI row card: tint, swipe-to-toggle-read, long-press to select, tap.
+    /// Host chrome around one SDUI row card: selection shade, swipe-to-toggle-read, long-press to
+    /// select, tap.
     private func row(_ n: V2Notification) -> some View {
         let dx = swiping?.id == n.id ? swiping!.dx : 0
         let picked = selecting?.contains(n.id) ?? false
@@ -407,15 +455,15 @@ struct V2InboxPage: View {
             .background(HFColor.primary)
             .opacity(dx < 0 ? 1 : 0)
 
-            HStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 0) {
                 if selecting != nil {
-                    EncoreIcon(iconName: picked ? "LCheckboxFilled" : "LCheckboxBlank", size: 24)
-                        .foregroundColor(picked ? HFColor.primary : V2Token.actionActive)
-                        .padding(.leading, Spacing.spacing16)
+                    V2Checkbox(checked: picked)
+                        .padding(.top, Spacing.spacing4)
+                        .padding(.trailing, -Spacing.spacing16)
                 }
                 V2NotificationRowCard(vars: .make(n, now: now))
             }
-            .background(ZStack { HFColor.surface; HFColor.primary.opacity(n.read ? 0 : 0.04) })
+            .background(ZStack { HFColor.surface; HFColor.primary.opacity(picked ? 0.04 : 0) })
             .offset(x: dx)
         }
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -448,9 +496,9 @@ struct V2InboxPage: View {
             })
     }
 
-    private func finishSelection(read: Bool) {
-        guard let ids = selecting, !ids.isEmpty else { return }
-        center.markRead(Array(ids), read)
+    private func finishSelection(_ ids: [Int], read: Bool) {
+        guard !ids.isEmpty else { return }
+        center.markRead(ids, read)
         withAnimation(V2Motion.standard) { selecting = nil }
         toast?.show("\(ids.count) marked as \(read ? "read" : "unread")")
     }
@@ -587,7 +635,7 @@ struct V2BellButton: View {
     var action: () -> Void
     var body: some View {
         Button(action: action) {
-            EncoreIcon(iconName: "LBell", size: V2Icon.bar)
+            EncoreIcon(iconName: "LNotificationsOutlined", size: V2Icon.bar)
                 .foregroundColor(V2Token.actionActive)
                 .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
                 .overlay(alignment: .topTrailing) {
