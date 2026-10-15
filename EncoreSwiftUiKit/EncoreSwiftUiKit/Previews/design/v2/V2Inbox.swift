@@ -20,14 +20,17 @@ import SwiftUI
 struct V2NotificationRowVars: Equatable {
     var subject: String
     var body: String
-    var timeLabel: String
+    /// Today's rows only ("12 min ago"). Under Yesterday and older the section header already says
+    /// when, so the row shows no time.
+    var timeLabel: String?
     var isUnread: Bool
     var goneLabel: String?
 
     static func make(_ n: V2Notification, now: Date) -> Self {
         V2NotificationRowVars(subject: n.subject,
                               body: n.body,
-                              timeLabel: V2Ago.label(n.createdAt, now: now),
+                              timeLabel: V2Ago.group(n.createdAt, now: now) == .today
+                                  ? V2Ago.label(n.createdAt, now: now) : nil,
                               isUnread: !n.read,
                               goneLabel: n.targetGone ? "This \(n.target.noun) is no longer available" : nil)
     }
@@ -45,10 +48,12 @@ struct V2NotificationRowCard: View {
                     .v2Text(vars.isUnread ? V2Font.cardTitle : V2Font.body1)
                     .foregroundColor(HFColor.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text(vars.timeLabel)
-                    .v2Label(V2Font.body2)
-                    .foregroundColor(HFColor.textSecondary)
-                    .fixedSize()
+                if let time = vars.timeLabel {
+                    Text(time)
+                        .v2Label(V2Font.body2)
+                        .foregroundColor(HFColor.textSecondary)
+                        .fixedSize()
+                }
                 if vars.isUnread {
                     Circle()
                         .fill(HFColor.primary)
