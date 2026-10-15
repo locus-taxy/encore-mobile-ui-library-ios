@@ -328,8 +328,7 @@ struct V2InboxPage: View {
         }
     }
 
-    /// The scan list's counted tabs for status, with the brief's "Mark all as read, at the top" on the
-    /// same row. Shown only while something is unread.
+    /// The scan list's counted tabs for status. No separate mark-all: Select all → Mark read does it.
     private var tabs: some View {
         V2Tabs(tabs: [V2Tab(id: "all", label: "All", count: faceted.count),
                       V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count),
@@ -338,21 +337,6 @@ struct V2InboxPage: View {
                                   set: { id in withAnimation(V2Motion.standard) {
                                       onStatus(V2InboxFilter.Status(rawValue: id) ?? .all)
                                   } }))
-            .overlay(alignment: .trailing) {
-                if center.unread > 0 {
-                    Button {
-                        center.markAllRead()
-                        toast?.show("All marked as read")
-                    } label: {
-                        Text("Mark all as read")
-                            .v2Label(V2Font.buttonMedium)
-                            .foregroundColor(HFColor.primary)
-                            .padding(.horizontal, Spacing.spacing16)
-                            .frame(height: V2Metrics.tabBar)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
     }
 
     /// Frame 09's select-all row: a 48 checkbox target, then the label.
