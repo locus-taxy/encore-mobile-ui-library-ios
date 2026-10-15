@@ -281,7 +281,7 @@ struct V2IdPSheet: View {
                         V2TextField(label: "Password", text: $password, secure: true)
                         Button { remember.toggle() } label: {
                             HStack(spacing: 0) {
-                                EncoreIcon(iconName: remember ? "LCheckboxFilled" : "LCheckboxBlank", size: 20)
+                                EncoreIcon(iconName: remember ? "LCheckboxFilled" : "LCheckboxBlank", size: 24)
                                     .foregroundColor(remember ? HFColor.primary : HFColor.textSecondary)
                                     .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
                                 Text("Remember me")

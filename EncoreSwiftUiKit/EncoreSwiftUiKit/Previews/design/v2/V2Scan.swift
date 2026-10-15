@@ -312,11 +312,11 @@ struct V2ScanPage: View {
     }
 }
 
-/// 20pt checkbox glyph in a 48 target.
+/// MUI checkbox: 24 glyph (18 box, same for blank and ticked) in a 48 target.
 struct V2Checkbox: View {
     let checked: Bool
     var body: some View {
-        EncoreIcon(iconName: checked ? "LCheckboxFilled" : "LCheckboxBlank", size: 20)
+        EncoreIcon(iconName: checked ? "LCheckboxFilled" : "LCheckboxBlank", size: 24)
             .foregroundColor(checked ? HFColor.primary : V2Token.actionActive)
             .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
     }
