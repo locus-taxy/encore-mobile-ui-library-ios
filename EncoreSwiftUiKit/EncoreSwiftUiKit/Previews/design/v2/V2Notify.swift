@@ -293,7 +293,7 @@ struct V2NotificationLayer: View {
 }
 
 /// Critical / high — Figma's blocking dialog (Auth + Home + Profile: "Setup biometric", "Update - soft
-/// block"): 328 wide, r8; tinted pill icon chip; h5 title; body1 secondary; then the actions on their
+/// block"): 328 wide, r12 (Figma r8 — see below); tinted pill icon chip; h5 title; body1 secondary; then the actions on their
 /// own white block with an E1 shadow as the separator (no rule); primary on top, grey text below.
 /// Tone lives in the icon chip only — no eyebrow, never in the buttons.
 struct V2NotificationTakeover: View {
@@ -355,7 +355,9 @@ struct V2NotificationTakeover: View {
             .allowsHitTesting(armed)
         }
         .background(HFColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        // r12, not Figma's 8: the container family (sheets, result card, menu) is 12, and a step above
+        // the r8 buttons keeps the card reading as the outer shape. Logged in figma-discrepancies.md.
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .frame(maxWidth: 328)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
