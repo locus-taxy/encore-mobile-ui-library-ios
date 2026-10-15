@@ -572,17 +572,41 @@ private struct HFToastFooterBody<Footer: View>: View {
 
 // MARK: - Avatar
 
+/// MUI `<Avatar>` (MUI – New (Mobile Native) › Avatar): Content = Text (initials) or Icon, plus the
+/// `badge` variant — a 12 `statusBadge` ring in paper white at the bottom-right holding an 8 `<Badge>`
+/// dot (Variant=Dot). Ring offset is −2 on 40 and smaller, 0 on 56, as the component draws it.
 struct HFAvatar: View {
     var initials: String = "A"
+    /// Content=Icon: the glyph replaces the initials (half the avatar, 20 on a 40).
+    var icon: String? = nil
     var size: CGFloat = 40
+    // Figma avatar fill is neutral grey (#A3A3A3); the DS avatar/fill token doesn't resolve here.
+    var fill: Color = Color(red: 0.639, green: 0.639, blue: 0.639)
+    var glyph: Color = HFColor.onPrimary
+    /// The dot's colour; nil = no badge.
+    var badge: Color? = nil
+
     var body: some View {
-        Text(initials)
-            .typography(Typography.Avatar.initialsLg)
-            .foregroundColor(HFColor.onPrimary)
-            .frame(width: size, height: size)
-            // Figma avatar fill is neutral grey (#A3A3A3); the DS avatar/fill token doesn't resolve here.
-            .background(Color(red: 0.639, green: 0.639, blue: 0.639))
-            .clipShape(Circle())
+        Group {
+            if let icon {
+                EncoreIcon(iconName: icon, size: size / 2)
+            } else {
+                Text(initials).typography(Typography.Avatar.initialsLg)
+            }
+        }
+        .foregroundColor(glyph)
+        .frame(width: size, height: size)
+        .background(fill)
+        .clipShape(Circle())
+        .overlay(alignment: .bottomTrailing) {
+            if let badge {
+                Circle()
+                    .fill(HFColor.surface)
+                    .frame(width: 12, height: 12)
+                    .overlay(Circle().fill(badge).frame(width: 8, height: 8))
+                    .offset(x: size <= 40 ? 2 : 0, y: size <= 40 ? 2 : 0)
+            }
+        }
     }
 }
 

@@ -483,30 +483,19 @@ struct V2InboxPage: View {
                     if selecting {
                         V2Checkbox(checked: picked)
                     } else {
-                        // A 40 light-blue disc behind a text-secondary glyph (Gmail's avatar slot) so it reads as
-                        // something to tap, not decoration.
-                        EncoreIcon(iconName: n.kind == .alert ? "LAlertTri" : "LBell", size: 20)
-                            .foregroundColor(HFColor.textSecondary)
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color.encore("Blue/50")))      // #F0F5FF
-                            .accessibilityLabel(n.kind == .alert ? "Alert" : "Notification")
+                        // MUI <Avatar> Content=Icon on a light-blue fill; unread = its badge variant
+                        // (a primary dot on the avatar's bottom-right). The checkbox is the only blue
+                        // mark while selecting, so no badge then.
+                        HFAvatar(icon: n.kind == .alert ? "LAlertTri" : "LBell",
+                                 fill: Color.encore("Blue/50"),                // #F0F5FF
+                                 glyph: HFColor.textSecondary,
+                                 badge: n.read ? nil : HFColor.primary)
+                            .accessibilityLabel((n.kind == .alert ? "Alert" : "Notification") + (n.read ? "" : ", unread"))
                     }
                 }
                 .buttonStyle(.plain)
                 // One 48 × 40 slot for disc or checkbox, top-aligned with the subject's line box.
                 .frame(width: V2Metrics.touchTarget, height: 40)
-                // Unread dot in the leading margin, level with the disc (LinkedIn, Clubhouse,
-                // Peerspace). Hidden while selecting: the checkbox is the only blue mark then, and
-                // weight still says unread.
-                .overlay(alignment: .leading) {
-                    if !n.read && !selecting {
-                        Circle()
-                            .fill(HFColor.primary)
-                            .frame(width: 8, height: 8)
-                            .offset(x: -9)            // centre at x7: 3 from the edge, 4 to the disc
-                            .accessibilityLabel("Unread")
-                    }
-                }
                 V2NotificationRowCard(vars: .make(n, now: now))
                 // Scan 2.1: the row's own ⋮ — one-row mark read / unread.
                 Button { withAnimation(V2Motion.standard) { menuFor = menuFor == n.id ? nil : n.id } } label: {
