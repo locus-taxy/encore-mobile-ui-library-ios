@@ -496,7 +496,7 @@ struct V2InboxPage: View {
                         EncoreIcon(iconName: n.kind == .alert ? "LAlertTri" : "LBell", size: 20)
                             .foregroundColor(V2Token.actionActive)
                             .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color.encore("Grey/100")))
+                            .background(Circle().fill(Color.encore("Blue/50")))      // #F0F5FF
                             .accessibilityLabel(n.kind == .alert ? "Alert" : "Notification")
                     }
                 }
