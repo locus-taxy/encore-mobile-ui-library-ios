@@ -484,6 +484,7 @@ struct V2AppBar: View {
             .frame(height: V2Metrics.touchTarget)
             .padding(.vertical, Spacing.spacing8)
             HFSeam()
+            V2BannerSlot()
         }
         .background(HFColor.surface)
     }

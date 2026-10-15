@@ -67,6 +67,7 @@ public struct V2Flow: View {
         .onAppear(perform: applyDemo)
         .onAppear(perform: scheduleLaunchPushes)
         .environment(\.v2InboxEntry, V2InboxEntry(unread: notes.unread, open: { openInbox() }))
+        .environment(\.v2Banner, V2BannerContext(center: notes, onOpen: { openNotification($0) }))
         .onReceive(NotificationCenter.default.publisher(for: .v2DeviceShaken)) { _ in
             guard session == .signedIn else { return }
             V2Motion.txSurface { showsPushPanel = true }

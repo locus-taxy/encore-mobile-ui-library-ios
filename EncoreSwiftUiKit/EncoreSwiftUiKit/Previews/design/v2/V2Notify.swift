@@ -258,25 +258,11 @@ final class V2NotificationCenter: ObservableObject {
 struct V2NotificationLayer: View {
     @ObservedObject var center: V2NotificationCenter
     var onOpen: (V2Notification) -> Void
-    /// App bar / navbar: 48 row + 8 above and below + the 1 seam.
-    static let appBar: CGFloat = 65
 
     var body: some View {
         ZStack(alignment: .top) {
-            // Under the app bar, never over it (the strip under the status bar is the network alert's).
-            // Clipped there so it slides out from beneath the bar and back under it.
-            ZStack(alignment: .top) {
-                if let n = center.entry(center.banner) {
-                    V2NotificationBanner(note: n,
-                                         onTap: { if let n = center.tapBanner() { onOpen(n) } },
-                                         onDismiss: { center.dismissBanner() })
-                        .transition(.move(edge: .top))
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .top)
-            .clipped()
-            .padding(.top, Self.appBar)
-            .zIndex(1)
+            // The medium banner is not drawn here: it lives in the page, under the app bar / navbar
+            // (`V2BannerSlot`), so the page moves down by its height.
             if let n = center.entry(center.takeover) {
                 ZStack {
                     Color.black.opacity(0.5)
@@ -298,6 +284,50 @@ struct V2NotificationLayer: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+// MARK: Banner slot — the medium banner as part of the page
+
+/// What a bar needs to host the medium banner. Injected at the flow root; absent → no slot.
+struct V2BannerContext {
+    let center: V2NotificationCenter
+    var onOpen: (V2Notification) -> Void
+}
+
+private struct V2BannerContextKey: EnvironmentKey { static let defaultValue: V2BannerContext? = nil }
+extension EnvironmentValues {
+    var v2Banner: V2BannerContext? {
+        get { self[V2BannerContextKey.self] }
+        set { self[V2BannerContextKey.self] = newValue }
+    }
+}
+
+/// Sits under every app bar and navbar. Home's banners push the page down ("Your shifts" starts below
+/// "Pre shift end"), so this one takes real height: the content beneath moves down by exactly the
+/// banner's height, and back up as it leaves. Clipped so it slides out from under the bar.
+struct V2BannerSlot: View {
+    @Environment(\.v2Banner) private var context
+    var body: some View {
+        if let context { V2BannerSlotBody(center: context.center, onOpen: context.onOpen) }
+    }
+}
+
+private struct V2BannerSlotBody: View {
+    @ObservedObject var center: V2NotificationCenter
+    var onOpen: (V2Notification) -> Void
+    var body: some View {
+        VStack(spacing: 0) {
+            if let n = center.entry(center.banner) {
+                V2NotificationBanner(note: n,
+                                     onTap: { if let n = center.tapBanner() { onOpen(n) } },
+                                     onDismiss: { center.dismissBanner() })
+                    .transition(.move(edge: .top))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .clipped()
+        .animation(V2Motion.standard, value: center.banner)
     }
 }
 
@@ -407,15 +437,17 @@ struct V2NotificationBanner: View {
             .foregroundColor(HFColor.onPrimary)
             .frame(maxWidth: .infinity, alignment: .leading)
             if note.target != .none {
+                // `<Alert>` action (Session pre-expiry "Continue"): a text <Button>, SemiBold 14/24,
+                // underlined, white, ≥ 64 × 48, px12.
                 Button(action: onTap) {
                     Text(note.target.openLabel)
-                        .v2Label(V2Font.label1)
+                        .v2Label(V2Font.buttonMedium)
                         .underline()
                         .foregroundColor(HFColor.onPrimary)
-                        .frame(minHeight: V2Metrics.touchTarget)
+                        .padding(.horizontal, Spacing.spacing12)
+                        .frame(minWidth: 64, minHeight: V2Metrics.touchTarget)
                 }
                 .buttonStyle(.plain)
-                .padding(.trailing, Spacing.spacing8)
             } else {
                 Button(action: onDismiss) {
                     EncoreIcon(iconName: "LCross", size: 24)

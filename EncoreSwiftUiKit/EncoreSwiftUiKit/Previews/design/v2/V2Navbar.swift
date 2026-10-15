@@ -71,6 +71,7 @@ struct V2Navbar: View {
             .padding(.vertical, V2Space.chipGap)
 
             HFSeam()      // the grey page background, not a #C2C2C2 rule (frames 12, 17)
+            V2BannerSlot()
         }
         .background(HFColor.surface)
     }
