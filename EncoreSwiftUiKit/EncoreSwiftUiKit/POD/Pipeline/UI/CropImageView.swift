@@ -256,7 +256,7 @@ internal struct CropImageView: View {
     private var controlBar: some View {
         HStack {
             Button(action: onCancel) {
-                Text("Cancel")
+                Text("Cancel", bundle: BundleToken.bundle)
                     .foregroundColor(.white)
                     .padding(.vertical, 12)
                     .padding(.horizontal, 16)
@@ -278,7 +278,7 @@ internal struct CropImageView: View {
             Spacer()
 
             Button(action: confirm) {
-                Text("Confirm")
+                Text("Confirm", bundle: BundleToken.bundle)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .padding(.vertical, 12)
