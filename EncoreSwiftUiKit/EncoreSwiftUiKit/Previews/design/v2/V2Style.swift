@@ -49,8 +49,6 @@ enum V2Font {
 
     /// `typography/label0` — navbar / sheet title. Medium 16/24 (lighter than a header name).
     static let navTitle = V2TextStyle(fontName: medium, size: 16, lineHeight: 24, tracking: 0)
-    /// Top alert title — `<Alert> | Banner` "Sync pending work" (Auth + Home + Profile). Medium 16/24.
-    static let alertTitle = V2TextStyle(fontName: medium, size: 16, lineHeight: 24, tracking: 0)
     /// `typography/h6` — entity-header name (trip window, stop name, task contact). SemiBold 16/24.
     static let sheetHeadline = V2TextStyle(fontName: semibold, size: 16, lineHeight: 24, tracking: 0)
     /// `typography/h5` — hero value (scanned HU ID). SemiBold 20/28.

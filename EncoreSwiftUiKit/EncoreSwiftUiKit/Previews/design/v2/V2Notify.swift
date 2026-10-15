@@ -258,16 +258,25 @@ final class V2NotificationCenter: ObservableObject {
 struct V2NotificationLayer: View {
     @ObservedObject var center: V2NotificationCenter
     var onOpen: (V2Notification) -> Void
+    /// App bar / navbar: 48 row + 8 above and below + the 1 seam.
+    static let appBar: CGFloat = 65
 
     var body: some View {
         ZStack(alignment: .top) {
-            if let n = center.entry(center.banner) {
-                V2NotificationBanner(note: n,
-                                     onTap: { if let n = center.tapBanner() { onOpen(n) } },
-                                     onDismiss: { center.dismissBanner() })
-                    .transition(.move(edge: .top))
-                    .zIndex(1)
+            // Under the app bar, never over it (the strip under the status bar is the network alert's).
+            // Clipped there so it slides out from beneath the bar and back under it.
+            ZStack(alignment: .top) {
+                if let n = center.entry(center.banner) {
+                    V2NotificationBanner(note: n,
+                                         onTap: { if let n = center.tapBanner() { onOpen(n) } },
+                                         onDismiss: { center.dismissBanner() })
+                        .transition(.move(edge: .top))
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .top)
+            .clipped()
+            .padding(.top, Self.appBar)
+            .zIndex(1)
             if let n = center.entry(center.takeover) {
                 ZStack {
                     Color.black.opacity(0.5)
@@ -368,10 +377,11 @@ struct V2NotificationTakeover: View {
     }
 }
 
-/// Medium — Figma's top `<Alert> | Banner` (Auth + Home + Profile): full width, info fill, 20 filled
-/// icon, white Medium 16/24 title. A notification carries a message too, so it runs to two lines.
-/// Trailing slot follows the "Sync pending" banner: an action link ("View task") REPLACES the ✕ — the
-/// boards never show both. A banner with nowhere to go keeps the ✕ ("Pre shift end").
+/// Medium — Home's in-page banner (Auth + Home + Profile: "Pre shift end", "Approaching-end reminder"):
+/// full width directly under the app bar, info fill, 20 filled icon centred, white 14/20 text (subject
+/// Medium, message Regular, up to two lines), ✕ in a 48 at the right. The full-bleed strip under the
+/// status bar is the network alert's, not this. Trailing slot follows "Sync pending": an action link
+/// ("View shift") REPLACES the ✕ — the boards never show both.
 /// It overlays rather than pushing content (Figma's push down) because it lands on any screen, mid-task,
 /// and leaves on its own; reflowing the page under the rider's thumb would be worse. Slides down and
 /// back up (annotation: "slides down top-to-bottom … and goes out in the reverse pattern").
@@ -383,13 +393,12 @@ struct V2NotificationBanner: View {
     @State private var drag: CGFloat = 0
 
     var body: some View {
-        HStack(alignment: .top, spacing: Spacing.spacing12) {
+        HStack(alignment: .center, spacing: Spacing.spacing12) {
             EncoreIcon(iconName: note.severity.icon, size: 20)
                 .foregroundColor(HFColor.onPrimary)
-                .padding(.top, 2)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(note.subject)
-                    .v2Label(V2Font.alertTitle)
+                    .v2Label(V2Font.label1)
                 Text(note.body)
                     .v2Text(V2Font.body1)
                     .opacity(0.9)
@@ -406,7 +415,6 @@ struct V2NotificationBanner: View {
                         .frame(minHeight: V2Metrics.touchTarget)
                 }
                 .buttonStyle(.plain)
-                .padding(.top, -12)
                 .padding(.trailing, Spacing.spacing8)
             } else {
                 Button(action: onDismiss) {
@@ -415,13 +423,13 @@ struct V2NotificationBanner: View {
                         .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
                 }
                 .buttonStyle(.plain)
-                .padding(.top, -12)
             }
         }
         .padding(.leading, Spacing.spacing16)
         .padding(.trailing, Spacing.spacing4)
-        .padding(.vertical, Spacing.spacing12)
-        .background(note.severity.tone.ignoresSafeArea(edges: .top))
+        .padding(.vertical, Spacing.spacing8)
+        .frame(minHeight: V2Metrics.touchTarget)
+        .background(note.severity.tone)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
         .offset(y: min(0, drag))
