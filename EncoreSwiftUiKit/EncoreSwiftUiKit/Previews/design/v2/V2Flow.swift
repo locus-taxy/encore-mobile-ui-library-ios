@@ -16,6 +16,7 @@ public struct V2Flow: View {
     @StateObject private var notes = V2NotificationCenter()
     /// Prototype-only push panel (shake the device).
     @State private var showsPushPanel = false
+    @Environment(\.v2Jump) private var jump
     /// DP-2956 — where the inbox was opened from (Back returns there), and its applied filter.
     @State private var inboxOrigin: V2Route = .home
     @State private var inboxFilter = V2InboxFilter()
@@ -66,6 +67,8 @@ public struct V2Flow: View {
         .onAppear { notes.seed(V2NotificationCenter.history()) }
         .onAppear(perform: applyDemo)
         .onAppear(perform: scheduleLaunchPushes)
+        // The camera holds medium banners; they land on the Scan HUs page once the rider is back out.
+        .onChange(of: router.scanner != nil) { notes.holdBanners($0) }
         .environment(\.v2InboxEntry, V2InboxEntry(unread: notes.unread, open: { openInbox() }))
         .environment(\.v2Banner, V2BannerContext(center: notes, onOpen: { openNotification($0) }))
         .onReceive(NotificationCenter.default.publisher(for: .v2DeviceShaken)) { _ in
@@ -239,6 +242,10 @@ public struct V2Flow: View {
                                 V2Motion.txSurface { showsPushPanel = false }
                                 // Let the panel sink first, so the arrival reads as its own event.
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { fire(sample) }
+                            },
+                            onJump: { key in
+                                showsPushPanel = false
+                                jump?(key)
                             },
                             onClose: { V2Motion.txSurface { showsPushPanel = false } })
             }

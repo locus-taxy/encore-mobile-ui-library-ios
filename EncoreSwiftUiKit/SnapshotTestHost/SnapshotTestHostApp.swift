@@ -16,12 +16,12 @@ struct SnapshotTestHostApp: App {
                 } else if screen.hasPrefix("p0-") {
                     V2P0Harness(demo: String(screen.dropFirst(3)))
                 } else if screen.hasPrefix("v2-") {
-                    V2Flow(demo: String(screen.dropFirst(3)))
+                    V2Playground(demo: String(screen.dropFirst(3)))
                 } else {
                     HFRouter(screen: screen)
                 }
             } else {
-                V2Flow()
+                V2Playground()
             }
         }
     }

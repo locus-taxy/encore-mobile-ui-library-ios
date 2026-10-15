@@ -146,6 +146,9 @@ final class V2NotificationCenter: ObservableObject {
     /// the scrim, where it would expire unseen. Only the newest waits — banners are moment-in-time.
     private var heldBanner: Int? = nil
     private var bannerTimer: DispatchWorkItem? = nil
+    /// The camera is open. A scan is a workflow: a medium waits for the rider to come back out to the
+    /// Scan HUs page and slides in there, rather than landing on the viewfinder.
+    private var holdsBanners = false
     private var nextId = 1
 
     /// How long a medium banner stays before it goes on its own.
@@ -175,7 +178,7 @@ final class V2NotificationCenter: ObservableObject {
             case .takeover:
                 if takeover == nil { takeover = id } else { queue.append(id) }
             case .banner:
-                if takeover == nil { showBanner(id) } else { heldBanner = id }
+                if takeover == nil && !holdsBanners { showBanner(id) } else { heldBanner = id }
             case .silent:
                 break
             }
@@ -199,13 +202,29 @@ final class V2NotificationCenter: ObservableObject {
                 takeover = queue.removeFirst()
             }
         }
-        if takeover == nil, let held = heldBanner {
-            heldBanner = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-                withAnimation(V2Motion.surface) { self?.showBanner(held) }
-            }
-        }
+        releaseHeldBanner()
         return closed
+    }
+
+    /// Camera opened / closed. A banner already up when the camera opens goes back to waiting.
+    func holdBanners(_ on: Bool) {
+        guard on != holdsBanners else { return }
+        holdsBanners = on
+        if on, let id = banner {
+            bannerTimer?.cancel()
+            heldBanner = id
+            withAnimation(V2Motion.surface) { banner = nil }
+        } else if !on {
+            releaseHeldBanner()
+        }
+    }
+
+    private func releaseHeldBanner() {
+        guard takeover == nil, !holdsBanners, let held = heldBanner else { return }
+        heldBanner = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+            withAnimation(V2Motion.surface) { self?.showBanner(held) }
+        }
     }
 
     // MARK: Banner
@@ -516,27 +535,80 @@ enum V2PushSample: String, CaseIterable, Identifiable {
 /// Bottom-sheet panel opened by shaking the device. Not part of the product.
 struct V2PushPanel: View {
     var onFire: (V2PushSample) -> Void
+    var onJump: (String) -> Void = { _ in }
     var onClose: () -> Void
+
+    /// Every demo state worth visiting for DP-2959 / DP-2956, grouped. "" = the full app from splash.
+    static let states: [(group: String, items: [(key: String, title: String)])] = [
+        ("App", [("", "Full app from splash"), ("home", "Home"), ("clockedin", "Home, clocked in")]),
+        ("Inbox", [("inbox", "All"), ("inbox-unread", "Unread tab"), ("inbox-read", "Read tab"),
+                   ("inbox-caughtup", "Unread tab, nothing unread"), ("inbox-filter", "Filter sheet"),
+                   ("inbox-nomatch", "Filter applied, no match"), ("inbox-select", "Selecting, some unread"),
+                   ("inbox-select-read", "Selecting, all read"), ("inbox-swipe-read", "Swipe on unread"),
+                   ("inbox-swipe-unread", "Swipe on read"), ("inbox-menu", "Row menu"),
+                   ("inbox-offline", "No connection"), ("inbox-empty", "Empty")]),
+        ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
+    ]
 
     var body: some View {
         VStack(spacing: 0) {
-            HFSheetTitle(title: "Simulate a push", onClose: onClose)
-            VStack(spacing: Spacing.spacing8) {
-                ForEach(V2PushSample.allCases) { s in
-                    Button { onFire(s) } label: {
-                        Text(s.title)
-                            .v2Label(V2Font.label1)
-                            .foregroundColor(HFColor.textPrimary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, Spacing.spacing16)
-                            .frame(height: V2Metrics.touchTarget)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(HFColor.screen))
+            HFSheetTitle(title: "Prototype", onClose: onClose)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.spacing8) {
+                    header("Simulate a push")
+                    ForEach(V2PushSample.allCases) { s in row(s.title) { onFire(s) } }
+                    ForEach(Self.states, id: \.group) { g in
+                        header("Go to · \(g.group)")
+                        ForEach(g.items, id: \.key) { item in row(item.title) { onJump(item.key) } }
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(Spacing.spacing16)
             }
-            .padding(Spacing.spacing16)
+            .frame(maxHeight: 520)
             HFSheetBottomInset()
         }
+    }
+
+    private func header(_ text: String) -> some View {
+        Text(text.uppercased())
+            .v2Label(V2Font.overline2)
+            .foregroundColor(HFColor.textSecondary)
+            .padding(.top, Spacing.spacing8)
+    }
+
+    private func row(_ title: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .v2Label(V2Font.label1)
+                .foregroundColor(HFColor.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.spacing16)
+                .frame(height: V2Metrics.touchTarget)
+                .background(RoundedRectangle(cornerRadius: 8).fill(HFColor.screen))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: Playground — the app's own "localhost"
+
+/// Jump to another demo state from inside the app: rebuilds the whole flow fresh (as a relaunch would).
+private struct V2JumpKey: EnvironmentKey { static let defaultValue: ((String) -> Void)? = nil }
+extension EnvironmentValues {
+    var v2Jump: ((String) -> Void)? {
+        get { self[V2JumpKey.self] }
+        set { self[V2JumpKey.self] = newValue }
+    }
+}
+
+/// Wraps the flow so a state picked in the shake panel restarts it there. Launch state still comes
+/// from POC_STATE; after that, everything is reachable from the panel.
+public struct V2Playground: View {
+    @State private var demo: String
+    public init(demo: String = "") { _demo = State(initialValue: demo) }
+    public var body: some View {
+        V2Flow(demo: demo)
+            .id(demo)
+            .environment(\.v2Jump, { demo = $0 })
     }
 }
