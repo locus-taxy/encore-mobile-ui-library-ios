@@ -20,6 +20,8 @@ public struct V2Flow: View {
     @State private var inboxOrigin: V2Route = .home
     @State private var inboxFilter = V2InboxFilter()
     @State private var inboxDemoSelection: Set<Int> = []
+    @State private var inboxDemoSwipe: Int? = nil
+    @State private var inboxDemoMenu: Int? = nil
     @State private var showsInboxFilter = false
     @State private var router = V2Router()
 
@@ -362,7 +364,9 @@ public struct V2Flow: View {
                                 inboxFilter = V2InboxFilter(status: inboxFilter.status)
                             } },
                             onStatus: { inboxFilter.status = $0 },
-                            demoSelection: inboxDemoSelection)
+                            demoSelection: inboxDemoSelection,
+                            demoSwipe: inboxDemoSwipe,
+                            demoMenu: inboxDemoMenu)
                     .transition(V2Motion.pushFromTrailing)
                     .zIndex(2)
             }
@@ -806,6 +810,9 @@ public struct V2Flow: View {
         case "inbox-empty":    notes.clear(); router.setPage(.inbox)
         case "inbox-filter":   router.setPage(.inbox); showsInboxFilter = true
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)
+        case "inbox-swipe-read":   inboxDemoSwipe = 101; router.setPage(.inbox)   // unread → green ✓
+        case "inbox-swipe-unread": inboxDemoSwipe = 103; router.setPage(.inbox)   // read → red ⊖
+        case "inbox-menu":         inboxDemoMenu = 102; router.setPage(.inbox)
         case "inbox-select":   inboxDemoSelection = [101, 103]; router.setPage(.inbox)
         case "inbox-caughtup": notes.markAllRead(); inboxFilter.status = .unread; router.setPage(.inbox)
         case "inbox-nomatch":

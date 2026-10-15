@@ -257,6 +257,8 @@ struct V2InboxPage: View {
     var onStatus: (V2InboxFilter.Status) -> Void
     /// Demo states only: open already selecting these ids.
     var demoSelection: Set<Int> = []
+    var demoSwipe: Int? = nil
+    var demoMenu: Int? = nil
 
     @Environment(\.hfToast) private var toast
     /// Paging: the first page, then one more each time the end of the list comes into view.
@@ -265,8 +267,15 @@ struct V2InboxPage: View {
     /// As on the scan list: ticking a row's checkbox IS selection mode; none ticked = normal.
     @State private var selected: Set<Int> = []
     @State private var collapsed: Set<V2Ago.Group> = []
+    /// Live drag offset of one row, and the row left open on its action block (scan 1.13 / 1.23).
     @State private var swiping: (id: Int, dx: CGFloat)? = nil
+    @State private var openSwipe: Int? = nil
+    /// The row whose ⋮ menu is showing (scan 2.2).
+    @State private var menuFor: Int? = nil
     static let pageSize = 8
+    /// Scan's action block: 64 square + the 1 seam before it. Past `commit` a swipe acts on release.
+    static let block: CGFloat = 64
+    static let commit: CGFloat = 160
 
     private var selecting: Bool { !selected.isEmpty }
     private var now: Date { Date() }
@@ -300,7 +309,22 @@ struct V2InboxPage: View {
         .background(HFColor.screen)
         .ignoresSafeArea(.container, edges: .bottom)
         .onChange(of: filter) { _ in shown = Self.pageSize }
-        .onAppear { if !demoSelection.isEmpty { selected = demoSelection } }
+        .overlayPreferenceValue(V2RowMenuAnchor.self) { anchor in
+            GeometryReader { geo in
+                if let anchor, let id = menuFor, let n = center.entries.first(where: { $0.id == id }) {
+                    let r = geo[anchor]
+                    rowMenu(n)
+                        // Right edge 8 in from the row's, top just under the ⋮ (scan 2.2).
+                        .offset(x: r.maxX - 160 - Spacing.spacing8, y: r.minY + V2Metrics.touchTarget)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topTrailing)))
+                }
+            }
+        }
+        .onAppear {
+            if !demoSelection.isEmpty { selected = demoSelection }
+            openSwipe = demoSwipe
+            menuFor = demoMenu
+        }
     }
 
     // MARK: Top — navbar, then tabs + "Mark all as read" (frame 08); ✕ "n selected" + Select all (09)
@@ -430,24 +454,29 @@ struct V2InboxPage: View {
         }
     }
 
-    /// Host chrome around one SDUI row card, laid out as the scan list's HU row (frame 08): a 48
-    /// checkbox top-aligned at x4, content, white, edge to edge. Tap opens (or toggles while
-    /// selecting); swipe left toggles read.
+    /// Host chrome around one SDUI row card, laid out as the scan list's HU row (frame 08): a 48 type
+    /// icon (→ checkbox while selecting), content, a 34 ⋮, white, edge to edge.
+    /// Swipes follow scan's overflow action patterns, with unread ↔ To do and read ↔ Done:
+    ///   • unread row, swipe right → green ✓ block: mark read   (scan 1.21–1.26, "mark scanned")
+    ///   • read row,   swipe left  → red ⊖ block:   mark unread (scan 1.11–1.16, "undo")
+    /// A short swipe leaves the block open to tap; a long one acts on release.
     private func row(_ n: V2Notification) -> some View {
-        let dx = swiping?.id == n.id ? swiping!.dx : 0
         let picked = selected.contains(n.id)
-        return ZStack(alignment: .trailing) {
-            // What the swipe reveals.
-            HStack {
-                Spacer()
-                Text(n.read ? "Mark unread" : "Mark read")
-                    .v2Label(V2Font.label1)
-                    .foregroundColor(HFColor.onPrimary)
-                    .padding(.trailing, Spacing.spacing24)
+        let sign: CGFloat = n.read ? -1 : 1              // which way this row may travel
+        let dx: CGFloat = swiping?.id == n.id ? swiping!.dx
+            : (openSwipe == n.id ? sign * (Self.block + V2Space.sectionSeam) : 0)
+        return ZStack(alignment: n.read ? .trailing : .leading) {
+            // What the swipe reveals — one 64 block at the edge it uncovers.
+            Button { swipeAct(n) } label: {
+                EncoreIcon(iconName: n.read ? "LRemoveCircleOutlined" : "LCheckCircleOutlined", size: V2Icon.bar)
+                    .foregroundColor(.white)
+                    .frame(width: max(Self.block, abs(dx)))
+                    .frame(maxHeight: .infinity)
+                    .background(n.read ? Color.encore("Error/Main") : HFColor.success)
             }
-            .frame(maxHeight: .infinity)
-            .background(HFColor.primary)
-            .opacity(dx < 0 ? 1 : 0)
+            .buttonStyle(.plain)
+            .opacity(dx == 0 ? 0 : 1)
+            .accessibilityLabel(n.read ? "Mark unread" : "Mark read")
 
             HStack(alignment: .top, spacing: Spacing.spacing4) {
                 // Gmail-style: the type icon (filled, grey) IS the selection handle — tapping it
@@ -465,17 +494,31 @@ struct V2InboxPage: View {
                 .buttonStyle(.plain)
                 V2NotificationRowCard(vars: .make(n, now: now))
                     .padding(.top, Spacing.spacing12)
+                // Scan 2.1: the row's own ⋮ — one-row mark read / unread.
+                Button { withAnimation(V2Motion.standard) { menuFor = menuFor == n.id ? nil : n.id } } label: {
+                    EncoreIcon(iconName: "LOverflowVertical", size: V2Icon.bar)
+                        .foregroundColor(V2Token.actionActive)
+                        .frame(width: 34, height: V2Metrics.touchTarget)
+                }
+                .buttonStyle(.plain)
+                .opacity(selecting ? 0 : 1)
+                .disabled(selecting)
             }
             .padding(.leading, Spacing.spacing4)
-            .padding(.trailing, V2Space.pageMargin)
+            .padding(.trailing, Spacing.spacing4)
             .padding(.bottom, Spacing.spacing12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(HFColor.surface)
             .offset(x: dx)
         }
+        .clipped()
         .contentShape(Rectangle())
         .onTapGesture {
-            if selecting {
+            if menuFor != nil {                       // no scrim: a tap anywhere else closes the menu
+                withAnimation(V2Motion.standard) { menuFor = nil }
+            } else if openSwipe != nil {
+                withAnimation(V2Motion.standard) { openSwipe = nil }
+            } else if selecting {
                 toggle(n.id)
             } else {
                 center.markRead([n.id])
@@ -486,15 +529,42 @@ struct V2InboxPage: View {
         .simultaneousGesture(selecting ? nil : DragGesture(minimumDistance: 12)
             .onChanged { v in
                 guard abs(v.translation.width) > abs(v.translation.height) else { return }
-                swiping = (n.id, min(0, max(-140, v.translation.width)))
+                let base: CGFloat = openSwipe == n.id ? sign * (Self.block + V2Space.sectionSeam) : 0
+                let raw = base + v.translation.width
+                swiping = (n.id, sign > 0 ? max(0, raw) : min(0, raw))
+                if openSwipe != n.id { openSwipe = nil }
             }
-            .onEnded { v in
-                if v.translation.width < -80 {
-                    center.markRead([n.id], !n.read)
-                    toast?.show(n.read ? "Marked as unread" : "Marked as read")
+            .onEnded { _ in
+                let travel = abs(swiping?.dx ?? 0)
+                withAnimation(V2Motion.standard) {
+                    swiping = nil
+                    if travel >= Self.commit { openSwipe = nil; swipeAct(n) }
+                    else if travel >= Self.block / 2 { openSwipe = n.id }
+                    else { openSwipe = nil }
                 }
-                withAnimation(V2Motion.standard) { swiping = nil }
             })
+        // The menu is drawn by the page (over every row), anchored to this row's bounds.
+        .anchorPreference(key: V2RowMenuAnchor.self, value: .bounds) { menuFor == n.id ? $0 : nil }
+    }
+
+    private func rowMenu(_ n: V2Notification) -> some View {
+        V2PopoverMenu(items: [
+            V2MenuItem(id: "read", title: n.read ? "Mark as unread" : "Mark as read") {
+                withAnimation(V2Motion.standard) { menuFor = nil }
+                center.markRead([n.id], !n.read)
+                toast?.show(n.read ? "Marked as unread" : "Marked as read")
+            },
+            V2MenuItem(id: "select", title: "Select") {
+                withAnimation(V2Motion.standard) { menuFor = nil }
+                toggle(n.id)
+            },
+        ])
+    }
+
+    private func swipeAct(_ n: V2Notification) {
+        withAnimation(V2Motion.standard) { openSwipe = nil }
+        center.markRead([n.id], !n.read)
+        toast?.show(n.read ? "Marked as unread" : "Marked as read")
     }
 
     private func toggle(_ id: Int) {
@@ -541,6 +611,14 @@ struct V2InboxPage: View {
         .padding(.horizontal, Spacing.spacing32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .offset(y: -40)
+    }
+}
+
+/// Bounds of the row whose ⋮ menu is open, so the page can draw the menu above every row.
+private struct V2RowMenuAnchor: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = value ?? nextValue()
     }
 }
 
