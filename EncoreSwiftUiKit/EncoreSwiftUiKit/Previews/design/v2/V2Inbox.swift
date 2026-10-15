@@ -492,10 +492,10 @@ struct V2InboxPage: View {
                     if selecting {
                         V2Checkbox(checked: picked)
                     } else {
-                        // A 40 light-blue disc behind a primary glyph (Gmail's avatar slot) so it reads as
+                        // A 40 light-blue disc behind a text-secondary glyph (Gmail's avatar slot) so it reads as
                         // something to tap, not decoration.
                         EncoreIcon(iconName: n.kind == .alert ? "LAlertTri" : "LBell", size: 20)
-                            .foregroundColor(HFColor.primary)
+                            .foregroundColor(HFColor.textSecondary)
                             .frame(width: 40, height: 40)
                             .background(Circle().fill(Color.encore("Blue/50")))      // #F0F5FF
                             .accessibilityLabel(n.kind == .alert ? "Alert" : "Notification")
