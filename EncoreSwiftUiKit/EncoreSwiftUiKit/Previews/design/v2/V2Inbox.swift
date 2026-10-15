@@ -46,7 +46,7 @@ struct V2NotificationRowCard: View {
     var showsDot: Bool = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.spacing4) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: Spacing.spacing8) {
                 Text(vars.subject)
                     .v2Text(vars.isUnread ? V2Font.cardTitle : V2Font.body1)
@@ -61,7 +61,7 @@ struct V2NotificationRowCard: View {
             }
             // Never cut short.
             Text(vars.body)
-                .v2Text(V2Font.body2)
+                .v2Text(V2Font.body1)
                 .foregroundColor(vars.isUnread ? HFColor.textPrimary : HFColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             if let gone = vars.goneLabel {
@@ -76,6 +76,7 @@ struct V2NotificationRowCard: View {
                 Text(time)
                     .v2Label(V2Font.label2)
                     .foregroundColor(HFColor.textSecondary)
+                    .padding(.top, Spacing.spacing4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -484,17 +485,17 @@ struct V2InboxPage: View {
             .opacity(dx == 0 ? 0 : 1)
             .accessibilityLabel(n.read ? "Mark unread" : "Mark read")
 
-            HStack(alignment: .top, spacing: Spacing.spacing4) {
+            HStack(alignment: .top, spacing: Spacing.spacing8) {
                 // Gmail-style: the type icon (filled, grey) IS the selection handle — tapping it
                 // starts selecting, and while selecting every icon becomes a checkbox in the same slot.
                 Button { toggle(n.id) } label: {
                     if selecting {
                         V2Checkbox(checked: picked)
                     } else {
-                        // A 40 neutral disc behind the glyph (Gmail's avatar slot) so it reads as
+                        // A 40 light-blue disc behind a primary glyph (Gmail's avatar slot) so it reads as
                         // something to tap, not decoration.
                         EncoreIcon(iconName: n.kind == .alert ? "LAlertTri" : "LBell", size: 20)
-                            .foregroundColor(V2Token.actionActive)
+                            .foregroundColor(HFColor.primary)
                             .frame(width: 40, height: 40)
                             .background(Circle().fill(Color.encore("Blue/50")))      // #F0F5FF
                             .accessibilityLabel(n.kind == .alert ? "Alert" : "Notification")
@@ -514,7 +515,7 @@ struct V2InboxPage: View {
                 .opacity(selecting ? 0 : 1)
                 .disabled(selecting)
             }
-            .padding(.leading, Spacing.spacing4)
+            .padding(.leading, Spacing.spacing12)          // 48 slot − 40 disc = 4 → disc sits on the 16 margin
             .padding(.trailing, Spacing.spacing4)
             .padding(.vertical, Spacing.spacing12)
             .frame(maxWidth: .infinity, alignment: .leading)
