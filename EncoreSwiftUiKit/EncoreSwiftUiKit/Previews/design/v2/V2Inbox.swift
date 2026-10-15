@@ -491,13 +491,13 @@ struct V2InboxPage: View {
                             .foregroundColor(V2Token.actionActive)
                             .frame(width: 40, height: 40)
                             .background(Circle().fill(Color.encore("Grey/100")))
-                            .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
                             .accessibilityLabel(n.kind == .alert ? "Alert" : "Notification")
                     }
                 }
                 .buttonStyle(.plain)
+                // One 48 × 40 slot for disc or checkbox, top-aligned with the subject's line box.
+                .frame(width: V2Metrics.touchTarget, height: 40)
                 V2NotificationRowCard(vars: .make(n, now: now))
-                    .padding(.top, Spacing.spacing12)
                 // Scan 2.1: the row's own ⋮ — one-row mark read / unread.
                 Button { withAnimation(V2Motion.standard) { menuFor = menuFor == n.id ? nil : n.id } } label: {
                     EncoreIcon(iconName: "LOverflowVertical", size: V2Icon.bar)
@@ -510,7 +510,7 @@ struct V2InboxPage: View {
             }
             .padding(.leading, Spacing.spacing4)
             .padding(.trailing, Spacing.spacing4)
-            .padding(.bottom, Spacing.spacing12)
+            .padding(.vertical, Spacing.spacing12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(HFColor.surface)
             .offset(x: dx)
