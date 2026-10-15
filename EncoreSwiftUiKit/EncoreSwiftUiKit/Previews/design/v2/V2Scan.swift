@@ -56,6 +56,37 @@ struct V2Tabs: View {
     }
 }
 
+// MARK: List section header — shared by every grouped list (scan orders, inbox days)
+
+/// `ORDER_ID_… (n)` with its accordion glyph — 44 tall on the grey, pl12 (frame 29).
+struct V2ListSectionHeader: View {
+    let title: String
+    let count: Int
+    let expanded: Bool
+    var onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: Spacing.spacing4) {
+                EncoreIcon(iconName: expanded ? "LExpandLess" : "LExpandMore", size: V2Icon.inline)
+                    .foregroundColor(V2Token.actionActive)
+                HStack(spacing: 2) {
+                    Text(title).lineLimit(1).truncationMode(.middle)
+                    Text("(\(count))")
+                }
+                .v2Label(V2Font.overline2)
+                .foregroundColor(HFColor.textSecondary)
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, Spacing.spacing12)
+            .padding(.trailing, Spacing.spacing16)
+            .frame(height: V2Metrics.listHeader)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: FAB — node 4458:253196
 
 struct V2Fab: View {
@@ -209,31 +240,12 @@ struct V2ScanPage: View {
         }
     }
 
-    /// `ORDER_ID_… (n)` with its accordion glyph — 44 tall on the grey, pl12 (frame 29).
     private func header(_ section: V2ScanSection, title: String, count: Int) -> some View {
-        Button {
+        V2ListSectionHeader(title: title, count: count, expanded: expanded.contains(section.id)) {
             withAnimation(V2Motion.standard) {
                 if expanded.contains(section.id) { expanded.remove(section.id) } else { expanded.insert(section.id) }
             }
-        } label: {
-            HStack(spacing: Spacing.spacing4) {
-                EncoreIcon(iconName: expanded.contains(section.id) ? "LExpandLess" : "LExpandMore",
-                           size: V2Icon.inline)
-                    .foregroundColor(V2Token.actionActive)
-                HStack(spacing: 2) {
-                    Text(title).lineLimit(1).truncationMode(.middle)
-                    Text("(\(count))")
-                }
-                .v2Label(V2Font.overline2)
-                .foregroundColor(HFColor.textSecondary)
-                Spacer(minLength: 0)
-            }
-            .padding(.leading, Spacing.spacing12)
-            .padding(.trailing, Spacing.spacing16)
-            .frame(height: V2Metrics.listHeader)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
     }
 
     /// Frame 30: replaces the tabs while selecting. Ticking it also opens every section.

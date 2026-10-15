@@ -22,9 +22,6 @@ struct V2Variant: Hashable {
 
     // Registry — one line per live variant.
     // static let denseCards = V2Variant("denseCards")   // example: tighter task-card rhythm (12 → 8)
-    /// DP-2956: inbox rows drop the severity chip; only open critical/high rows say "• Action required"
-    /// (the scan page's "• Damaged" label), pinned on top, with an "Action required (n)" tab.
-    static let actionRequired = V2Variant("actionRequired")
 
     /// Variants switched on for this launch, from `POC_VARIANT`.
     static let active: Set<String> = {

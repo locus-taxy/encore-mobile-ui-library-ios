@@ -19,7 +19,7 @@ public struct V2Flow: View {
     /// DP-2956 — where the inbox was opened from (Back returns there), and its applied filter.
     @State private var inboxOrigin: V2Route = .home
     @State private var inboxFilter = V2InboxFilter()
-    @State private var inboxDemoSelection: Set<Int>? = nil
+    @State private var inboxDemoSelection: Set<Int> = []
     @State private var showsInboxFilter = false
     @State private var router = V2Router()
 
@@ -359,9 +359,9 @@ public struct V2Flow: View {
                             onFilter: { V2Motion.txSurface { showsInboxFilter = true } },
                             filter: inboxFilter,
                             onResetFilter: { withAnimation(V2Motion.standard) {
-                                inboxFilter = V2InboxFilter().with(tab: inboxFilter.tab)
+                                inboxFilter = V2InboxFilter(status: inboxFilter.status)
                             } },
-                            onTab: { inboxFilter = inboxFilter.with(tab: $0) },
+                            onStatus: { inboxFilter.status = $0 },
                             demoSelection: inboxDemoSelection)
                     .transition(V2Motion.pushFromTrailing)
                     .zIndex(2)
@@ -805,12 +805,11 @@ public struct V2Flow: View {
         case "inbox-offline":  notes.offline = true; router.setPage(.inbox)
         case "inbox-empty":    notes.clear(); router.setPage(.inbox)
         case "inbox-filter":   router.setPage(.inbox); showsInboxFilter = true
-        case "inbox-unread":   inboxFilter.unreadOnly = true; router.setPage(.inbox)
-        case "inbox-action":   inboxFilter.actionOnly = true; router.setPage(.inbox)
+        case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)
         case "inbox-select":   inboxDemoSelection = [101, 103]; router.setPage(.inbox)
-        case "inbox-caughtup": notes.markAllRead(); inboxFilter.unreadOnly = true; router.setPage(.inbox)
+        case "inbox-caughtup": notes.markAllRead(); inboxFilter.status = .unread; router.setPage(.inbox)
         case "inbox-nomatch":
-            inboxFilter = V2InboxFilter(unreadOnly: true, severity: [.low, .critical])
+            inboxFilter = V2InboxFilter(status: .unread, severity: [.low, .critical])
             notes.markRead(notes.entries.filter { $0.severity == .critical || $0.severity == .low }.map(\.id))
             router.setPage(.inbox)
         // Shift card states (Components → Shift card states). Multi-leg so the rail, GAP and HUB OPS show.

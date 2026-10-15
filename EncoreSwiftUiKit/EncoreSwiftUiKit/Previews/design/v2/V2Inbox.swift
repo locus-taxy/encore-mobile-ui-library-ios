@@ -2,81 +2,62 @@ import SwiftUI
 
 // MARK: - DP-2956 In-app notification inbox
 //
+// Built to the brief only, on the scan list's structure (Scan HUs, frames 08 / 09):
+//   tabs on top · grey day sections with an accordion header and count · flat white rows with a
+//   leading checkbox · ticking one swaps the bar for ✕ "n selected" and the footer for one action.
+//
 // Split the way the dev team's SDUI stack splits (disco-mobile-workspace docs/sdui-framework.md):
-//   • SDUI card  — the row CONTENT: `notification_list_card_v1`. One card per entry, evaluated against
-//                  the entry + `now`. `V2NotificationRowVars` is that evaluation (the AppEvalex
-//                  expressions); `V2NotificationRowCard` renders nothing but those variables.
-//   • Native host — everything around it: navbar, bell + count, day-group headers, filter sheet,
-//                  paging, swipe-to-read, long-press multi-select, mark-all, offline / empty /
-//                  no-results states, and row tap → open target (same routing as a push tap).
+//   • SDUI card  — the row CONTENT: `notification_list_card_v1`. `V2NotificationRowVars` is that
+//                  card's variables; `V2NotificationRowCard` renders nothing but those.
+//   • Native host — everything around it: navbar, tabs, day headers, filter sheet, paging, checkbox,
+//                  swipe-to-read, mark-all, offline / empty / no-results states, row tap → target.
 // Keep that line when changing this file: if it needs a gesture, a list or a sheet, it's host chrome.
 
 // MARK: SDUI card — notification_list_card_v1
 
-/// The card's variables. Each is one expression over `notification` and `now`.
+/// The card's variables — exactly the brief's row: severity chip, subject, full message, relative
+/// time, read or unread; plus the gone line ("The row stays and says so").
 struct V2NotificationRowVars: Equatable {
     var subject: String
     var body: String
     var timeLabel: String
-    var typeLabel: String
     var severityLabel: String
     var severityBg: Color
     var severityStroke: Color
-    /// Off under the `actionRequired` variant — rows carry no severity, only the action label.
-    var showsSeverity: Bool = true
-    /// "Action required", in the severity's tone — the scan page's "• Damaged" label.
-    var actionLabel: String? = nil
-    var actionTone: Color = .clear
     var isUnread: Bool
-    /// Shown when the target is gone — "The row stays and says so" (DP-2956).
     var goneLabel: String?
 
     static func make(_ n: V2Notification, now: Date) -> Self {
         V2NotificationRowVars(subject: n.subject,
                               body: n.body,
                               timeLabel: V2Ago.label(n.createdAt, now: now),
-                              typeLabel: n.kind.label,
                               severityLabel: n.severity.label,
                               severityBg: n.severity.chipBg,
                               severityStroke: n.severity.chipStroke,
-                              showsSeverity: !V2Variant.isOn(.actionRequired),
-                              actionLabel: V2Variant.isOn(.actionRequired) && n.actionRequired ? "Action required" : nil,
-                              actionTone: n.severity.tone,
                               isUnread: !n.read,
                               goneLabel: n.targetGone ? "This \(n.target.noun) is no longer available" : nil)
     }
 }
 
-/// Unread = primary dot after the time + SemiBold subject; read = Medium subject, secondary message.
-/// The dot is the common mobile unread mark (Mobbin: ~13 of 20 inboxes); the row shade is kept for
-/// selection, so the two never mean the same thing. (The web inbox uses shade only.)
+/// Chip + time on one line, then subject, then the message in full. Unread = primary dot after the
+/// time + SemiBold subject; read = Regular subject and a secondary message.
 struct V2NotificationRowCard: View {
     let vars: V2NotificationRowVars
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.spacing4) {
             HStack(spacing: Spacing.spacing8) {
-                if vars.showsSeverity {
-                    Text(vars.severityLabel)
-                        .typography(HFType.badge12)
-                        .foregroundColor(HFColor.textPrimary)
-                        .padding(.horizontal, 6)
-                        .frame(height: V2Metrics.chip)
-                        .background(vars.severityBg)
-                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(vars.severityStroke, lineWidth: V2Space.hairline))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                Text(vars.typeLabel.uppercased())
-                    .v2Label(V2Font.overline2)
-                    .foregroundColor(HFColor.textSecondary)
-                if let action = vars.actionLabel {
-                    Text("• \(action)")
-                        .v2Label(V2Font.label2)
-                        .foregroundColor(vars.actionTone)
-                }
+                Text(vars.severityLabel)
+                    .typography(HFType.badge12)
+                    .foregroundColor(HFColor.textPrimary)
+                    .padding(.horizontal, 6)
+                    .frame(height: V2Metrics.chip)
+                    .background(vars.severityBg)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(vars.severityStroke, lineWidth: V2Space.hairline))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
                 Spacer(minLength: 0)
                 Text(vars.timeLabel)
-                    .v2Label(V2Font.label2)
+                    .v2Label(V2Font.body2)
                     .foregroundColor(HFColor.textSecondary)
                 if vars.isUnread {
                     Circle()
@@ -85,13 +66,12 @@ struct V2NotificationRowCard: View {
                         .accessibilityLabel("Unread")
                 }
             }
-            .padding(.bottom, Spacing.spacing4)
             Text(vars.subject)
-                .v2Text(vars.isUnread ? V2Font.cardTitle : V2Font.label1)
+                .v2Text(vars.isUnread ? V2Font.cardTitle : V2Font.body1)
                 .foregroundColor(HFColor.textPrimary)
-            // Never cut short (AC-3).
+            // Never cut short.
             Text(vars.body)
-                .v2Text(V2Font.body1)
+                .v2Text(V2Font.body2)
                 .foregroundColor(vars.isUnread ? HFColor.textPrimary : HFColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             if let gone = vars.goneLabel {
@@ -103,7 +83,6 @@ struct V2NotificationRowCard: View {
                 .padding(.top, Spacing.spacing4)
             }
         }
-        .padding(Spacing.spacing16)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -150,31 +129,29 @@ enum V2Ago {
 
 // MARK: Filter
 
-/// Read state is the All / Unread tab (the scan page's counted tabs); the sheet holds type + severity.
+/// The brief's three filters. Status (unread, read) is the tab row, as the scan list's To do / Done;
+/// type and severity are the filter sheet.
 struct V2InboxFilter: Equatable {
-    var unreadOnly = false
-    /// The "Action required" tab (`actionRequired` variant only).
-    var actionOnly = false
+    enum Status: String, CaseIterable { case all, unread, read }
+    var status: Status = .all
     var kind: Set<V2NotificationKind> = []
     var severity: Set<V2Severity> = []
 
-    /// Sheet facets only — the tab is not a filter and never badges the filter icon.
+    /// Sheet facets only — the tab never badges the filter icon.
     var count: Int { kind.count + severity.count }
     var isEmpty: Bool { count == 0 }
 
-    /// Empty set = no constraint on that facet.
     func matchesFacets(_ n: V2Notification) -> Bool {
-        (kind.isEmpty || kind.contains(n.kind))
-            && (severity.isEmpty || severity.contains(n.severity))
+        (kind.isEmpty || kind.contains(n.kind)) && (severity.isEmpty || severity.contains(n.severity))
     }
 
     func matches(_ n: V2Notification) -> Bool {
-        matchesFacets(n) && (!unreadOnly || !n.read) && (!actionOnly || n.actionRequired)
-    }
-
-    var tab: String { actionOnly ? "action" : unreadOnly ? "unread" : "all" }
-    func with(tab: String) -> Self {
-        var f = self; f.unreadOnly = tab == "unread"; f.actionOnly = tab == "action"; return f
+        guard matchesFacets(n) else { return false }
+        switch status {
+        case .all:    return true
+        case .unread: return !n.read
+        case .read:   return n.read
+        }
     }
 }
 
@@ -186,8 +163,8 @@ struct V2InboxFilterSheet: View {
     var onApply: (V2InboxFilter) -> Void
     var onClose: () -> Void
 
-    enum Facet: String, CaseIterable { case type = "Type", severity = "Severity" }
-    @State private var facet: Facet = .type
+    enum Facet: String, CaseIterable { case severity = "Severity", type = "Type" }
+    @State private var facet: Facet = .severity
     @State private var draft = V2InboxFilter()
 
     var body: some View {
@@ -195,7 +172,7 @@ struct V2InboxFilterSheet: View {
             HFSheetTitle(title: "Notification filter", onClose: onClose)
             HStack(alignment: .top, spacing: 0) {
                 VStack(spacing: 0) {
-                    ForEach(facets, id: \.self) { f in
+                    ForEach(Facet.allCases, id: \.self) { f in
                         let n = picked(f)
                         Button { facet = f } label: {
                             Text(n > 0 ? "\(f.rawValue.uppercased()) (\(n))" : f.rawValue.uppercased())
@@ -238,16 +215,13 @@ struct V2InboxFilterSheet: View {
                 VStack(spacing: Spacing.spacing8) {
                     V2Button(label: "Apply", enabled: draft != applied) { onApply(draft) }
                     V2Button(label: "Reset all", role: .text, enabled: !draft.isEmpty) {
-                        draft = V2InboxFilter().with(tab: applied.tab)
+                        draft = V2InboxFilter(status: applied.status)
                     }
                 }
             }
         }
         .onAppear { draft = applied }
     }
-
-    /// Severity leaves the sheet under `actionRequired` — the tab replaces it.
-    private var facets: [Facet] { V2Variant.isOn(.actionRequired) ? [.type] : Facet.allCases }
 
     private func picked(_ f: Facet) -> Int {
         switch f {
@@ -287,19 +261,22 @@ struct V2InboxPage: View {
     var onFilter: () -> Void
     var filter: V2InboxFilter
     var onResetFilter: () -> Void
-    /// All / Unread (/ Action required) tab, kept by the flow so it survives the filter sheet.
-    var onTab: (String) -> Void
+    /// The status tab, kept by the flow so it survives the filter sheet.
+    var onStatus: (V2InboxFilter.Status) -> Void
     /// Demo states only: open already selecting these ids.
-    var demoSelection: Set<Int>? = nil
+    var demoSelection: Set<Int> = []
 
     @Environment(\.hfToast) private var toast
     /// Paging: the first page, then one more each time the end of the list comes into view.
     @State private var shown = Self.pageSize
     @State private var loadingMore = false
-    @State private var selecting: Set<Int>? = nil
+    /// As on the scan list: ticking a row's checkbox IS selection mode; none ticked = normal.
+    @State private var selected: Set<Int> = []
+    @State private var collapsed: Set<V2Ago.Group> = []
     @State private var swiping: (id: Int, dx: CGFloat)? = nil
     static let pageSize = 8
 
+    private var selecting: Bool { !selected.isEmpty }
     private var now: Date { Date() }
     /// Sheet facets applied, tab ignored — what the tab counts are taken from.
     private var faceted: [V2Notification] { center.entries.filter(filter.matchesFacets) }
@@ -316,18 +293,14 @@ struct V2InboxPage: View {
             } else if center.entries.isEmpty {
                 state(title: "No notifications yet", body: "Anything you're sent will show here.")
             } else {
-                // Frame 13: "Select all" replaces the tabs while selecting.
-                if selecting != nil { selectAllRow } else { tabs }
+                // Frame 09: "Select all" replaces the tabs while selecting.
+                if selecting { selectAllRow } else { tabs }
                 HFSeam()
-                if !matching.isEmpty {
-                    list
-                } else if filter.actionOnly && filter.isEmpty {
-                    state(title: "Nothing needs you", body: "Anything you need to act on will show here.")
-                } else if filter.unreadOnly && filter.isEmpty {
-                    state(title: "You're all caught up", body: "You've read all your notifications.")
-                } else {
+                if matching.isEmpty {
                     state(title: "No results found", body: "Try adjusting or clearing your filters",
-                          action: ("Reset all", onResetFilter))
+                          action: filter.isEmpty ? nil : ("Reset all", onResetFilter))
+                } else {
+                    list
                 }
             }
             footer
@@ -335,16 +308,16 @@ struct V2InboxPage: View {
         .background(HFColor.screen)
         .ignoresSafeArea(.container, edges: .bottom)
         .onChange(of: filter) { _ in shown = Self.pageSize }
-        .onAppear { if let demoSelection { selecting = demoSelection } }
+        .onAppear { if !demoSelection.isEmpty { selected = demoSelection } }
     }
 
-    // MARK: Navbar — back · title · filter (count badge); select mode swaps in ✕ · "n selected"
+    // MARK: Top — navbar, then tabs + "Mark all as read" (frame 08); ✕ "n selected" + Select all (09)
 
     @ViewBuilder private var navbar: some View {
-        if let selecting {
-            V2Navbar(back: { withAnimation(V2Motion.standard) { self.selecting = nil } },
+        if selecting {
+            V2Navbar(back: { withAnimation(V2Motion.standard) { selected = [] } },
                      backIcon: "LCross",
-                     title: "\(selecting.count) selected")
+                     title: "\(selected.count) selected")
         } else {
             V2Navbar(back: onBack,
                      title: "Notifications",
@@ -355,25 +328,39 @@ struct V2InboxPage: View {
         }
     }
 
-    /// The scan page's counted tabs. The unread count lives here, never as a "0 unread" line.
+    /// The scan list's counted tabs for status, with the brief's "Mark all as read, at the top" on the
+    /// same row. Shown only while something is unread.
     private var tabs: some View {
-        var tabs = [V2Tab(id: "all", label: "All", count: faceted.count),
-                    V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count)]
-        // The scan page's "Exceptions (n)" tab, for the things that still need the rider.
-        if V2Variant.isOn(.actionRequired) {
-            tabs.append(V2Tab(id: "action", label: "Action required", count: faceted.filter(\.actionRequired).count))
-        }
-        return V2Tabs(tabs: tabs,
-                      selection: Binding(get: { filter.tab },
-                                         set: { id in withAnimation(V2Motion.standard) { onTab(id) } }))
+        V2Tabs(tabs: [V2Tab(id: "all", label: "All", count: faceted.count),
+                      V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count),
+                      V2Tab(id: "read", label: "Read", count: faceted.filter(\.read).count)],
+               selection: Binding(get: { filter.status.rawValue },
+                                  set: { id in withAnimation(V2Motion.standard) {
+                                      onStatus(V2InboxFilter.Status(rawValue: id) ?? .all)
+                                  } }))
+            .overlay(alignment: .trailing) {
+                if center.unread > 0 {
+                    Button {
+                        center.markAllRead()
+                        toast?.show("All marked as read")
+                    } label: {
+                        Text("Mark all as read")
+                            .v2Label(V2Font.buttonMedium)
+                            .foregroundColor(HFColor.primary)
+                            .padding(.horizontal, Spacing.spacing16)
+                            .frame(height: V2Metrics.tabBar)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
     }
 
-    /// Frame 13 / the scan page's select-all row: a 48 checkbox target, then the label.
+    /// Frame 09's select-all row: a 48 checkbox target, then the label.
     private var selectAllRow: some View {
         let ids = Set(matching.map(\.id))
-        let all = !ids.isEmpty && ids.isSubset(of: selecting ?? [])
+        let all = !ids.isEmpty && ids.isSubset(of: selected)
         return Button {
-            withAnimation(V2Motion.standard) { selecting = all ? [] : ids }
+            withAnimation(V2Motion.standard) { selected = all ? [] : ids }
         } label: {
             HStack(spacing: -Spacing.spacing8) {
                 V2Checkbox(checked: all)
@@ -382,26 +369,24 @@ struct V2InboxPage: View {
                     .foregroundColor(HFColor.textPrimary)
                 Spacer(minLength: 0)
             }
+            .padding(.leading, Spacing.spacing4)
             .frame(height: V2Metrics.tabBar)
             .background(HFColor.surface)
         }
         .buttonStyle(.plain)
     }
 
-    /// Frame 13's footer while selecting: one hug-right action. It reads "Mark read" while any picked
-    /// row is unread, else "Mark unread". Otherwise an empty band, so feedback toasts still have a
-    /// footer to rise from (the toast channel lives on footers).
+    /// Frame 09's footer while selecting: one hug-right action — "Mark read" while any picked row is
+    /// unread, else "Mark unread". Otherwise an empty band, so toasts still have a footer to rise from.
     private var footer: some View {
         HFToastFooter {
-            if let selecting {
-                let ids = Array(selecting)
-                let markRead = selecting.isEmpty || center.entries.contains { selecting.contains($0.id) && !$0.read }
+            if selecting {
+                let markRead = center.entries.contains { selected.contains($0.id) && !$0.read }
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
                     V2Button(label: markRead ? "Mark read" : "Mark unread",
-                             enabled: !ids.isEmpty,
                              leadingIcon: markRead ? "LCheck" : nil,
-                             hug: true) { finishSelection(ids, read: markRead) }
+                             hug: true) { finishSelection(read: markRead) }
                 }
                 .padding(.horizontal, V2Space.headerInset)
                 .frame(height: V2Metrics.dialogActions)
@@ -431,27 +416,22 @@ struct V2InboxPage: View {
         .background(HFColor.warning)
     }
 
-    // MARK: List
+    // MARK: List — the scan list's grey day sections and flat white rows
 
     private var list: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                // `actionRequired` variant: open critical/high rows sit above the day groups until done.
-                if !pinned.isEmpty {
-                    groupHeader("ACTION REQUIRED (\(pinned.count))")
-                    VStack(spacing: Spacing.spacing8) {
-                        ForEach(pinned) { row($0) }
-                    }
-                    .padding(.horizontal, V2Space.pageMargin)
-                }
+            LazyVStack(alignment: .leading, spacing: V2Space.sectionSeam) {
                 ForEach(V2Ago.Group.allCases, id: \.self) { g in
-                    let rows = visible.filter { V2Ago.group($0.createdAt, now: now) == g && !isPinned($0) }
+                    let rows = visible.filter { V2Ago.group($0.createdAt, now: now) == g }
                     if !rows.isEmpty {
-                        groupHeader("\(g.title.uppercased()) (\(matching.filter { V2Ago.group($0.createdAt, now: now) == g && !isPinned($0) }.count))")
-                        VStack(spacing: Spacing.spacing8) {
+                        V2ListSectionHeader(title: g.title.uppercased(),
+                                            count: matching.filter { V2Ago.group($0.createdAt, now: now) == g }.count,
+                                            expanded: !collapsed.contains(g)) {
+                            withAnimation(V2Motion.standard) { collapsed.formSymmetricDifference([g]) }
+                        }
+                        if !collapsed.contains(g) {
                             ForEach(rows) { row($0) }
                         }
-                        .padding(.horizontal, V2Space.pageMargin)
                     }
                 }
                 if shown < matching.count {
@@ -465,20 +445,6 @@ struct V2InboxPage: View {
         }
     }
 
-    private var pinned: [V2Notification] {
-        V2Variant.isOn(.actionRequired) ? matching.filter(\.actionRequired) : []
-    }
-    private func isPinned(_ n: V2Notification) -> Bool { V2Variant.isOn(.actionRequired) && n.actionRequired }
-
-    private func groupHeader(_ text: String) -> some View {
-        Text(text)
-            .v2Label(V2Font.section)
-            .foregroundColor(HFColor.textSecondary)
-            .padding(.horizontal, V2Space.pageMargin)
-            .padding(.top, Spacing.spacing16)
-            .padding(.bottom, Spacing.spacing8)
-    }
-
     private func loadMore() {
         guard !loadingMore else { return }
         loadingMore = true
@@ -488,11 +454,12 @@ struct V2InboxPage: View {
         }
     }
 
-    /// Host chrome around one SDUI row card: selection shade, swipe-to-toggle-read, long-press to
-    /// select, tap.
+    /// Host chrome around one SDUI row card, laid out as the scan list's HU row (frame 08): a 48
+    /// checkbox top-aligned at x4, content, white, edge to edge. Tap opens (or toggles while
+    /// selecting); swipe left toggles read.
     private func row(_ n: V2Notification) -> some View {
         let dx = swiping?.id == n.id ? swiping!.dx : 0
-        let picked = selecting?.contains(n.id) ?? false
+        let picked = selected.contains(n.id)
         return ZStack(alignment: .trailing) {
             // What the swipe reveals.
             HStack {
@@ -506,34 +473,30 @@ struct V2InboxPage: View {
             .background(HFColor.primary)
             .opacity(dx < 0 ? 1 : 0)
 
-            HStack(alignment: .top, spacing: 0) {
-                if selecting != nil {
-                    V2Checkbox(checked: picked)
-                        .padding(.top, Spacing.spacing4)
-                        .padding(.trailing, -Spacing.spacing16)
-                }
+            HStack(alignment: .top, spacing: Spacing.spacing4) {
+                Button { toggle(n.id) } label: { V2Checkbox(checked: picked) }
+                    .buttonStyle(.plain)
+                    .padding(.top, -Spacing.spacing4)
                 V2NotificationRowCard(vars: .make(n, now: now))
+                    .padding(.top, Spacing.spacing8)
             }
-            .background(ZStack { HFColor.surface; HFColor.primary.opacity(picked ? 0.04 : 0) })
+            .padding(.leading, Spacing.spacing4)
+            .padding(.trailing, V2Space.pageMargin)
+            .padding(.bottom, Spacing.spacing12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(HFColor.surface)
             .offset(x: dx)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12)
-            .stroke(picked ? HFColor.primary : HFColor.divider, lineWidth: picked ? 1 : V2Space.hairline))
         .contentShape(Rectangle())
         .onTapGesture {
-            if selecting != nil {
-                withAnimation(V2Motion.standard) { selecting?.formSymmetricDifference([n.id]) }
+            if selecting {
+                toggle(n.id)
             } else {
                 center.markRead([n.id])
                 onOpen(n)
             }
         }
-        .onLongPressGesture(minimumDuration: 0.4) {
-            guard selecting == nil else { return }
-            withAnimation(V2Motion.standard) { selecting = [n.id] }
-        }
-        .simultaneousGesture(selecting != nil ? nil : DragGesture(minimumDistance: 12)
+        .simultaneousGesture(selecting ? nil : DragGesture(minimumDistance: 12)
             .onChanged { v in
                 guard abs(v.translation.width) > abs(v.translation.height) else { return }
                 swiping = (n.id, min(0, max(-140, v.translation.width)))
@@ -547,10 +510,15 @@ struct V2InboxPage: View {
             })
     }
 
-    private func finishSelection(_ ids: [Int], read: Bool) {
+    private func toggle(_ id: Int) {
+        withAnimation(V2Motion.standard) { selected.formSymmetricDifference([id]) }
+    }
+
+    private func finishSelection(read: Bool) {
+        let ids = Array(selected)
         guard !ids.isEmpty else { return }
         center.markRead(ids, read)
-        withAnimation(V2Motion.standard) { selecting = nil }
+        withAnimation(V2Motion.standard) { selected = [] }
         toast?.show("\(ids.count) marked as \(read ? "read" : "unread")")
     }
 
@@ -629,7 +597,7 @@ extension V2NotificationCenter {
             V2Notification(id: 108, severity: .high, kind: .alert,
                            subject: "Stop skipped by dispatch",
                            body: "Stop 6 on trip 3 was skipped by dispatch. Don't go to Brigade Road; continue to your next stop.",
-                           createdAt: ago(4 * day), read: true, resolved: true),
+                           createdAt: ago(4 * day), read: true),
             V2Notification(id: 109, severity: .low, kind: .notification,
                            subject: "Message from your hub",
                            body: "The hub closes at 08:00 PM on Saturday for stock-taking.",
@@ -645,7 +613,7 @@ extension V2NotificationCenter {
             V2Notification(id: 112, severity: .high, kind: .alert,
                            subject: "Delivery cancelled at stop 3",
                            body: "Order IKEA-UK-2026-00098712 for Anil Kumar was cancelled by dispatch. You handed it back at the hub.",
-                           createdAt: ago(15 * day), read: true, resolved: true),
+                           createdAt: ago(15 * day), read: true),
         ]
     }
 }

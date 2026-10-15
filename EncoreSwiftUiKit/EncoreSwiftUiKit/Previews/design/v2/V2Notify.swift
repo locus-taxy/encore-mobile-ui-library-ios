@@ -129,12 +129,6 @@ struct V2Notification: Identifiable, Equatable {
     var target: V2NotificationTarget = .none
     /// The target no longer exists or is no longer this worker's (reassigned). The entry stays.
     var targetGone: Bool = false
-    /// The thing it asked for is done (vehicle check passed, skip acknowledged). New data — the
-    /// platform sends severity only; needed by the `actionRequired` variant.
-    var resolved: Bool = false
-
-    /// Critical / high that still needs the rider. Read ≠ resolved.
-    var actionRequired: Bool { severity.tier == .takeover && !resolved && !targetGone }
 }
 
 /// Holds the inbox entries and decides what is on screen. Surfaces only render what it says.
