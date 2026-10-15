@@ -15,15 +15,12 @@ import SwiftUI
 
 // MARK: SDUI card — notification_list_card_v1
 
-/// The card's variables — exactly the brief's row: severity chip, subject, full message, relative
-/// time, read or unread; plus the gone line ("The row stays and says so").
+/// The card's variables: subject, full message, relative time, read or unread, plus the gone line
+/// ("The row stays and says so"). Severity and type are filters only — not drawn on the row.
 struct V2NotificationRowVars: Equatable {
     var subject: String
     var body: String
     var timeLabel: String
-    var severityLabel: String
-    var severityBg: Color
-    var severityStroke: Color
     var isUnread: Bool
     var goneLabel: String?
 
@@ -31,34 +28,27 @@ struct V2NotificationRowVars: Equatable {
         V2NotificationRowVars(subject: n.subject,
                               body: n.body,
                               timeLabel: V2Ago.label(n.createdAt, now: now),
-                              severityLabel: n.severity.label,
-                              severityBg: n.severity.chipBg,
-                              severityStroke: n.severity.chipStroke,
                               isUnread: !n.read,
                               goneLabel: n.targetGone ? "This \(n.target.noun) is no longer available" : nil)
     }
 }
 
-/// Chip + time on one line, then subject, then the message in full. Unread = primary dot after the
-/// time + SemiBold subject; read = Regular subject and a secondary message.
+/// Subject with the time (+ unread dot) on its right, then the message in full. Unread = primary dot
+/// + SemiBold subject; read = Regular subject and a secondary message.
 struct V2NotificationRowCard: View {
     let vars: V2NotificationRowVars
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.spacing4) {
-            HStack(spacing: Spacing.spacing8) {
-                Text(vars.severityLabel)
-                    .typography(HFType.badge12)
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.spacing8) {
+                Text(vars.subject)
+                    .v2Text(vars.isUnread ? V2Font.cardTitle : V2Font.body1)
                     .foregroundColor(HFColor.textPrimary)
-                    .padding(.horizontal, 6)
-                    .frame(height: V2Metrics.chip)
-                    .background(vars.severityBg)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(vars.severityStroke, lineWidth: V2Space.hairline))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Text(vars.timeLabel)
                     .v2Label(V2Font.body2)
                     .foregroundColor(HFColor.textSecondary)
+                    .fixedSize()
                 if vars.isUnread {
                     Circle()
                         .fill(HFColor.primary)
@@ -66,9 +56,6 @@ struct V2NotificationRowCard: View {
                         .accessibilityLabel("Unread")
                 }
             }
-            Text(vars.subject)
-                .v2Text(vars.isUnread ? V2Font.cardTitle : V2Font.body1)
-                .foregroundColor(HFColor.textPrimary)
             // Never cut short.
             Text(vars.body)
                 .v2Text(V2Font.body2)
@@ -460,9 +447,8 @@ struct V2InboxPage: View {
             HStack(alignment: .top, spacing: Spacing.spacing4) {
                 Button { toggle(n.id) } label: { V2Checkbox(checked: picked) }
                     .buttonStyle(.plain)
-                    .padding(.top, -Spacing.spacing4)
                 V2NotificationRowCard(vars: .make(n, now: now))
-                    .padding(.top, Spacing.spacing8)
+                    .padding(.top, Spacing.spacing12)
             }
             .padding(.leading, Spacing.spacing4)
             .padding(.trailing, V2Space.pageMargin)
