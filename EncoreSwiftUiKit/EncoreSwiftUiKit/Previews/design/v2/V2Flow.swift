@@ -813,6 +813,7 @@ public struct V2Flow: View {
         case "inbox-swipe-read":   inboxDemoSwipe = 101; router.setPage(.inbox)   // unread → green ✓
         case "inbox-swipe-unread": inboxDemoSwipe = 103; router.setPage(.inbox)   // read → red ⊖
         case "inbox-menu":         inboxDemoMenu = 102; router.setPage(.inbox)
+        case "inbox-select-read": inboxDemoSelection = [103, 104]; router.setPage(.inbox)  // all read → Mark unread
         case "inbox-select":   inboxDemoSelection = [101, 103]; router.setPage(.inbox)
         case "inbox-caughtup": notes.markAllRead(); inboxFilter.status = .unread; router.setPage(.inbox)
         case "inbox-nomatch":

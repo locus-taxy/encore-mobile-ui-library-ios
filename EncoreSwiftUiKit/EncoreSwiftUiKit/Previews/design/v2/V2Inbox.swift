@@ -387,8 +387,11 @@ struct V2InboxPage: View {
                 let markRead = center.entries.contains { selected.contains($0.id) && !$0.read }
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
+                    // Scan's select footer: To do → Done is green "✓ Mark scanned", Done → To do is
+                    // red "− Mark unscanned". Unread ↔ To do, read ↔ Done — same as the swipe blocks.
                     V2Button(label: markRead ? "Mark read" : "Mark unread",
-                             leadingIcon: markRead ? "LCheck" : nil,
+                             role: markRead ? .success : .danger,
+                             leadingIcon: markRead ? "LCheck" : "LMinus",
                              hug: true) { finishSelection(read: markRead) }
                 }
                 .padding(.horizontal, V2Space.headerInset)
