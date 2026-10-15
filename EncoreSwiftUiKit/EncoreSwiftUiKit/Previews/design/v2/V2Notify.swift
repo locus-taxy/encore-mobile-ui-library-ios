@@ -455,7 +455,7 @@ extension UIWindow {
 
 /// The kinds of push the panel can fire — written against the seeded trip so targets are real.
 enum V2PushSample: String, CaseIterable, Identifiable {
-    case critical, high, medium, low, gone, pair, connection
+    case critical, high, medium, low, gone, pair, connection, criticalInfo, mediumInfo
     var id: String { rawValue }
 
     var title: String {
@@ -467,6 +467,8 @@ enum V2PushSample: String, CaseIterable, Identifiable {
         case .gone:     return "High · trip reassigned (target gone)"
         case .pair:     return "Two important at once"
         case .connection: return "Lose / restore the connection"
+        case .criticalInfo: return "Critical · nothing to open"
+        case .mediumInfo:   return "Medium · nothing to open"
         }
     }
 }

@@ -329,6 +329,14 @@ public struct V2Flow: View {
             fire(.high)
         case .connection:
             withAnimation(V2Motion.standard) { notes.offline.toggle() }
+        case .criticalInfo:
+            notes.receive(.critical, .alert,
+                          subject: "Vehicle check overdue",
+                          body: "Your vehicle check for KA-03-MX-4412 was due before your shift. Complete it at the hub before your next trip.")
+        case .mediumInfo:
+            notes.receive(.medium, .notification,
+                          subject: "Hub closes early today",
+                          body: "The hub closes at 06:00 PM. Hand back anything left before then.")
         }
     }
 
@@ -809,6 +817,7 @@ public struct V2Flow: View {
         case "inbox-offline":  notes.offline = true; router.setPage(.inbox)
         case "inbox-empty":    notes.clear(); router.setPage(.inbox)
         case "inbox-filter":   router.setPage(.inbox); showsInboxFilter = true
+        case "inbox-read":     inboxFilter.status = .read; router.setPage(.inbox)
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)
         case "inbox-swipe-read":   inboxDemoSwipe = 101; router.setPage(.inbox)   // unread → green ✓
         case "inbox-swipe-unread": inboxDemoSwipe = 103; router.setPage(.inbox)   // read → red ⊖
