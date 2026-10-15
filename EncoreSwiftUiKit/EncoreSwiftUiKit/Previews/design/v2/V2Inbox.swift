@@ -485,8 +485,12 @@ struct V2InboxPage: View {
                     if selecting {
                         V2Checkbox(checked: picked)
                     } else {
-                        EncoreIcon(iconName: n.kind == .alert ? "LAlertTri" : "LBell", size: V2Icon.bar)
+                        // A 40 neutral disc behind the glyph (Gmail's avatar slot) so it reads as
+                        // something to tap, not decoration.
+                        EncoreIcon(iconName: n.kind == .alert ? "LAlertTri" : "LBell", size: 20)
                             .foregroundColor(V2Token.actionActive)
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(Color.encore("Grey/100")))
                             .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
                             .accessibilityLabel(n.kind == .alert ? "Alert" : "Notification")
                     }
@@ -553,10 +557,6 @@ struct V2InboxPage: View {
                 withAnimation(V2Motion.standard) { menuFor = nil }
                 center.markRead([n.id], !n.read)
                 toast?.show(n.read ? "Marked as unread" : "Marked as read")
-            },
-            V2MenuItem(id: "select", title: "Select") {
-                withAnimation(V2Motion.standard) { menuFor = nil }
-                toggle(n.id)
             },
         ])
     }
