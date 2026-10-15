@@ -292,9 +292,10 @@ struct V2NotificationLayer: View {
     }
 }
 
-/// Critical / high — Figma's blocking dialog (Home › Edge cases, e.g. "You missed the shift"):
-/// 328 wide, r8; tinted icon chip; h5 title; body1 secondary; divider; actions. Tone lives in the icon
-/// chip and the eyebrow, never in the buttons.
+/// Critical / high — Figma's blocking dialog (Auth + Home + Profile: "Setup biometric", "Update - soft
+/// block"): 328 wide, r8; tinted pill icon chip; h5 title; body1 secondary; then the actions on their
+/// own white block with an E1 shadow as the separator (no rule); primary on top, grey text below.
+/// Tone lives in the icon chip only — no eyebrow, never in the buttons.
 struct V2NotificationTakeover: View {
     let note: V2Notification
     var waiting: Int
@@ -326,9 +327,6 @@ struct V2NotificationTakeover: View {
                     }
                 }
                 VStack(alignment: .leading, spacing: Spacing.spacing4) {
-                    Text("\(note.severity.label.uppercased()) · \(note.kind.label.uppercased())")
-                        .v2Label(V2Font.overline2)
-                        .foregroundColor(note.severity.tone)
                     Text(note.subject)
                         .v2Text(V2Font.h5)
                         .foregroundColor(HFColor.textPrimary)
@@ -341,8 +339,6 @@ struct V2NotificationTakeover: View {
             }
             .padding(Spacing.spacing16)
 
-            Rectangle().fill(HFColor.divider).frame(height: V2Space.hairline)
-
             VStack(spacing: Spacing.spacing8) {
                 V2Button(label: note.target.openLabel, action: note.target == .none ? onDismiss : onOpen)
                 if note.target != .none {
@@ -350,9 +346,16 @@ struct V2NotificationTakeover: View {
                 }
             }
             .padding(Spacing.spacing16)
+            .background(
+                Rectangle()
+                    .fill(HFColor.surface)
+                    .shadow(color: Color(.sRGB, red: 17/255, green: 19/255, blue: 24/255, opacity: 0.16),
+                            radius: 2, x: 0, y: 0)
+            )
             .allowsHitTesting(armed)
         }
-        .background(RoundedRectangle(cornerRadius: 8).fill(HFColor.surface))
+        .background(HFColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
         .frame(maxWidth: 328)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
@@ -363,10 +366,13 @@ struct V2NotificationTakeover: View {
     }
 }
 
-/// Medium — Figma's dismissible top banner (Home › Pre shift end): full width, info fill, 20 icon,
-/// white Medium 14, ✕ at 48. A notification carries a message too, so it runs to two text lines; the
-/// fill reaches into the status strip, as the connectivity strip does. Slides down from the top and
-/// back up (Figma annotation: "slides down top-to-bottom … and goes out in the reverse pattern").
+/// Medium — Figma's top `<Alert> | Banner` (Auth + Home + Profile): full width, info fill, 20 filled
+/// icon, white Medium 16/24 title. A notification carries a message too, so it runs to two lines.
+/// Trailing slot follows the "Sync pending" banner: an action link ("View task") REPLACES the ✕ — the
+/// boards never show both. A banner with nowhere to go keeps the ✕ ("Pre shift end").
+/// It overlays rather than pushing content (Figma's push down) because it lands on any screen, mid-task,
+/// and leaves on its own; reflowing the page under the rider's thumb would be worse. Slides down and
+/// back up (annotation: "slides down top-to-bottom … and goes out in the reverse pattern").
 struct V2NotificationBanner: View {
     let note: V2Notification
     var onTap: () -> Void
@@ -381,7 +387,7 @@ struct V2NotificationBanner: View {
                 .padding(.top, 2)
             VStack(alignment: .leading, spacing: 2) {
                 Text(note.subject)
-                    .v2Label(V2Font.label1)
+                    .v2Label(V2Font.alertTitle)
                 Text(note.body)
                     .v2Text(V2Font.body1)
                     .opacity(0.9)
@@ -389,13 +395,26 @@ struct V2NotificationBanner: View {
             }
             .foregroundColor(HFColor.onPrimary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button(action: onDismiss) {
-                EncoreIcon(iconName: "LCross", size: 24)
-                    .foregroundColor(HFColor.onPrimary)
-                    .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
+            if note.target != .none {
+                Button(action: onTap) {
+                    Text(note.target.openLabel)
+                        .v2Label(V2Font.label1)
+                        .underline()
+                        .foregroundColor(HFColor.onPrimary)
+                        .frame(minHeight: V2Metrics.touchTarget)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, -12)
+                .padding(.trailing, Spacing.spacing8)
+            } else {
+                Button(action: onDismiss) {
+                    EncoreIcon(iconName: "LCross", size: 24)
+                        .foregroundColor(HFColor.onPrimary)
+                        .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, -12)
             }
-            .buttonStyle(.plain)
-            .padding(.top, -12)
         }
         .padding(.leading, Spacing.spacing16)
         .padding(.trailing, Spacing.spacing4)
