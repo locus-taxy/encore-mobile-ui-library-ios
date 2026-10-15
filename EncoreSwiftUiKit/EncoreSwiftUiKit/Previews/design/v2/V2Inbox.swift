@@ -36,8 +36,9 @@ struct V2NotificationRowVars: Equatable {
     }
 }
 
-/// Subject with the time (+ unread dot) on its right, then the message in full. Unread = primary dot
-/// + SemiBold subject; read = Regular subject and a secondary message.
+/// Subject with the unread dot at its right, the message in full, then the time as a small grey
+/// line under it — the scan row's "0/3 box" line. Unread = primary dot + SemiBold subject; read =
+/// Regular subject and a secondary message.
 struct V2NotificationRowCard: View {
     let vars: V2NotificationRowVars
 
@@ -48,12 +49,6 @@ struct V2NotificationRowCard: View {
                     .v2Text(vars.isUnread ? V2Font.cardTitle : V2Font.body1)
                     .foregroundColor(HFColor.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                if let time = vars.timeLabel {
-                    Text(time)
-                        .v2Label(V2Font.body2)
-                        .foregroundColor(HFColor.textSecondary)
-                        .fixedSize()
-                }
                 if vars.isUnread {
                     Circle()
                         .fill(HFColor.primary)
@@ -73,6 +68,11 @@ struct V2NotificationRowCard: View {
                 }
                 .foregroundColor(HFColor.textSecondary)
                 .padding(.top, Spacing.spacing4)
+            }
+            if let time = vars.timeLabel {
+                Text(time)
+                    .v2Label(V2Font.label2)
+                    .foregroundColor(HFColor.textSecondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -450,8 +450,19 @@ struct V2InboxPage: View {
             .opacity(dx < 0 ? 1 : 0)
 
             HStack(alignment: .top, spacing: Spacing.spacing4) {
-                Button { toggle(n.id) } label: { V2Checkbox(checked: picked) }
-                    .buttonStyle(.plain)
+                // Gmail-style: the type icon (filled, grey) IS the selection handle — tapping it
+                // starts selecting, and while selecting every icon becomes a checkbox in the same slot.
+                Button { toggle(n.id) } label: {
+                    if selecting {
+                        V2Checkbox(checked: picked)
+                    } else {
+                        EncoreIcon(iconName: n.kind == .alert ? "LAlertTri" : "LBell", size: V2Icon.bar)
+                            .foregroundColor(V2Token.actionActive)
+                            .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
+                            .accessibilityLabel(n.kind == .alert ? "Alert" : "Notification")
+                    }
+                }
+                .buttonStyle(.plain)
                 V2NotificationRowCard(vars: .make(n, now: now))
                     .padding(.top, Spacing.spacing12)
             }
@@ -471,6 +482,7 @@ struct V2InboxPage: View {
                 onOpen(n)
             }
         }
+        .onLongPressGesture(minimumDuration: 0.4) { if !selecting { toggle(n.id) } }
         .simultaneousGesture(selecting ? nil : DragGesture(minimumDistance: 12)
             .onChanged { v in
                 guard abs(v.translation.width) > abs(v.translation.height) else { return }
