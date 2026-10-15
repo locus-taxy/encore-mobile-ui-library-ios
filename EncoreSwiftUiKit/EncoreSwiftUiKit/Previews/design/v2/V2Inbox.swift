@@ -36,14 +36,11 @@ struct V2NotificationRowVars: Equatable {
     }
 }
 
-/// Subject with the unread dot at its right, the message in full, then the time as a small grey
-/// line under it — the scan row's "0/3 box" line. Unread = primary dot + SemiBold subject; read =
-/// Regular subject and a secondary message.
+/// Subject, the message in full, then the time as a small grey line under it — the scan row's
+/// "0/3 box" line. Unread = SemiBold subject + primary message; read = Regular subject and a
+/// secondary message. (The unread dot is host chrome, drawn in the row's leading margin.)
 struct V2NotificationRowCard: View {
     let vars: V2NotificationRowVars
-    /// Host context: off while selecting — the blue checkbox is the only blue mark then, and the
-    /// SemiBold subject / darker message still say unread (as Gmail does in every state).
-    var showsDot: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -52,12 +49,6 @@ struct V2NotificationRowCard: View {
                     .v2Text(vars.isUnread ? V2Font.cardTitle : V2Font.body1)
                     .foregroundColor(HFColor.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                if vars.isUnread && showsDot {
-                    Circle()
-                        .fill(HFColor.primary)
-                        .frame(width: 8, height: 8)
-                        .accessibilityLabel("Unread")
-                }
             }
             // Never cut short.
             Text(vars.body)
@@ -504,7 +495,19 @@ struct V2InboxPage: View {
                 .buttonStyle(.plain)
                 // One 48 × 40 slot for disc or checkbox, top-aligned with the subject's line box.
                 .frame(width: V2Metrics.touchTarget, height: 40)
-                V2NotificationRowCard(vars: .make(n, now: now), showsDot: !selecting)
+                // Unread dot in the leading margin, level with the disc (LinkedIn, Clubhouse,
+                // Peerspace). Hidden while selecting: the checkbox is the only blue mark then, and
+                // weight still says unread.
+                .overlay(alignment: .leading) {
+                    if !n.read && !selecting {
+                        Circle()
+                            .fill(HFColor.primary)
+                            .frame(width: 8, height: 8)
+                            .offset(x: -9)            // centre at x7: 3 from the edge, 4 to the disc
+                            .accessibilityLabel("Unread")
+                    }
+                }
+                V2NotificationRowCard(vars: .make(n, now: now))
                 // Scan 2.1: the row's own ⋮ — one-row mark read / unread.
                 Button { withAnimation(V2Motion.standard) { menuFor = menuFor == n.id ? nil : n.id } } label: {
                     EncoreIcon(iconName: "LOverflowVertical", size: V2Icon.bar)
