@@ -185,11 +185,14 @@ final class V2NotificationCenter: ObservableObject {
 
     @discardableResult
     func receive(_ severity: V2Severity, _ kind: V2NotificationKind, subject: String, body: String,
-                 target: V2NotificationTarget = .none, targetGone: Bool = false) -> Int {
+                 target: V2NotificationTarget = .none, targetGone: Bool = false,
+                 surface: Bool = true) -> Int {
         let id = nextId
         nextId += 1
         entries.insert(V2Notification(id: id, severity: severity, kind: kind, subject: subject, body: body,
                                       target: target, targetGone: targetGone), at: 0)
+        // Arrived while the app was closed: the phone showed it; in the app it is only an entry.
+        guard surface else { return id }
         withAnimation(V2Motion.surface) {
             switch severity.tier {
             case .takeover:
@@ -567,7 +570,7 @@ extension UIWindow {
 
 /// The kinds of push the panel can fire — written against the seeded trip so targets are real.
 enum V2PushSample: String, CaseIterable, Identifiable {
-    case critical, high, medium, low, gone, pair, connection, criticalInfo, mediumInfo
+    case critical, high, medium, low, gone, pair, connection, criticalInfo, mediumInfo, tray
     var id: String { rawValue }
 
     var title: String {
@@ -581,6 +584,7 @@ enum V2PushSample: String, CaseIterable, Identifiable {
         case .connection: return "Lose / restore the connection"
         case .criticalInfo: return "Critical · nothing to open"
         case .mediumInfo:   return "Medium · nothing to open"
+        case .tray:         return "Tap it in the phone's tray (app was closed)"
         }
     }
 }
@@ -599,7 +603,11 @@ struct V2PushPanel: View {
                    ("inbox-nomatch", "Filter applied, no match"), ("inbox-select", "Selecting, some unread"),
                    ("inbox-select-read", "Selecting, all read"), ("inbox-swipe-read", "Swipe on unread"),
                    ("inbox-swipe-unread", "Swipe on read"), ("inbox-menu", "Row menu"),
-                   ("inbox-offline", "No connection"), ("inbox-empty", "Empty")]),
+                   ("inbox-offline", "No connection"), ("inbox-empty", "Empty"),
+                   ("inbox-filter-type", "Filter sheet, Type"), ("inbox-collapsed", "Day section collapsed"),
+                   ("inbox-paging", "Loading more")]),
+        ("Acting on one", [("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
+                           ("notif-gone", "Row whose trip is gone → toast"), ("notif-tray", "Opened from the phone's tray")]),
         ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
     ]
 

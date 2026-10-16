@@ -149,6 +149,8 @@ struct V2InboxFilterSheet: View {
     let applied: V2InboxFilter
     var onApply: (V2InboxFilter) -> Void
     var onClose: () -> Void
+    /// Demo states only: open on this rail item.
+    var startFacet: Facet = .severity
 
     enum Facet: String, CaseIterable { case severity = "Severity", type = "Type" }
     @State private var facet: Facet = .severity
@@ -207,7 +209,7 @@ struct V2InboxFilterSheet: View {
                 }
             }
         }
-        .onAppear { draft = applied }
+        .onAppear { draft = applied; facet = startFacet }
     }
 
     private func picked(_ f: Facet) -> Int {
@@ -254,6 +256,9 @@ struct V2InboxPage: View {
     var demoSelection: Set<Int> = []
     var demoSwipe: Int? = nil
     var demoMenu: Int? = nil
+    var demoCollapsed: Set<V2Ago.Group> = []
+    /// Demo states only: scroll to the end of the first page so the loading row shows.
+    var demoScrollToEnd = false
 
     @Environment(\.hfToast) private var toast
     /// Paging: the first page, then one more each time the end of the list comes into view.
@@ -320,6 +325,7 @@ struct V2InboxPage: View {
             if !demoSelection.isEmpty { selected = demoSelection }
             openSwipe = demoSwipe
             menuFor = demoMenu
+            collapsed = demoCollapsed
         }
     }
 
@@ -407,6 +413,7 @@ struct V2InboxPage: View {
     // MARK: List — the scan list's grey day sections and flat white rows
 
     private var list: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             LazyVStack(alignment: .leading, spacing: V2Space.sectionSeam) {
                 ForEach(V2Ago.Group.allCases, id: \.self) { g in
@@ -426,10 +433,16 @@ struct V2InboxPage: View {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .frame(height: 64)
-                        .onAppear(perform: loadMore)
+                        .id("more")
+                        .onAppear { if !demoScrollToEnd { loadMore() } }
                 }
                 Color.clear.frame(height: Spacing.spacing16)
             }
+        }
+        .onAppear {
+            guard demoScrollToEnd else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { proxy.scrollTo("more", anchor: .bottom) }
+        }
         }
     }
 

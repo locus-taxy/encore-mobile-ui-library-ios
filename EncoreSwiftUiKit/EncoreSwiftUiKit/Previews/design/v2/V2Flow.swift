@@ -23,6 +23,9 @@ public struct V2Flow: View {
     @State private var inboxDemoSelection: Set<Int> = []
     @State private var inboxDemoSwipe: Int? = nil
     @State private var inboxDemoMenu: Int? = nil
+    @State private var inboxDemoCollapsed: Set<V2Ago.Group> = []
+    @State private var inboxDemoScroll = false
+    @State private var filterStartFacet: V2InboxFilterSheet.Facet = .severity
     @State private var showsInboxFilter = false
     @State private var router = V2Router()
 
@@ -264,7 +267,8 @@ public struct V2Flow: View {
                                    onApply: { f in
                                        V2Motion.txSurface { inboxFilter = f; showsInboxFilter = false }
                                    },
-                                   onClose: { V2Motion.txSurface { showsInboxFilter = false } })
+                                   onClose: { V2Motion.txSurface { showsInboxFilter = false } },
+                                   startFacet: filterStartFacet)
             }
         }
         // Top of the stack: an important notification shows over any sheet, cover or the scanner.
@@ -347,6 +351,15 @@ public struct V2Flow: View {
             notes.receive(.critical, .alert,
                           subject: "Vehicle check overdue",
                           body: "Your vehicle check for KA-03-MX-4412 was due before your shift. Complete it at the hub before your next trip.")
+        case .tray:
+            // The push arrived while the app was closed; the phone showed it and the rider tapped it.
+            // The app opens on its target with the entry already read — no takeover, no banner.
+            let id = notes.receive(.high, .notification,
+                                   subject: "Delivery window changed at stop 4",
+                                   body: "Costa Coffee now accepts deliveries until 12:30 PM. Your route order is unchanged.",
+                                   target: .stop(4), surface: false)
+            notes.markRead([id])
+            if let n = notes.entry(id) { openNotification(n) }
         case .mediumInfo:
             notes.receive(.medium, .notification,
                           subject: "Hub closes early today",
@@ -388,7 +401,9 @@ public struct V2Flow: View {
                             onStatus: { inboxFilter.status = $0 },
                             demoSelection: inboxDemoSelection,
                             demoSwipe: inboxDemoSwipe,
-                            demoMenu: inboxDemoMenu)
+                            demoMenu: inboxDemoMenu,
+                            demoCollapsed: inboxDemoCollapsed,
+                            demoScrollToEnd: inboxDemoScroll)
                     .transition(V2Motion.pushFromTrailing)
                     .zIndex(2)
             }
@@ -831,6 +846,28 @@ public struct V2Flow: View {
         case "inbox-offline":  notes.offline = true; router.setPage(.inbox)
         case "inbox-empty":    notes.clear(); router.setPage(.inbox)
         case "inbox-filter":   router.setPage(.inbox); showsInboxFilter = true
+        case "inbox-filter-type": filterStartFacet = .type; router.setPage(.inbox); showsInboxFilter = true
+        case "inbox-collapsed": inboxDemoCollapsed = [.yesterday]; router.setPage(.inbox)
+        case "inbox-paging":   inboxDemoScroll = true; router.setPage(.inbox)
+        // End to end: what acting on a notification does.
+        case "notif-open":     // tap the "Stop added" row → stop 4 opens, the row is read
+            router.setPage(.inbox)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if let n = notes.entry(101) { notes.markRead([101]); openNotification(n) }
+            }
+        case "notif-gone":     // tap the reassigned trip's row → stay put, toast
+            router.setPage(.inbox)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if let n = notes.entry(105) { notes.markRead([105]); openNotification(n) }
+            }
+        case "notif-viewtask": // critical takeover → "View task" → the cancelled task opens
+            router.setPage(.home)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.critical) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+                if let n = notes.closeTakeover() { openNotification(n) }
+            }
+        case "notif-tray":     router.setPage(.home)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { fire(.tray) }
         case "inbox-read":     inboxFilter.status = .read; router.setPage(.inbox)
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)
         case "inbox-swipe-read":   inboxDemoSwipe = 101; router.setPage(.inbox)   // unread → green ✓
