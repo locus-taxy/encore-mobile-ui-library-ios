@@ -140,7 +140,24 @@ final class V2NotificationCenter: ObservableObject {
     /// The medium banner on screen.
     @Published private(set) var banner: Int? = nil
     /// The inbox is online-only (Story 5.4.5 AC-8). Prototype toggle from the push panel.
-    @Published var offline = false
+    @Published var offline = false {
+        didSet {
+            guard oldValue != offline else { return }
+            reconnectWork?.cancel()
+            if offline { reconnected = false; return }
+            // Back online: the green strip takes the offline strip's place, then goes on its own.
+            reconnected = true
+            let work = DispatchWorkItem { [weak self] in self?.reconnected = false }
+            reconnectWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.reconnectedDwell, execute: work)
+        }
+    }
+    /// The moment after the connection returns ("Refreshed", Figma › Offline (no connection)).
+    @Published private(set) var reconnected = false
+    private var reconnectWork: DispatchWorkItem? = nil
+    static let reconnectedDwell: TimeInterval = 2.5
+    /// Either network strip is showing — fixed-height sheets give it room.
+    var showsNetworkAlert: Bool { offline || reconnected }
 
     /// A medium that lands while a takeover is up waits for it to clear rather than sliding in under
     /// the scrim, where it would expire unseen. Only the newest waits — banners are moment-in-time.
@@ -329,10 +346,16 @@ struct V2NetworkAlert: View {
             if center.offline {
                 HFOfflineBanner(lastSynced: lastSynced)
                     .transition(.move(edge: .top))
+            } else if center.reconnected {
+                // Same slot and metrics as the offline strip, success fill — the two swap in place
+                // rather than one leaving and another arriving.
+                HFBanner(role: .network, title: "Refreshed", icon: "LCheckCircleFilled", fill: HFColor.success)
+                    .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity)
         .animation(V2Motion.standard, value: center.offline)
+        .animation(V2Motion.standard, value: center.reconnected)
     }
 }
 

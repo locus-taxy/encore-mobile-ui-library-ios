@@ -67,7 +67,7 @@ public struct V2Flow: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             if session == .signedIn { V2NetworkAlert(center: notes) }
         }
-        .environment(\.v2NetworkInset, session == .signedIn && notes.offline ? V2NetworkAlert.height : 0)
+        .environment(\.v2NetworkInset, session == .signedIn && notes.showsNetworkAlert ? V2NetworkAlert.height : 0)
         .environment(\.hfToast, toast)
         // History first, so a demo state can then reshape it.
         .onAppear { notes.seed(V2NotificationCenter.history()) }
