@@ -173,9 +173,9 @@ public struct PinView: View {
         if let countdown = formattedCountdown {
             // Countdown active — disabled resend
             (
-                Text("Didn't receive OTP? ")
+                Text("Didn't receive OTP? ", bundle: BundleToken.bundle)
                     .foregroundColor(Color.encore("Text/Secondary"))
-                + Text("Resend in \(countdown)")
+                + Text("Resend in \(countdown)", bundle: BundleToken.bundle)
                     .underline()
                     .foregroundColor(Color.encore("Divider"))
             )
@@ -183,9 +183,9 @@ public struct PinView: View {
         } else {
             // Countdown expired (or never started) — tappable resend
             (
-                Text("Didn't receive OTP? ")
+                Text("Didn't receive OTP? ", bundle: BundleToken.bundle)
                     .foregroundColor(Color.encore("Text/Secondary"))
-                + Text("Resend")
+                + Text("Resend", bundle: BundleToken.bundle)
                     .underline()
                     .foregroundColor(Color.encore("Primary/Main"))
             )

@@ -1,0 +1,113 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    " *" : {
+
+    },
+    "%@" : {
+
+    },
+    "%lld of %lld selected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld selected"
+          }
+        }
+      }
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+
+    },
+    "●" : {
+
+    },
+    "Add" : {
+
+    },
+    "Apply" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Choose from Gallery" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Close" : {
+
+    },
+    "Confirm" : {
+
+    },
+    "Continue Anyway" : {
+
+    },
+    "Didn't receive OTP? " : {
+
+    },
+    "Finish mandatory (*) checklist items to complete task" : {
+
+    },
+    "Loading..." : {
+
+    },
+    "OK" : {
+
+    },
+    "Pick a date" : {
+
+    },
+    "Resend" : {
+
+    },
+    "Resend in %@" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Save" : {
+
+    },
+    "Select all" : {
+
+    },
+    "Select Image Source" : {
+
+    },
+    "Select Time" : {
+
+    },
+    "Sign Here" : {
+
+    },
+    "Take Photo" : {
+
+    },
+    "Today" : {
+
+    },
+    "Yesterday" : {
+
+    }
+  },
+  "version" : "1.1"
+}

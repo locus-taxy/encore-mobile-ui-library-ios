@@ -34,7 +34,7 @@ public struct SlidingButtonView: View {
                         ProgressView()
                             .tint(Color.encore("Text/Disabled"))
                             .frame(width: Spacing.spacing16, height: Spacing.spacing16)
-                        Text("Loading...")
+                        Text("Loading...", bundle: BundleToken.bundle)
                             .typography(Typography.Button.large)
                             .foregroundColor(Color.encore("Text/Disabled"))
                     }

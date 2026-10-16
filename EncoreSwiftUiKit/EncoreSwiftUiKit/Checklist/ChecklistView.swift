@@ -94,7 +94,7 @@ public struct ChecklistView<Header: View>: View {
                         .disabled(!stateManager.areAllRequiredItemsValid())
 
                         if !stateManager.areAllRequiredItemsValid() {
-                            Text("Finish mandatory (*) checklist items to complete task")
+                            Text("Finish mandatory (*) checklist items to complete task", bundle: BundleToken.bundle)
                                 .typography(Typography.Input.helper)
                                 .foregroundColor(Color.encore("Text/Secondary"))
                                 // Tap the hint to jump to the first unfilled mandatory field.

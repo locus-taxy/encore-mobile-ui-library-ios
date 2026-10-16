@@ -222,7 +222,7 @@ public struct EncoreDropdownModifier: ViewModifier {
     private var selectAllRow: some View {
         HStack(spacing: 12) {
             checkbox(isChecked: allSelected)
-            Text("Select all")
+            Text("Select all", bundle: BundleToken.bundle)
                 .typography(Typography.Menu.itemDefault)
                 .foregroundColor(Color.encore("Text/Primary"))
             Spacer(minLength: 0)

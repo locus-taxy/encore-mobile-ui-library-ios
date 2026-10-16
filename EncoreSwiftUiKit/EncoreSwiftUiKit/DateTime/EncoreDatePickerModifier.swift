@@ -104,7 +104,7 @@ public struct EncoreDatePickerModifier: ViewModifier {
                         .frame(width: 48, height: 48)
                 }
                 Spacer()
-                Text("Pick a date")
+                Text("Pick a date", bundle: BundleToken.bundle)
                     .typography(Typography.h5)
                     .foregroundColor(Color.encore("Text/Primary"))
                 Spacer()
@@ -143,7 +143,7 @@ public struct EncoreDatePickerModifier: ViewModifier {
                     HStack(spacing: 8) {
                         if canShowToday {
                             EncoreButton(
-                                label: "Today",
+                                label: String(localized: "Today", bundle: BundleToken.bundle),
                                 startIconName: nil,
                                 endIconName: nil,
                                 color: .primary,
@@ -155,7 +155,7 @@ public struct EncoreDatePickerModifier: ViewModifier {
                         }
                         if canShowYesterday {
                             EncoreButton(
-                                label: "Yesterday",
+                                label: String(localized: "Yesterday", bundle: BundleToken.bundle),
                                 startIconName: nil,
                                 endIconName: nil,
                                 color: .primary,
@@ -172,7 +172,7 @@ public struct EncoreDatePickerModifier: ViewModifier {
 
             // Actions
             VStack(spacing: 0) {
-                EncoreButton(label: "Apply",
+                EncoreButton(label: String(localized: "Apply", bundle: BundleToken.bundle),
                              endIconName: nil,
                              size: .large) {
                     onDateSelected(selectedDate)

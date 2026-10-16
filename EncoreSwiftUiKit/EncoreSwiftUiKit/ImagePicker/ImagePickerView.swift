@@ -61,7 +61,7 @@ public struct ImagePickerView: View {
                         VStack(spacing: 0) {
                             EncoreIcon(iconName: "LCameraAlt", size: 24)
                                 .foregroundColor(Color.encore("Primary/Main"))
-                            Text("Add")
+                            Text("Add", bundle: BundleToken.bundle)
                                 .typography(Typography.Button.medium)
                                 .foregroundColor(Color.encore("Primary/Main"))
                         }

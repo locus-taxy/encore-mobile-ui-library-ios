@@ -121,7 +121,7 @@ struct SignatureDrawingCanvas: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Text("Sign Here")
+                Text("Sign Here", bundle: BundleToken.bundle)
                     .font(.headline)
                     .padding(.top, 16)
 

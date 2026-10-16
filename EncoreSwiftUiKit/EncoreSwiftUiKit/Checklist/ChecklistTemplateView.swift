@@ -73,7 +73,7 @@ public struct ChecklistTemplateView<Header: View>: View {
                         .disabled(!driver.canSubmit())
 
                         if !driver.canSubmit() {
-                            Text("Finish mandatory (*) checklist items to complete task")
+                            Text("Finish mandatory (*) checklist items to complete task", bundle: BundleToken.bundle)
                                 .typography(Typography.Input.helper)
                                 .foregroundColor(Color.encore("Text/Secondary"))
                                 .contentShape(Rectangle())
