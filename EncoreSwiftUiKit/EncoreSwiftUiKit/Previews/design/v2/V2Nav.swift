@@ -161,6 +161,8 @@ struct V2SheetLayer<Content: View>: View {
     @ViewBuilder var content: Content
 
     @State private var drag: CGFloat = 0
+    /// The network alert's height while it shows: the sheet starts under it, not under the status bar.
+    @Environment(\.v2NetworkInset) private var networkInset
 
     var body: some View {
         // Frames 17 / 19 / 40 / 73: the sheet covers EVERYTHING below the status bar, and the only
@@ -183,7 +185,7 @@ struct V2SheetLayer<Content: View>: View {
 
                 content
                     .frame(maxWidth: .infinity)
-                    .frame(height: V2Layout.drawableHeight)
+                    .frame(height: V2Layout.drawableHeight - networkInset)
                     .background(HFColor.surface)
                     // A colour background bleeds into the safe area by default, which painted the
                     // status strip white over the backdrop. Clip the sheet to its own frame.

@@ -454,17 +454,19 @@ struct HFBanner: View {
         .shadow(color: Color(.sRGB, red: 17/255, green: 19/255, blue: 24/255, opacity: 0.16), radius: 4)
     }
 
+    /// Network alert (Auth + Home + Profile › "Offline (no connection)"): sits ABOVE the app bar and
+    /// fills the status bar strip too; 20 filled icon, Regular 14/20 white, centred, 40 tall, no ✕.
     private var band: some View {
-        HStack(spacing: Spacing.spacing8) {
-            EncoreIcon(iconName: icon, size: 16)
+        HStack(spacing: Spacing.spacing12) {
+            EncoreIcon(iconName: icon, size: 20)
                 .foregroundColor(HFColor.onPrimary)
             Text(title)
-                .typography(Typography.label0)
+                .typography(Typography.subtitle1)
                 .foregroundColor(HFColor.onPrimary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.spacing8)
-        .background(fill)
+        .padding(.vertical, 10)                     // 20 icon + 2×10 = 40
+        .background(fill.ignoresSafeArea(edges: .top))
     }
 }
 

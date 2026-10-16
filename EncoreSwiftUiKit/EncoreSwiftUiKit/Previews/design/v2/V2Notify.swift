@@ -306,6 +306,36 @@ struct V2NotificationLayer: View {
     }
 }
 
+// MARK: Network alert — above every app bar
+
+/// The connectivity strip (Auth + Home + Profile › "Offline (no connection)"): warning fill that runs
+/// up through the status bar, then "Offline · Last synced" — above the app bar, so every page moves
+/// down by it. App-wide state, not a notification and not part of any page.
+private struct V2NetworkInsetKey: EnvironmentKey { static let defaultValue: CGFloat = 0 }
+extension EnvironmentValues {
+    /// Height the network alert takes above the app (0 when online). Fixed-height sheets subtract it.
+    var v2NetworkInset: CGFloat {
+        get { self[V2NetworkInsetKey.self] }
+        set { self[V2NetworkInsetKey.self] = newValue }
+    }
+}
+
+struct V2NetworkAlert: View {
+    static let height: CGFloat = 40
+    @ObservedObject var center: V2NotificationCenter
+    var lastSynced = "08:16"
+    var body: some View {
+        VStack(spacing: 0) {
+            if center.offline {
+                HFOfflineBanner(lastSynced: lastSynced)
+                    .transition(.move(edge: .top))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .animation(V2Motion.standard, value: center.offline)
+    }
+}
+
 // MARK: Banner slot — the medium banner as part of the page
 
 /// What a bar needs to host the medium banner. Injected at the flow root; absent → no slot.

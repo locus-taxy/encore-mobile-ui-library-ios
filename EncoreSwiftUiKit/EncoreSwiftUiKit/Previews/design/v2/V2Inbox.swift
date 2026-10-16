@@ -283,7 +283,8 @@ struct V2InboxPage: View {
         VStack(spacing: 0) {
             navbar
             if center.offline {
-                offlineStrip
+                // The orange "Offline · Last synced" strip is the app-wide network alert, drawn above
+                // the app bar at the flow root (V2NetworkAlert) — not here.
                 state(title: "No connection",
                       body: "Your notifications need a connection. They'll show here once you're back online.")
             } else if center.entries.isEmpty {
@@ -401,17 +402,6 @@ struct V2InboxPage: View {
                 Color.clear.frame(maxWidth: .infinity).frame(height: HFLayout.bottomInset)
             }
         }
-    }
-
-    private var offlineStrip: some View {
-        HStack(spacing: Spacing.spacing8) {
-            EncoreIcon(iconName: "LWarning", size: 20)
-            Text("Offline · Last synced 08:16").v2Label(V2Font.label1)
-        }
-        .foregroundColor(HFColor.onPrimary)
-        .frame(maxWidth: .infinity)
-        .frame(height: 40)
-        .background(HFColor.warning)
     }
 
     // MARK: List — the scan list's grey day sections and flat white rows

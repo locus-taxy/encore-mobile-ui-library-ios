@@ -62,6 +62,12 @@ public struct V2Flow: View {
                 login.transition(.opacity)
             }
         }
+        // Network alert above everything signed-in, covers and sheets included: it becomes the top of
+        // the safe area, so every app bar / sheet title lays out directly under the strip.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if session == .signedIn { V2NetworkAlert(center: notes) }
+        }
+        .environment(\.v2NetworkInset, session == .signedIn && notes.offline ? V2NetworkAlert.height : 0)
         .environment(\.hfToast, toast)
         // History first, so a demo state can then reshape it.
         .onAppear { notes.seed(V2NotificationCenter.history()) }
