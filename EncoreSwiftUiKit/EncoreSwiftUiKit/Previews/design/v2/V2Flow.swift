@@ -291,7 +291,7 @@ public struct V2Flow: View {
     /// is with a toast (E-07).
     private func openNotification(_ n: V2Notification) {
         if n.targetGone {
-            toast.show("This \(n.target.noun) is no longer available")
+            toast.show("This \(n.target.noun) is no longer available", icon: "LInformation")
             return
         }
         V2Motion.txSurface {

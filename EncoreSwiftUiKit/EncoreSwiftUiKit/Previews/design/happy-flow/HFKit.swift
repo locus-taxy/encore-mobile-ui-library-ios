@@ -307,12 +307,13 @@ struct HFVerifiedTitle: View {
 /// Single feedback-toast channel for the flow: any transient message (status + copy) shows
 /// through here so it rises from behind the sticky footer and sinks back under it.
 final class HFToastCenter: ObservableObject {
-    struct Msg: Equatable { let title: String; let subtitle: String?; let token: Int }
+    struct Msg: Equatable { let title: String; let subtitle: String?; var icon: String = "LCheckCircle"; let token: Int }
     @Published var current: Msg? = nil
     private var counter = 0
 
-    /// Show a status toast (title, optional detail line).
-    func show(_ title: String, subtitle: String? = nil) { present(title, subtitle) }
+    /// Show a status toast (title, optional detail line). The icon carries the tone: the check for
+    /// something done, `LInformation` for information (e.g. "This trip is no longer available").
+    func show(_ title: String, subtitle: String? = nil, icon: String = "LCheckCircle") { present(title, subtitle, icon) }
 
     /// Copy an entity ID to the clipboard and confirm with a toast.
     func copy(label: String, id: String) {
@@ -329,13 +330,13 @@ final class HFToastCenter: ObservableObject {
     /// two motions compete and the toast reads as part of the button change.
     static let entryDelay: TimeInterval = 0.45
 
-    private func present(_ title: String, _ subtitle: String?) {
+    private func present(_ title: String, _ subtitle: String?, _ icon: String = "LCheckCircle") {
         counter += 1
         let token = counter
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.entryDelay) { [weak self] in
             guard let self, self.counter == token else { return }
             withAnimation(.easeOut(duration: 0.3)) {
-                self.current = Msg(title: title, subtitle: subtitle, token: token)
+                self.current = Msg(title: title, subtitle: subtitle, icon: icon, token: token)
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
                 guard let self, self.current?.token == token else { return }
@@ -532,7 +533,7 @@ private struct HFToastFooterBody<Footer: View>: View {
             .overlay(alignment: .top) {
                 ZStack(alignment: .bottom) {
                     if let m = toast.current {
-                        HFToastPill(title: m.title, subtitle: m.subtitle, onClose: { dismiss() })
+                        HFToastPill(title: m.title, subtitle: m.subtitle, icon: m.icon, onClose: { dismiss() })
                             .padding(.horizontal, Spacing.spacing20)      // 320 wide on a 360 frame
                             .padding(.bottom, Spacing.spacing16)          // rests 16 above the footer
                             .offset(y: drag)

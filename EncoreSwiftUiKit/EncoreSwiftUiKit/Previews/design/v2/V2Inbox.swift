@@ -298,7 +298,11 @@ struct V2InboxPage: View {
                 // Frame 09: "Select all" replaces the tabs while selecting.
                 if selecting { selectAllRow } else { tabs }
                 HFSeam()
-                if matching.isEmpty {
+                if matching.isEmpty && filter.isEmpty && filter.status == .unread {
+                    state(title: "You're all caught up", body: "New notifications will show here")
+                } else if matching.isEmpty && filter.isEmpty && filter.status == .read {
+                    state(title: "Nothing read yet", body: "Notifications you've read will show here")
+                } else if matching.isEmpty {
                     state(title: "No results found", body: "Try adjusting or clearing your filters",
                           action: filter.isEmpty ? nil : ("Reset all", onResetFilter))
                 } else {
