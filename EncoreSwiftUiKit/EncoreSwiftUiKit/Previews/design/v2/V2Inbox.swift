@@ -287,7 +287,7 @@ struct V2InboxPage: View {
                 state(title: "No connection",
                       body: "Your notifications need a connection. They'll show here once you're back online.")
             } else if center.entries.isEmpty {
-                state(title: "No notifications yet", body: "Anything you're sent will show here.")
+                state(title: "No notifications yet", body: "Anything you're sent will show here")
             } else {
                 // Frame 09: "Select all" replaces the tabs while selecting.
                 if selecting { selectAllRow } else { tabs }
