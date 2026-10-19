@@ -422,8 +422,8 @@ private struct V2BannerSlotBody: View {
 /// own white block with an E1 shadow as the separator (no rule); primary on top, grey text below.
 /// Tone lives in the icon chip only — no eyebrow, never in the buttons.
 ///
-/// Two or more at once: the same dialog as a summary — "3 alerts need your attention", "View all"
-/// (the inbox, Unread tab) over "Later". The chip takes the most severe one's tone. A single dialog that
+/// Two or more at once: the same dialog as a summary — "3 urgent notifications", "Open notifications"
+/// (the inbox, Unread tab) over "Not now". The chip takes the most severe one's tone. A single dialog that
 /// a second one joins dissolves into the summary in place (decided 2026-10-19, after a swipeable
 /// carousel and a pager both read badly with alerts of different lengths).
 struct V2NotificationTakeover: View {
@@ -448,8 +448,10 @@ struct V2NotificationTakeover: View {
         VStack(alignment: .leading, spacing: 0) {
             Group {
                 if isSummary {
-                    message(title: "\(notes.count) alerts need your attention",
-                            body: "Read and act on them in your notifications")
+                    // Named as the inbox is ("Notifications"), "urgent" says why it interrupted, and the
+                    // body says when to act — not where to read, which the button already says.
+                    message(title: "\(notes.count) urgent notifications",
+                            body: "Check them before you carry on")
                 } else if let note = notes.first {
                     // The message is never cut short (DP-2956 rows say the same of the inbox).
                     message(title: note.subject, body: note.body)
@@ -460,7 +462,7 @@ struct V2NotificationTakeover: View {
 
             Group {
                 if isSummary {
-                    actions(primary: "View all", primaryAction: onViewAll, secondary: "Later", secondaryAction: onLater)
+                    actions(primary: "Open notifications", primaryAction: onViewAll, secondary: "Not now", secondaryAction: onLater)
                 } else if let note = notes.first {
                     actions(primary: note.target.openLabel,
                             primaryAction: note.target == .none ? onDismiss : onOpen,
@@ -657,7 +659,7 @@ struct V2PushPanel: View {
                    ("inbox-offline", "No connection"), ("inbox-empty", "Empty"),
                    ("inbox-filter-type", "Filter sheet, Type"), ("inbox-collapsed", "Day section collapsed"),
                    ("inbox-paging", "Loading more")]),
-        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → View all"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
+        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → Open notifications"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
                            ("notif-gone", "Row whose trip is gone → toast"), ("notif-tray", "Opened from the phone's tray")]),
         ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
     ]

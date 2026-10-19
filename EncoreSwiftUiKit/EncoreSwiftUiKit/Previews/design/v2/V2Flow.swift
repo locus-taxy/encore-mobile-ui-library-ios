@@ -878,7 +878,7 @@ public struct V2Flow: View {
             router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.critical) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { fire(.high); fire(.criticalInfo) }
-        case "notif-viewall":  // summary → "View all": the inbox on Unread, nothing marked read
+        case "notif-viewall":  // summary → "Open notifications": the inbox on Unread, nothing marked read
             router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.pair) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
