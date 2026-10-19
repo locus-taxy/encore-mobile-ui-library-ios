@@ -449,9 +449,9 @@ struct V2NotificationTakeover: View {
             Group {
                 if isSummary {
                     // Named as the inbox is ("Notifications"), "urgent" says why it interrupted, and the
-                    // body says when to act — not where to read, which the button already says.
+                    // body says what opening it shows.
                     message(title: "\(notes.count) urgent notifications",
-                            body: "Check them before you carry on")
+                            body: "Open to see what needs your attention")
                 } else if let note = notes.first {
                     // The message is never cut short (DP-2956 rows say the same of the inbox).
                     message(title: note.subject, body: note.body)
