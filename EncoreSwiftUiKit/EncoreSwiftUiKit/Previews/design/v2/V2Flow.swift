@@ -254,7 +254,14 @@ public struct V2Flow: View {
                             },
                             onJump: { key in
                                 showsPushPanel = false
-                                jump?(key)
+                                // "size:<option>" switches the takeover's height rule, then replays the mixed lengths.
+                                if key.hasPrefix("size:"),
+                                   let sizing = V2NotificationTakeover.Sizing(rawValue: String(key.dropFirst(5))) {
+                                    V2NotificationTakeover.sizing = sizing
+                                    jump?("notif-mixed")
+                                } else {
+                                    jump?(key)
+                                }
                             },
                             onClose: { V2Motion.txSurface { showsPushPanel = false } })
             }
@@ -345,6 +352,17 @@ public struct V2Flow: View {
         case .pair:
             fire(.critical)
             fire(.high)
+        case .mixed:
+            // Short, then long, then medium — so the card's height has to cope with all three.
+            notes.receive(.critical, .alert, subject: "Stop 5 skipped",
+                          body: "Don't go to stop 5.", target: .stop(5))
+            notes.receive(.high, .notification,
+                          subject: "Delivery windows changed at stops 4, 6 and 7",
+                          body: "Costa Coffee now accepts deliveries until 12:30 PM, Brigade Mall from 01:00 PM and "
+                              + "Phoenix Market City only after 01:30 PM. Your route order is unchanged, but check the "
+                              + "new windows before you leave stop 3.",
+                          target: .trip)
+            fire(.criticalInfo)
         case .trio:
             fire(.critical)
             fire(.high)
@@ -879,6 +897,11 @@ public struct V2Flow: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { withAnimation(V2Motion.surface) { notes.takeoverPage = 1 } }
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.6) { withAnimation(V2Motion.surface) { notes.takeoverPage = 2 } }
             DispatchQueue.main.asyncAfter(deadline: .now() + 4.8) { notes.closeTakeover() }
+        case "notif-mixed":    // three of very different lengths, paged through on its own
+            router.setPage(.home)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.mixed) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { withAnimation(V2Motion.surface) { notes.takeoverPage = 1 } }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) { withAnimation(V2Motion.surface) { notes.takeoverPage = 2 } }
         case "notif-tray":     router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { fire(.tray) }
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)

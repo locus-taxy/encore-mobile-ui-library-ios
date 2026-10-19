@@ -435,17 +435,33 @@ struct V2NotificationTakeover: View {
     static let armDelay: TimeInterval = 0.6
     @State private var drag: CGFloat = 0
 
+    /// Under study (2026-10-19), when the pages differ in length:
+    ///   • tallest — the card takes the longest page's height and never resizes; short pages leave a gap.
+    ///   • fit     — the card takes the page showing's height, centred; both edges move as a page settles,
+    ///               so the buttons move under the thumb.
+    ///   • pinned  — fit, but the card's bottom stays where the tallest card's would be: only the top edge
+    ///               moves; the buttons and dots never do (a lone "Got it" keeps the primary's place).
+    /// Prototype switch: SIMCTL_CHILD_POC_TAKEOVER=fit|pinned, or the shake panel.
+    enum Sizing: String, CaseIterable { case tallest, fit, pinned }
+    static var sizing = Sizing(rawValue: ProcessInfo.processInfo.environment["POC_TAKEOVER"] ?? "") ?? .tallest
+
     private var current: V2Notification? { notes.indices.contains(page) ? notes[page] : notes.last }
+    private var showing: [V2Notification] { current.map { [$0] } ?? [] }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            pager
-            actionBlock
+        Group {
+            switch Self.sizing {
+            case .tallest: card(sizedBy: notes)
+            case .fit:     card(sizedBy: showing)
+            case .pinned:
+                // An invisible tallest card holds the place; the real one hugs its page, bottom-aligned.
+                ZStack(alignment: .bottom) {
+                    card(sizedBy: notes).hidden()
+                    // The button block stays the tallest set's, so the primary never moves either.
+                    card(sizedBy: showing, actionsSizedBy: notes)
+                }
+            }
         }
-        .background(HFColor.surface)
-        // r12, not Figma's 8: the container family (sheets, result card, menu) is 12, and a step above
-        // the r8 buttons keeps the card reading as the outer shape. Logged in figma-discrepancies.md.
-        .clipShape(RoundedRectangle(cornerRadius: 12))
         .frame(maxWidth: 328)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
@@ -455,13 +471,24 @@ struct V2NotificationTakeover: View {
         }
     }
 
+    private func card(sizedBy sizers: [V2Notification], actionsSizedBy actionSizers: [V2Notification]? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            pager(sizers)
+            actionBlock(actionSizers ?? sizers)
+        }
+        .background(HFColor.surface)
+        // r12, not Figma's 8: the container family (sheets, result card, menu) is 12, and a step above
+        // the r8 buttons keeps the card reading as the outer shape. Logged in figma-discrepancies.md.
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
     // MARK: Pages
 
-    private var pager: some View {
+    private func pager(_ sizers: [V2Notification]) -> some View {
         VStack(spacing: 0) {
             // Every page laid out but invisible: they size the card to the tallest one.
             ZStack(alignment: .topLeading) {
-                ForEach(notes) { message($0).hidden() }
+                ForEach(sizers) { message($0).hidden() }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .overlay(
@@ -551,12 +578,12 @@ struct V2NotificationTakeover: View {
 
     // MARK: Actions — the page showing's
 
-    private var actionBlock: some View {
+    private func actionBlock(_ sizers: [V2Notification]) -> some View {
         VStack(spacing: Spacing.spacing12) {
             ZStack(alignment: .top) {
                 // Same trick as the pages: the block is as tall as the tallest set, so "Got it" alone
                 // doesn't shrink the card (or move the dots) when it is one of several.
-                ForEach(notes) { actions($0).hidden() }
+                ForEach(sizers) { actions($0).hidden() }
                 if let n = current {
                     actions(n)
                         .id(n.id)
@@ -676,7 +703,7 @@ extension UIWindow {
 
 /// The kinds of push the panel can fire — written against the seeded trip so targets are real.
 enum V2PushSample: String, CaseIterable, Identifiable {
-    case critical, high, medium, low, gone, pair, trio, connection, criticalInfo, mediumInfo, tray
+    case critical, high, medium, low, gone, pair, trio, mixed, connection, criticalInfo, mediumInfo, tray
     var id: String { rawValue }
 
     var title: String {
@@ -688,6 +715,7 @@ enum V2PushSample: String, CaseIterable, Identifiable {
         case .gone:     return "High · trip reassigned (target gone)"
         case .pair:     return "Two important at once"
         case .trio:     return "Three important at once (one with nothing to open)"
+        case .mixed:    return "Three at once, very different lengths"
         case .connection: return "Lose / restore the connection"
         case .criticalInfo: return "Critical · nothing to open"
         case .mediumInfo:   return "Medium · nothing to open"
@@ -713,7 +741,9 @@ struct V2PushPanel: View {
                    ("inbox-offline", "No connection"), ("inbox-empty", "Empty"),
                    ("inbox-filter-type", "Filter sheet, Type"), ("inbox-collapsed", "Day section collapsed"),
                    ("inbox-paging", "Loading more")]),
-        ("Acting on one", [("notif-pair", "Two important at once → swipe"), ("notif-trio", "Three at once, paging through"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
+        ("Acting on one", [("notif-pair", "Two important at once → swipe"), ("notif-trio", "Three at once, paging through"), ("notif-mixed", "Three at once, different lengths"),
+                           ("size:tallest", "  ↳ dialog height: tallest (fixed)"), ("size:fit", "  ↳ dialog height: fits each alert"),
+                           ("size:pinned", "  ↳ dialog height: fits, bottom pinned"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
                            ("notif-gone", "Row whose trip is gone → toast"), ("notif-tray", "Opened from the phone's tray")]),
         ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
     ]
