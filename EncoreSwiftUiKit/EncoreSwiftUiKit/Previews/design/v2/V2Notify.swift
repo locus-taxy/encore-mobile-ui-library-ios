@@ -420,7 +420,7 @@ private struct V2BannerSlotBody: View {
 /// Tone lives in the icon chip only — no eyebrow, never in the buttons.
 ///
 /// Two or more: one dialog, one page per alert, swiped sideways (Push, the motion for sibling pages),
-/// with MUI <MobileStepper> dots under the message. The card is as tall as its TALLEST page, so it never
+/// with MUI <MobileStepper> dots at the foot of the card, under Dismiss. The card is as tall as its TALLEST page, so it never
 /// resizes under the rider's thumb mid-swipe; a shorter page leaves space above the actions. The actions
 /// belong to the page showing and dissolve as it changes. Answering a page removes it; the next slides in.
 struct V2NotificationTakeover: View {
@@ -481,11 +481,6 @@ struct V2NotificationTakeover: View {
                 }
             )
             .clipped()
-            if notes.count > 1 {
-                dots
-                    .padding(.bottom, Spacing.spacing16)
-                    .transition(.opacity)
-            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityValue(notes.count > 1 ? "Alert \(page + 1) of \(notes.count)" : "")
@@ -557,17 +552,22 @@ struct V2NotificationTakeover: View {
     // MARK: Actions — the page showing's
 
     private var actionBlock: some View {
-        ZStack(alignment: .top) {
-            // Same trick as the pages: the block is as tall as the tallest set, so "Got it" alone
-            // doesn't shrink the card when it is one of several.
-            ForEach(notes) { actions($0).hidden() }
-            if let n = current {
-                actions(n)
-                    .id(n.id)
-                    .transition(V2Motion.dissolve)
+        VStack(spacing: Spacing.spacing12) {
+            ZStack(alignment: .top) {
+                // Same trick as the pages: the block is as tall as the tallest set, so "Got it" alone
+                // doesn't shrink the card (or move the dots) when it is one of several.
+                ForEach(notes) { actions($0).hidden() }
+                if let n = current {
+                    actions(n)
+                        .id(n.id)
+                        .transition(V2Motion.dissolve)
+                }
+            }
+            .animation(V2Motion.standard, value: current?.id)
+            if notes.count > 1 {
+                dots.transition(.opacity)
             }
         }
-        .animation(V2Motion.standard, value: current?.id)
         .padding(Spacing.spacing16)
         .background(
             Rectangle()
