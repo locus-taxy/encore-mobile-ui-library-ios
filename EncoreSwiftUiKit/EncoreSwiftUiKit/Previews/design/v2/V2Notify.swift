@@ -10,7 +10,7 @@ import UIKit
 // it; anything missing or unrecognised is LOW (AC-5), so a guess never outranks a chosen severity.
 //
 //   CRITICAL, HIGH → takeover: centred dialog over a scrim (Figma's blocking-dialog pattern) until
-//                    dismissed or tapped through. A second one waits behind it, with a marker.
+//                    dismissed or tapped through. Two or more share one dialog as swipeable pages.
 //   MEDIUM         → top banner (Figma's dismissible banner, info): slides down, goes on its own,
 //                    tappable.
 //   LOW            → nothing in the app; it waits in the inbox (DP-2956).
@@ -134,9 +134,11 @@ struct V2Notification: Identifiable, Equatable {
 /// Holds the inbox entries and decides what is on screen. Surfaces only render what it says.
 final class V2NotificationCenter: ObservableObject {
     @Published private(set) var entries: [V2Notification] = []
-    /// The critical / high on screen, and the ones waiting behind it (oldest first).
-    @Published private(set) var takeover: Int? = nil
-    @Published private(set) var queue: [Int] = []
+    /// The critical / high ones on screen, oldest first — the takeover's pages — and the page showing.
+    /// A new one joins as the last page; it never pulls the rider off the page they are reading.
+    @Published private(set) var takeovers: [Int] = []
+    @Published var takeoverPage = 0
+    var takeover: Int? { takeovers.indices.contains(takeoverPage) ? takeovers[takeoverPage] : takeovers.last }
     /// The medium banner on screen.
     @Published private(set) var banner: Int? = nil
     /// The inbox is online-only (Story 5.4.5 AC-8). Prototype toggle from the push panel.
@@ -147,7 +149,7 @@ final class V2NotificationCenter: ObservableObject {
             if offline { reconnected = false; return }
             // Back online: the green strip takes the offline strip's place, then goes on its own.
             reconnected = true
-            let work = DispatchWorkItem { [weak self] in self?.reconnected = false }
+            let work = DispatchWorkItem { [weak self] in withAnimation(V2Motion.reflow) { self?.reconnected = false } }
             reconnectWork = work
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.reconnectedDwell, execute: work)
         }
@@ -189,16 +191,19 @@ final class V2NotificationCenter: ObservableObject {
                  surface: Bool = true) -> Int {
         let id = nextId
         nextId += 1
-        entries.insert(V2Notification(id: id, severity: severity, kind: kind, subject: subject, body: body,
-                                      target: target, targetGone: targetGone), at: 0)
+        // An open inbox makes room for it rather than cutting it in.
+        withAnimation(V2Motion.reflow) {
+            entries.insert(V2Notification(id: id, severity: severity, kind: kind, subject: subject, body: body,
+                                          target: target, targetGone: targetGone), at: 0)
+        }
         // Arrived while the app was closed: the phone showed it; in the app it is only an entry.
         guard surface else { return id }
-        withAnimation(V2Motion.surface) {
+        withAnimation(severity.tier == .banner ? V2Motion.reflow : V2Motion.surface) {
             switch severity.tier {
             case .takeover:
-                if takeover == nil { takeover = id } else { queue.append(id) }
+                takeovers.append(id)
             case .banner:
-                if takeover == nil && !holdsBanners { showBanner(id) } else { heldBanner = id }
+                if takeovers.isEmpty && !holdsBanners { showBanner(id) } else { heldBanner = id }
             case .silent:
                 break
             }
@@ -208,18 +213,18 @@ final class V2NotificationCenter: ObservableObject {
 
     // MARK: Takeover
 
-    /// Dismiss or tap through: either way the entry turns read (Story 5.4.3 AC-7), and the next one
-    /// waiting takes its place.
+    /// Dismiss or tap through one page (the one showing unless named): the entry turns read (Story
+    /// 5.4.3 AC-7) and its page leaves — the next slides in from the right, or the previous from the
+    /// left if it was the last. The dialog closes with the last page.
     @discardableResult
-    func closeTakeover() -> V2Notification? {
-        guard let id = takeover else { return nil }
+    func closeTakeover(_ id: Int? = nil) -> V2Notification? {
+        guard let id = id ?? takeover, let index = takeovers.firstIndex(of: id) else { return nil }
         markRead([id])
         let closed = entry(id)
         withAnimation(V2Motion.surface) {
-            if queue.isEmpty {
-                takeover = nil
-            } else {
-                takeover = queue.removeFirst()
+            takeovers.remove(at: index)
+            if index < takeoverPage || takeoverPage >= takeovers.count {
+                takeoverPage = max(0, takeoverPage - 1)
             }
         }
         releaseHeldBanner()
@@ -233,17 +238,17 @@ final class V2NotificationCenter: ObservableObject {
         if on, let id = banner {
             bannerTimer?.cancel()
             heldBanner = id
-            withAnimation(V2Motion.surface) { banner = nil }
+            withAnimation(V2Motion.reflow) { banner = nil }
         } else if !on {
             releaseHeldBanner()
         }
     }
 
     private func releaseHeldBanner() {
-        guard takeover == nil, !holdsBanners, let held = heldBanner else { return }
+        guard takeovers.isEmpty, !holdsBanners, let held = heldBanner else { return }
         heldBanner = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-            withAnimation(V2Motion.surface) { self?.showBanner(held) }
+            withAnimation(V2Motion.reflow) { self?.showBanner(held) }
         }
     }
 
@@ -254,7 +259,7 @@ final class V2NotificationCenter: ObservableObject {
         banner = id
         let work = DispatchWorkItem { [weak self] in
             guard self?.banner == id else { return }
-            withAnimation(V2Motion.surface) { self?.banner = nil }
+            withAnimation(V2Motion.reflow) { self?.banner = nil }
         }
         bannerTimer = work
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.bannerDwell, execute: work)
@@ -266,7 +271,7 @@ final class V2NotificationCenter: ObservableObject {
         guard let id = banner else { return nil }
         markRead([id])
         bannerTimer?.cancel()
-        withAnimation(V2Motion.surface) { banner = nil }
+        withAnimation(V2Motion.reflow) { banner = nil }
         return entry(id)
     }
 
@@ -276,13 +281,16 @@ final class V2NotificationCenter: ObservableObject {
         guard let id = banner else { return }
         markRead([id])
         bannerTimer?.cancel()
-        withAnimation(V2Motion.surface) { banner = nil }
+        withAnimation(V2Motion.reflow) { banner = nil }
     }
 
     // MARK: Read state
 
+    /// Animated: in the Unread tab a row that turns read glides out and the rows below close up.
     func markRead(_ ids: [Int], _ read: Bool = true) {
-        for i in entries.indices where ids.contains(entries[i].id) { entries[i].read = read }
+        withAnimation(V2Motion.reflow) {
+            for i in entries.indices where ids.contains(entries[i].id) { entries[i].read = read }
+        }
     }
 
     func clear() { entries = [] }
@@ -302,19 +310,18 @@ struct V2NotificationLayer: View {
         ZStack(alignment: .top) {
             // The medium banner is not drawn here: it lives in the page, under the app bar / navbar
             // (`V2BannerSlot`), so the page moves down by its height.
-            if let n = center.entry(center.takeover) {
+            if !center.takeovers.isEmpty {
                 ZStack {
                     Color.black.opacity(0.5)
                         .ignoresSafeArea()
                         // The scrim swallows taps: an important one is answered, not tapped away.
                         .onTapGesture {}
-                    V2NotificationTakeover(note: n,
-                                           waiting: center.queue.count,
-                                           onOpen: {
-                                               if let n = center.closeTakeover(), n.target != .none { onOpen(n) }
+                    V2NotificationTakeover(notes: center.takeovers.compactMap { center.entry($0) },
+                                           page: $center.takeoverPage,
+                                           onOpen: { n in
+                                               if let n = center.closeTakeover(n.id), n.target != .none { onOpen(n) }
                                            },
-                                           onDismiss: { center.closeTakeover() })
-                        .id(n.id)
+                                           onDismiss: { n in center.closeTakeover(n.id) })
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .padding(.horizontal, Spacing.spacing16)
                 }
@@ -357,8 +364,8 @@ struct V2NetworkAlert: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .animation(V2Motion.standard, value: center.offline)
-        .animation(V2Motion.standard, value: center.reconnected)
+        .animation(V2Motion.reflow, value: center.offline)
+        .animation(V2Motion.reflow, value: center.reconnected)
     }
 }
 
@@ -397,12 +404,13 @@ private struct V2BannerSlotBody: View {
                 V2NotificationBanner(note: n,
                                      onTap: { if let n = center.tapBanner() { onOpen(n) } },
                                      onDismiss: { center.dismissBanner() })
-                    .transition(.move(edge: .top))
+                    // Slides out from under the bar as its slot opens; the page below follows (reflow).
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .frame(maxWidth: .infinity)
         .clipped()
-        .animation(V2Motion.standard, value: center.banner)
+        .animation(V2Motion.reflow, value: center.banner)
     }
 }
 
@@ -410,63 +418,29 @@ private struct V2BannerSlotBody: View {
 /// block"): 328 wide, r12 (Figma r8 — see below); tinted pill icon chip; h5 title; body1 secondary; then the actions on their
 /// own white block with an E1 shadow as the separator (no rule); primary on top, grey text below.
 /// Tone lives in the icon chip only — no eyebrow, never in the buttons.
+///
+/// Two or more: one dialog, one page per alert, swiped sideways (Push, the motion for sibling pages),
+/// with MUI <MobileStepper> dots under the message. The card is as tall as its TALLEST page, so it never
+/// resizes under the rider's thumb mid-swipe; a shorter page leaves space above the actions. The actions
+/// belong to the page showing and dissolve as it changes. Answering a page removes it; the next slides in.
 struct V2NotificationTakeover: View {
-    let note: V2Notification
-    var waiting: Int
-    var onOpen: () -> Void
-    var onDismiss: () -> Void
+    let notes: [V2Notification]
+    @Binding var page: Int
+    var onOpen: (V2Notification) -> Void
+    var onDismiss: (V2Notification) -> Void
 
     /// Taps are ignored for a moment after it appears. A notification can land mid-swipe or mid-scan;
     /// without this the driver's finger, already moving, answers it by accident.
     @State private var armed = false
     static let armDelay: TimeInterval = 0.6
+    @State private var drag: CGFloat = 0
+
+    private var current: V2Notification? { notes.indices.contains(page) ? notes[page] : notes.last }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: Spacing.spacing16) {
-                HStack(alignment: .center) {
-                    EncoreIcon(iconName: note.severity.icon, size: 20)
-                        .foregroundColor(note.severity.tone)
-                        .frame(width: 52, height: 36)
-                        .background(Capsule().fill(note.severity.tone.opacity(0.08)))
-                    Spacer()
-                    if waiting > 0 {
-                        Text("\(waiting) more waiting")
-                            .v2Label(V2Font.label2)
-                            .foregroundColor(HFColor.textSecondary)
-                            .padding(.horizontal, Spacing.spacing8)
-                            .padding(.vertical, 2)
-                            .background(Capsule().fill(HFColor.screen))
-                            .transition(.opacity)
-                    }
-                }
-                VStack(alignment: .leading, spacing: Spacing.spacing4) {
-                    Text(note.subject)
-                        .v2Text(V2Font.h5)
-                        .foregroundColor(HFColor.textPrimary)
-                    // The message is never cut short (DP-2956 rows say the same of the inbox).
-                    Text(note.body)
-                        .v2Text(V2Font.body1)
-                        .foregroundColor(HFColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .padding(Spacing.spacing16)
-
-            VStack(spacing: Spacing.spacing8) {
-                V2Button(label: note.target.openLabel, action: note.target == .none ? onDismiss : onOpen)
-                if note.target != .none {
-                    V2Button(label: "Dismiss", role: .text, action: onDismiss)
-                }
-            }
-            .padding(Spacing.spacing16)
-            .background(
-                Rectangle()
-                    .fill(HFColor.surface)
-                    .shadow(color: Color(.sRGB, red: 17/255, green: 19/255, blue: 24/255, opacity: 0.16),
-                            radius: 2, x: 0, y: 0)
-            )
-            .allowsHitTesting(armed)
+            pager
+            actionBlock
         }
         .background(HFColor.surface)
         // r12, not Figma's 8: the container family (sheets, result card, menu) is 12, and a step above
@@ -478,6 +452,138 @@ struct V2NotificationTakeover: View {
         .onAppear {
             armed = false
             DispatchQueue.main.asyncAfter(deadline: .now() + Self.armDelay) { armed = true }
+        }
+    }
+
+    // MARK: Pages
+
+    private var pager: some View {
+        VStack(spacing: 0) {
+            // Every page laid out but invisible: they size the card to the tallest one.
+            ZStack(alignment: .topLeading) {
+                ForEach(notes) { message($0).hidden() }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(
+                GeometryReader { geo in
+                    HStack(alignment: .top, spacing: 0) {
+                        ForEach(notes) { n in
+                            message(n).frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
+                                // An answered page goes at once; its neighbour slides into the gap.
+                                // Fading it out instead cross-printed the two pages' text.
+                                .transition(.identity)
+                        }
+                    }
+                    .offset(x: -CGFloat(page) * geo.size.width + drag)
+                    .frame(width: geo.size.width, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .gesture(notes.count > 1 ? swipe(width: geo.size.width) : nil)
+                }
+            )
+            .clipped()
+            if notes.count > 1 {
+                dots
+                    .padding(.bottom, Spacing.spacing16)
+                    .transition(.opacity)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(notes.count > 1 ? "Alert \(page + 1) of \(notes.count)" : "")
+        .accessibilityAdjustableAction { direction in
+            withAnimation(V2Motion.surface) {
+                switch direction {
+                case .increment: page = min(page + 1, notes.count - 1)
+                case .decrement: page = max(page - 1, 0)
+                @unknown default: break
+                }
+            }
+        }
+    }
+
+    private func message(_ note: V2Notification) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.spacing16) {
+            EncoreIcon(iconName: note.severity.icon, size: 20)
+                .foregroundColor(note.severity.tone)
+                .frame(width: 52, height: 36)
+                .background(Capsule().fill(note.severity.tone.opacity(0.08)))
+            VStack(alignment: .leading, spacing: Spacing.spacing4) {
+                Text(note.subject)
+                    .v2Text(V2Font.h5)
+                    .foregroundColor(HFColor.textPrimary)
+                // The message is never cut short (DP-2956 rows say the same of the inbox).
+                Text(note.body)
+                    .v2Text(V2Font.body1)
+                    .foregroundColor(HFColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Spacing.spacing16)
+    }
+
+    /// Follows the finger; past a third of the width (or flicked) it settles on the neighbour. At either
+    /// end it resists instead of moving freely, so the rider feels there is nothing more that way.
+    private func swipe(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { v in
+                guard abs(v.translation.width) > abs(v.translation.height) else { return }
+                let pastEnd = (page == 0 && v.translation.width > 0)
+                    || (page == notes.count - 1 && v.translation.width < 0)
+                drag = pastEnd ? v.translation.width / 3 : v.translation.width
+            }
+            .onEnded { v in
+                let travel = v.predictedEndTranslation.width
+                var next = page
+                if travel < -width / 3 { next = min(page + 1, notes.count - 1) }
+                if travel > width / 3 { next = max(page - 1, 0) }
+                withAnimation(V2Motion.surface) { page = next; drag = 0 }
+            }
+    }
+
+    /// MUI <MobileStepper variant="dots">: 8 dots, 4 apart; the current one primary, the rest
+    /// action.disabled. Not tappable — swiping moves between pages.
+    private var dots: some View {
+        HStack(spacing: Spacing.spacing4) {
+            ForEach(Array(notes.enumerated()), id: \.element.id) { i, _ in
+                Circle()
+                    .fill(i == page ? HFColor.primary : Color.black.opacity(0.26))
+                    .frame(width: 8, height: 8)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .animation(V2Motion.standard, value: page)
+    }
+
+    // MARK: Actions — the page showing's
+
+    private var actionBlock: some View {
+        ZStack(alignment: .top) {
+            // Same trick as the pages: the block is as tall as the tallest set, so "Got it" alone
+            // doesn't shrink the card when it is one of several.
+            ForEach(notes) { actions($0).hidden() }
+            if let n = current {
+                actions(n)
+                    .id(n.id)
+                    .transition(V2Motion.dissolve)
+            }
+        }
+        .animation(V2Motion.standard, value: current?.id)
+        .padding(Spacing.spacing16)
+        .background(
+            Rectangle()
+                .fill(HFColor.surface)
+                .shadow(color: Color(.sRGB, red: 17/255, green: 19/255, blue: 24/255, opacity: 0.16),
+                        radius: 2, x: 0, y: 0)
+        )
+        .allowsHitTesting(armed)
+    }
+
+    private func actions(_ n: V2Notification) -> some View {
+        VStack(spacing: Spacing.spacing8) {
+            V2Button(label: n.target.openLabel, action: { n.target == .none ? onDismiss(n) : onOpen(n) })
+            if n.target != .none {
+                V2Button(label: "Dismiss", role: .text, action: { onDismiss(n) })
+            }
         }
     }
 }
@@ -570,7 +676,7 @@ extension UIWindow {
 
 /// The kinds of push the panel can fire — written against the seeded trip so targets are real.
 enum V2PushSample: String, CaseIterable, Identifiable {
-    case critical, high, medium, low, gone, pair, connection, criticalInfo, mediumInfo, tray
+    case critical, high, medium, low, gone, pair, trio, connection, criticalInfo, mediumInfo, tray
     var id: String { rawValue }
 
     var title: String {
@@ -581,6 +687,7 @@ enum V2PushSample: String, CaseIterable, Identifiable {
         case .low:      return "Low · hub message"
         case .gone:     return "High · trip reassigned (target gone)"
         case .pair:     return "Two important at once"
+        case .trio:     return "Three important at once (one with nothing to open)"
         case .connection: return "Lose / restore the connection"
         case .criticalInfo: return "Critical · nothing to open"
         case .mediumInfo:   return "Medium · nothing to open"
@@ -598,7 +705,7 @@ struct V2PushPanel: View {
     /// Every demo state worth visiting for DP-2959 / DP-2956, grouped. "" = the full app from splash.
     static let states: [(group: String, items: [(key: String, title: String)])] = [
         ("App", [("", "Full app from splash"), ("home", "Home"), ("clockedin", "Home, clocked in")]),
-        ("Inbox", [("inbox", "All"), ("inbox-unread", "Unread tab"), ("inbox-read", "Read tab"),
+        ("Inbox", [("inbox", "All"), ("inbox-unread", "Unread tab"),
                    ("inbox-caughtup", "Unread tab, nothing unread"), ("inbox-filter", "Filter sheet"),
                    ("inbox-nomatch", "Filter applied, no match"), ("inbox-select", "Selecting, some unread"),
                    ("inbox-select-read", "Selecting, all read"), ("inbox-swipe-read", "Swipe on unread"),
@@ -606,7 +713,7 @@ struct V2PushPanel: View {
                    ("inbox-offline", "No connection"), ("inbox-empty", "Empty"),
                    ("inbox-filter-type", "Filter sheet, Type"), ("inbox-collapsed", "Day section collapsed"),
                    ("inbox-paging", "Loading more")]),
-        ("Acting on one", [("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
+        ("Acting on one", [("notif-pair", "Two important at once → swipe"), ("notif-trio", "Three at once, paging through"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
                            ("notif-gone", "Row whose trip is gone → toast"), ("notif-tray", "Opened from the phone's tray")]),
         ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
     ]

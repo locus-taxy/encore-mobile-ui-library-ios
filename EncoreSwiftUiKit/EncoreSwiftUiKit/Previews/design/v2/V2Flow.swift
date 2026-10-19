@@ -345,8 +345,12 @@ public struct V2Flow: View {
         case .pair:
             fire(.critical)
             fire(.high)
+        case .trio:
+            fire(.critical)
+            fire(.high)
+            fire(.criticalInfo)
         case .connection:
-            withAnimation(V2Motion.standard) { notes.offline.toggle() }
+            withAnimation(V2Motion.reflow) { notes.offline.toggle() }
         case .criticalInfo:
             notes.receive(.critical, .alert,
                           subject: "Vehicle check overdue",
@@ -866,9 +870,17 @@ public struct V2Flow: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
                 if let n = notes.closeTakeover() { openNotification(n) }
             }
+        case "notif-pair":     // two important at once → one dialog, swipe between them
+            router.setPage(.home)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.pair) }
+        case "notif-trio":     // three at once, paged through on its own (as a swipe would), then the last answered
+            router.setPage(.home)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.trio) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { withAnimation(V2Motion.surface) { notes.takeoverPage = 1 } }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.6) { withAnimation(V2Motion.surface) { notes.takeoverPage = 2 } }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.8) { notes.closeTakeover() }
         case "notif-tray":     router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { fire(.tray) }
-        case "inbox-read":     inboxFilter.status = .read; router.setPage(.inbox)
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)
         case "inbox-swipe-read":   inboxDemoSwipe = 101; router.setPage(.inbox)   // unread → green ✓
         case "inbox-swipe-unread": inboxDemoSwipe = 103; router.setPage(.inbox)   // read → red ⊖

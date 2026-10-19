@@ -116,10 +116,11 @@ enum V2Ago {
 
 // MARK: Filter
 
-/// The brief's three filters. Status (unread, read) is the tab row, as the scan list's To do / Done;
+/// The brief's three filters. Status is the tab row — All / Unread, as an inbox does (a Read tab was
+/// dropped 2026-10-19: nobody goes looking for what they've already read);
 /// type and severity are the filter sheet.
 struct V2InboxFilter: Equatable {
-    enum Status: String, CaseIterable { case all, unread, read }
+    enum Status: String, CaseIterable { case all, unread }
     var status: Status = .all
     var kind: Set<V2NotificationKind> = []
     var severity: Set<V2Severity> = []
@@ -137,7 +138,6 @@ struct V2InboxFilter: Equatable {
         switch status {
         case .all:    return true
         case .unread: return !n.read
-        case .read:   return n.read
         }
     }
 }
@@ -300,8 +300,6 @@ struct V2InboxPage: View {
                 HFSeam()
                 if matching.isEmpty && filter.isEmpty && filter.status == .unread {
                     state(title: "You're all caught up", body: "New notifications will show here")
-                } else if matching.isEmpty && filter.isEmpty && filter.status == .read {
-                    state(title: "Nothing read yet", body: "Notifications you've read will show here")
                 } else if matching.isEmpty {
                     state(title: "No results found", body: "Try adjusting or clearing your filters",
                           action: filter.isEmpty ? nil : ("Reset all", onResetFilter))
@@ -353,8 +351,7 @@ struct V2InboxPage: View {
     /// The scan list's counted tabs for status. No separate mark-all: Select all → Mark read does it.
     private var tabs: some View {
         V2Tabs(tabs: [V2Tab(id: "all", label: "All", count: faceted.count),
-                      V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count),
-                      V2Tab(id: "read", label: "Read", count: faceted.filter(\.read).count)],
+                      V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count)],
                selection: Binding(get: { filter.status.rawValue },
                                   set: { id in withAnimation(V2Motion.standard) {
                                       onStatus(V2InboxFilter.Status(rawValue: id) ?? .all)
@@ -426,7 +423,7 @@ struct V2InboxPage: View {
                         V2ListSectionHeader(title: g.title.uppercased(),
                                             count: matching.filter { V2Ago.group($0.createdAt, now: now) == g }.count,
                                             expanded: !collapsed.contains(g)) {
-                            withAnimation(V2Motion.standard) { collapsed.formSymmetricDifference([g]) }
+                            withAnimation(V2Motion.reflow) { collapsed.formSymmetricDifference([g]) }
                         }
                         if !collapsed.contains(g) {
                             ForEach(rows) { row($0) }

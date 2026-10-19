@@ -130,6 +130,11 @@ enum V2Motion {
     static let standard: Animation = .easeInOut(duration: 0.22)
     /// Sheets and covers travel further, so they get slightly longer.
     static let surface: Animation = .easeInOut(duration: 0.28)
+    /// Reflow — something inside the page grows or shrinks (the medium banner, the network strip, a
+    /// day section, a row leaving the Unread tab) and everything below follows it. The whole page
+    /// moves, so it gets the longest, softest curve (Material's standard easing): it should glide in
+    /// and settle, never jump. Same curve both ways.
+    static let reflow: Animation = .timingCurve(0.4, 0, 0.2, 1, duration: 0.4)
 
     /// Law 1 & 3 — content cross-fades in place.
     static let dissolve: AnyTransition = .opacity
