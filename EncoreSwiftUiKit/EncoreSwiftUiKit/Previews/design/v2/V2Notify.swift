@@ -466,7 +466,7 @@ struct V2NotificationTakeover: View {
                 } else if let note = notes.first {
                     actions(primary: note.target.openLabel,
                             primaryAction: note.target == .none ? onDismiss : onOpen,
-                            secondary: note.target == .none ? nil : "Dismiss", secondaryAction: onDismiss)
+                            secondary: note.target == .none ? nil : "Mark as read", secondaryAction: onDismiss)
                 }
             }
             .id(isSummary)
