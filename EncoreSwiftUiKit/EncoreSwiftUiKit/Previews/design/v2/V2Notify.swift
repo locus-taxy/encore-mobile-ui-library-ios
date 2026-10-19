@@ -10,7 +10,8 @@ import UIKit
 // it; anything missing or unrecognised is LOW (AC-5), so a guess never outranks a chosen severity.
 //
 //   CRITICAL, HIGH → takeover: centred dialog over a scrim (Figma's blocking-dialog pattern) until
-//                    dismissed or tapped through. Two or more share one dialog as swipeable pages.
+//                    dismissed or tapped through. Two or more at once become one summary dialog that
+//                    sends the rider to the inbox.
 //   MEDIUM         → top banner (Figma's dismissible banner, info): slides down, goes on its own,
 //                    tappable.
 //   LOW            → nothing in the app; it waits in the inbox (DP-2956).
@@ -134,11 +135,10 @@ struct V2Notification: Identifiable, Equatable {
 /// Holds the inbox entries and decides what is on screen. Surfaces only render what it says.
 final class V2NotificationCenter: ObservableObject {
     @Published private(set) var entries: [V2Notification] = []
-    /// The critical / high ones on screen, oldest first — the takeover's pages — and the page showing.
-    /// A new one joins as the last page; it never pulls the rider off the page they are reading.
+    /// The critical / high ones waiting to be answered, oldest first. One → its own dialog; two or
+    /// more → the summary. A new one joins the summary (its count goes up), never a second dialog.
     @Published private(set) var takeovers: [Int] = []
-    @Published var takeoverPage = 0
-    var takeover: Int? { takeovers.indices.contains(takeoverPage) ? takeovers[takeoverPage] : takeovers.last }
+    var takeover: Int? { takeovers.count == 1 ? takeovers.first : nil }
     /// The medium banner on screen.
     @Published private(set) var banner: Int? = nil
     /// The inbox is online-only (Story 5.4.5 AC-8). Prototype toggle from the push panel.
@@ -213,22 +213,22 @@ final class V2NotificationCenter: ObservableObject {
 
     // MARK: Takeover
 
-    /// Dismiss or tap through one page (the one showing unless named): the entry turns read (Story
-    /// 5.4.3 AC-7) and its page leaves — the next slides in from the right, or the previous from the
-    /// left if it was the last. The dialog closes with the last page.
+    /// A single one, dismissed or tapped through: the entry turns read (Story 5.4.3 AC-7).
     @discardableResult
-    func closeTakeover(_ id: Int? = nil) -> V2Notification? {
-        guard let id = id ?? takeover, let index = takeovers.firstIndex(of: id) else { return nil }
+    func closeTakeover() -> V2Notification? {
+        guard let id = takeover else { return nil }
         markRead([id])
         let closed = entry(id)
-        withAnimation(V2Motion.surface) {
-            takeovers.remove(at: index)
-            if index < takeoverPage || takeoverPage >= takeovers.count {
-                takeoverPage = max(0, takeoverPage - 1)
-            }
-        }
+        withAnimation(V2Motion.surface) { takeovers = [] }
         releaseHeldBanner()
         return closed
+    }
+
+    /// The summary, answered ("View all" or "Later"). Nothing turns read — the rider hasn't read them;
+    /// they stay unread in the inbox and in the bell's count.
+    func closeSummary() {
+        withAnimation(V2Motion.surface) { takeovers = [] }
+        releaseHeldBanner()
     }
 
     /// Camera opened / closed. A banner already up when the camera opens goes back to waiting.
@@ -305,6 +305,8 @@ final class V2NotificationCenter: ObservableObject {
 struct V2NotificationLayer: View {
     @ObservedObject var center: V2NotificationCenter
     var onOpen: (V2Notification) -> Void
+    /// The summary's "View all": the inbox, on its Unread tab.
+    var onViewAll: () -> Void = {}
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -317,11 +319,12 @@ struct V2NotificationLayer: View {
                         // The scrim swallows taps: an important one is answered, not tapped away.
                         .onTapGesture {}
                     V2NotificationTakeover(notes: center.takeovers.compactMap { center.entry($0) },
-                                           page: $center.takeoverPage,
-                                           onOpen: { n in
-                                               if let n = center.closeTakeover(n.id), n.target != .none { onOpen(n) }
+                                           onOpen: {
+                                               if let n = center.closeTakeover(), n.target != .none { onOpen(n) }
                                            },
-                                           onDismiss: { n in center.closeTakeover(n.id) })
+                                           onDismiss: { center.closeTakeover() },
+                                           onViewAll: { center.closeSummary(); onViewAll() },
+                                           onLater: { center.closeSummary() })
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .padding(.horizontal, Spacing.spacing16)
                 }
@@ -419,121 +422,96 @@ private struct V2BannerSlotBody: View {
 /// own white block with an E1 shadow as the separator (no rule); primary on top, grey text below.
 /// Tone lives in the icon chip only — no eyebrow, never in the buttons.
 ///
-/// Two or more: one dialog, one page per alert, swiped sideways (Push, the motion for sibling pages),
-/// with MUI <MobileStepper> dots at the foot of the card, under Dismiss. The card is as tall as its TALLEST page, so it never
-/// resizes under the rider's thumb mid-swipe; a shorter page leaves space above the actions. The actions
-/// belong to the page showing and dissolve as it changes. Answering a page removes it; the next slides in.
+/// Two or more at once: the same dialog as a summary — "3 alerts need your attention", "View all"
+/// (the inbox, Unread tab) over "Later". The chip takes the most severe one's tone. A single dialog that
+/// a second one joins dissolves into the summary in place (decided 2026-10-19, after a swipeable
+/// carousel and a pager both read badly with alerts of different lengths).
 struct V2NotificationTakeover: View {
     let notes: [V2Notification]
-    @Binding var page: Int
-    var onOpen: (V2Notification) -> Void
-    var onDismiss: (V2Notification) -> Void
+    var onOpen: () -> Void
+    var onDismiss: () -> Void
+    var onViewAll: () -> Void
+    var onLater: () -> Void
 
-    /// Taps are ignored for a moment after it appears. A notification can land mid-swipe or mid-scan;
-    /// without this the driver's finger, already moving, answers it by accident.
+    /// Taps are ignored for a moment after it appears — and again when it turns into the summary, since
+    /// its buttons change under a finger that may be on its way to them. A notification can land
+    /// mid-swipe or mid-scan; without this the driver's finger, already moving, answers it by accident.
     @State private var armed = false
     static let armDelay: TimeInterval = 0.6
-    @State private var drag: CGFloat = 0
 
-    /// Under study (2026-10-19), when the pages differ in length:
-    ///   • tallest — the card takes the longest page's height and never resizes; short pages leave a gap.
-    ///   • fit     — the card takes the page showing's height, centred; both edges move as a page settles,
-    ///               so the buttons move under the thumb.
-    ///   • pinned  — fit, but the card's bottom stays where the tallest card's would be: only the top edge
-    ///               moves; the buttons and dots never do (a lone "Got it" keeps the primary's place).
-    /// Prototype switch: SIMCTL_CHILD_POC_TAKEOVER=fit|pinned, or the shake panel.
-    enum Sizing: String, CaseIterable { case tallest, fit, pinned }
-    static var sizing = Sizing(rawValue: ProcessInfo.processInfo.environment["POC_TAKEOVER"] ?? "") ?? .tallest
-
-    private var current: V2Notification? { notes.indices.contains(page) ? notes[page] : notes.last }
-    private var showing: [V2Notification] { current.map { [$0] } ?? [] }
-
-    var body: some View {
-        Group {
-            switch Self.sizing {
-            case .tallest: card(sizedBy: notes)
-            case .fit:     card(sizedBy: showing)
-            case .pinned:
-                // An invisible tallest card holds the place; the real one hugs its page, bottom-aligned.
-                ZStack(alignment: .bottom) {
-                    card(sizedBy: notes).hidden()
-                    // The button block stays the tallest set's, so the primary never moves either.
-                    card(sizedBy: showing, actionsSizedBy: notes)
-                }
-            }
-        }
-        .frame(maxWidth: 328)
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isModal)
-        .onAppear {
-            armed = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + Self.armDelay) { armed = true }
-        }
+    private var isSummary: Bool { notes.count > 1 }
+    private var severity: V2Severity {
+        notes.contains { $0.severity == .critical } ? .critical : (notes.first?.severity ?? .high)
     }
 
-    private func card(sizedBy sizers: [V2Notification], actionsSizedBy actionSizers: [V2Notification]? = nil) -> some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            pager(sizers)
-            actionBlock(actionSizers ?? sizers)
+            Group {
+                if isSummary {
+                    message(title: "\(notes.count) alerts need your attention",
+                            body: "Read and act on them in your notifications")
+                } else if let note = notes.first {
+                    // The message is never cut short (DP-2956 rows say the same of the inbox).
+                    message(title: note.subject, body: note.body)
+                }
+            }
+            .id(isSummary)
+            .transition(Self.swap)
+
+            Group {
+                if isSummary {
+                    actions(primary: "View all", primaryAction: onViewAll, secondary: "Later", secondaryAction: onLater)
+                } else if let note = notes.first {
+                    actions(primary: note.target.openLabel,
+                            primaryAction: note.target == .none ? onDismiss : onOpen,
+                            secondary: note.target == .none ? nil : "Dismiss", secondaryAction: onDismiss)
+                }
+            }
+            .id(isSummary)
+            .transition(Self.swap)
+            .padding(Spacing.spacing16)
+            .frame(maxWidth: .infinity)
+            .background(
+                Rectangle()
+                    .fill(HFColor.surface)
+                    .shadow(color: Color(.sRGB, red: 17/255, green: 19/255, blue: 24/255, opacity: 0.16),
+                            radius: 2, x: 0, y: 0)
+            )
+            .allowsHitTesting(armed)
         }
         .background(HFColor.surface)
         // r12, not Figma's 8: the container family (sheets, result card, menu) is 12, and a step above
         // the r8 buttons keeps the card reading as the outer shape. Logged in figma-discrepancies.md.
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: 328)
+        .animation(V2Motion.standard, value: isSummary)
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isModal)
+        .onAppear(perform: arm)
+        .onChange(of: isSummary) { _ in arm() }
     }
 
-    // MARK: Pages
+    /// Single → summary: the old words leave before the new arrive, so the two never print over each other.
+    static let swap: AnyTransition = .asymmetric(
+        insertion: .opacity.animation(.easeInOut(duration: 0.16).delay(0.1)),
+        removal: .opacity.animation(.easeOut(duration: 0.1)))
 
-    private func pager(_ sizers: [V2Notification]) -> some View {
-        VStack(spacing: 0) {
-            // Every page laid out but invisible: they size the card to the tallest one.
-            ZStack(alignment: .topLeading) {
-                ForEach(sizers) { message($0).hidden() }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(
-                GeometryReader { geo in
-                    HStack(alignment: .top, spacing: 0) {
-                        ForEach(notes) { n in
-                            message(n).frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
-                                // An answered page goes at once; its neighbour slides into the gap.
-                                // Fading it out instead cross-printed the two pages' text.
-                                .transition(.identity)
-                        }
-                    }
-                    .offset(x: -CGFloat(page) * geo.size.width + drag)
-                    .frame(width: geo.size.width, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .gesture(notes.count > 1 ? swipe(width: geo.size.width) : nil)
-                }
-            )
-            .clipped()
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityValue(notes.count > 1 ? "Alert \(page + 1) of \(notes.count)" : "")
-        .accessibilityAdjustableAction { direction in
-            withAnimation(V2Motion.surface) {
-                switch direction {
-                case .increment: page = min(page + 1, notes.count - 1)
-                case .decrement: page = max(page - 1, 0)
-                @unknown default: break
-                }
-            }
-        }
+    private func arm() {
+        armed = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.armDelay) { armed = true }
     }
 
-    private func message(_ note: V2Notification) -> some View {
+    private func message(title: String, body: String) -> some View {
         VStack(alignment: .leading, spacing: Spacing.spacing16) {
-            EncoreIcon(iconName: note.severity.icon, size: 20)
-                .foregroundColor(note.severity.tone)
+            EncoreIcon(iconName: severity.icon, size: 20)
+                .foregroundColor(severity.tone)
                 .frame(width: 52, height: 36)
-                .background(Capsule().fill(note.severity.tone.opacity(0.08)))
+                .background(Capsule().fill(severity.tone.opacity(0.08)))
             VStack(alignment: .leading, spacing: Spacing.spacing4) {
-                Text(note.subject)
+                Text(title)
                     .v2Text(V2Font.h5)
                     .foregroundColor(HFColor.textPrimary)
-                // The message is never cut short (DP-2956 rows say the same of the inbox).
-                Text(note.body)
+                Text(body)
                     .v2Text(V2Font.body1)
                     .foregroundColor(HFColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -543,73 +521,12 @@ struct V2NotificationTakeover: View {
         .padding(Spacing.spacing16)
     }
 
-    /// Follows the finger; past a third of the width (or flicked) it settles on the neighbour. At either
-    /// end it resists instead of moving freely, so the rider feels there is nothing more that way.
-    private func swipe(width: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 10)
-            .onChanged { v in
-                guard abs(v.translation.width) > abs(v.translation.height) else { return }
-                let pastEnd = (page == 0 && v.translation.width > 0)
-                    || (page == notes.count - 1 && v.translation.width < 0)
-                drag = pastEnd ? v.translation.width / 3 : v.translation.width
-            }
-            .onEnded { v in
-                let travel = v.predictedEndTranslation.width
-                var next = page
-                if travel < -width / 3 { next = min(page + 1, notes.count - 1) }
-                if travel > width / 3 { next = max(page - 1, 0) }
-                withAnimation(V2Motion.surface) { page = next; drag = 0 }
-            }
-    }
-
-    /// MUI <MobileStepper variant="dots">: 8 dots, 4 apart; the current one primary, the rest
-    /// action.disabled. Not tappable — swiping moves between pages.
-    private var dots: some View {
-        HStack(spacing: Spacing.spacing4) {
-            ForEach(Array(notes.enumerated()), id: \.element.id) { i, _ in
-                Circle()
-                    .fill(i == page ? HFColor.primary : Color.black.opacity(0.26))
-                    .frame(width: 8, height: 8)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .animation(V2Motion.standard, value: page)
-    }
-
-    // MARK: Actions — the page showing's
-
-    private func actionBlock(_ sizers: [V2Notification]) -> some View {
-        VStack(spacing: Spacing.spacing12) {
-            ZStack(alignment: .top) {
-                // Same trick as the pages: the block is as tall as the tallest set, so "Got it" alone
-                // doesn't shrink the card (or move the dots) when it is one of several.
-                ForEach(sizers) { actions($0).hidden() }
-                if let n = current {
-                    actions(n)
-                        .id(n.id)
-                        .transition(V2Motion.dissolve)
-                }
-            }
-            .animation(V2Motion.standard, value: current?.id)
-            if notes.count > 1 {
-                dots.transition(.opacity)
-            }
-        }
-        .padding(Spacing.spacing16)
-        .background(
-            Rectangle()
-                .fill(HFColor.surface)
-                .shadow(color: Color(.sRGB, red: 17/255, green: 19/255, blue: 24/255, opacity: 0.16),
-                        radius: 2, x: 0, y: 0)
-        )
-        .allowsHitTesting(armed)
-    }
-
-    private func actions(_ n: V2Notification) -> some View {
+    private func actions(primary: String, primaryAction: @escaping () -> Void,
+                         secondary: String?, secondaryAction: @escaping () -> Void) -> some View {
         VStack(spacing: Spacing.spacing8) {
-            V2Button(label: n.target.openLabel, action: { n.target == .none ? onDismiss(n) : onOpen(n) })
-            if n.target != .none {
-                V2Button(label: "Dismiss", role: .text, action: { onDismiss(n) })
+            V2Button(label: primary, action: primaryAction)
+            if let secondary {
+                V2Button(label: secondary, role: .text, action: secondaryAction)
             }
         }
     }
@@ -703,7 +620,7 @@ extension UIWindow {
 
 /// The kinds of push the panel can fire — written against the seeded trip so targets are real.
 enum V2PushSample: String, CaseIterable, Identifiable {
-    case critical, high, medium, low, gone, pair, trio, mixed, connection, criticalInfo, mediumInfo, tray
+    case critical, high, medium, low, gone, pair, trio, connection, criticalInfo, mediumInfo, tray
     var id: String { rawValue }
 
     var title: String {
@@ -715,7 +632,6 @@ enum V2PushSample: String, CaseIterable, Identifiable {
         case .gone:     return "High · trip reassigned (target gone)"
         case .pair:     return "Two important at once"
         case .trio:     return "Three important at once (one with nothing to open)"
-        case .mixed:    return "Three at once, very different lengths"
         case .connection: return "Lose / restore the connection"
         case .criticalInfo: return "Critical · nothing to open"
         case .mediumInfo:   return "Medium · nothing to open"
@@ -741,9 +657,7 @@ struct V2PushPanel: View {
                    ("inbox-offline", "No connection"), ("inbox-empty", "Empty"),
                    ("inbox-filter-type", "Filter sheet, Type"), ("inbox-collapsed", "Day section collapsed"),
                    ("inbox-paging", "Loading more")]),
-        ("Acting on one", [("notif-pair", "Two important at once → swipe"), ("notif-trio", "Three at once, paging through"), ("notif-mixed", "Three at once, different lengths"),
-                           ("size:tallest", "  ↳ dialog height: tallest (fixed)"), ("size:fit", "  ↳ dialog height: fits each alert"),
-                           ("size:pinned", "  ↳ dialog height: fits, bottom pinned"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
+        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → View all"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
                            ("notif-gone", "Row whose trip is gone → toast"), ("notif-tray", "Opened from the phone's tray")]),
         ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
     ]

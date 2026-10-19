@@ -254,14 +254,7 @@ public struct V2Flow: View {
                             },
                             onJump: { key in
                                 showsPushPanel = false
-                                // "size:<option>" switches the takeover's height rule, then replays the mixed lengths.
-                                if key.hasPrefix("size:"),
-                                   let sizing = V2NotificationTakeover.Sizing(rawValue: String(key.dropFirst(5))) {
-                                    V2NotificationTakeover.sizing = sizing
-                                    jump?("notif-mixed")
-                                } else {
-                                    jump?(key)
-                                }
+                                jump?(key)
                             },
                             onClose: { V2Motion.txSurface { showsPushPanel = false } })
             }
@@ -280,7 +273,8 @@ public struct V2Flow: View {
         }
         // Top of the stack: an important notification shows over any sheet, cover or the scanner.
         .overlay {
-            V2NotificationLayer(center: notes, onOpen: { openNotification($0) })
+            V2NotificationLayer(center: notes, onOpen: { openNotification($0) },
+                                onViewAll: { inboxFilter.status = .unread; openInbox() })
         }
     }
 
@@ -352,17 +346,6 @@ public struct V2Flow: View {
         case .pair:
             fire(.critical)
             fire(.high)
-        case .mixed:
-            // Short, then long, then medium — so the card's height has to cope with all three.
-            notes.receive(.critical, .alert, subject: "Stop 5 skipped",
-                          body: "Don't go to stop 5.", target: .stop(5))
-            notes.receive(.high, .notification,
-                          subject: "Delivery windows changed at stops 4, 6 and 7",
-                          body: "Costa Coffee now accepts deliveries until 12:30 PM, Brigade Mall from 01:00 PM and "
-                              + "Phoenix Market City only after 01:30 PM. Your route order is unchanged, but check the "
-                              + "new windows before you leave stop 3.",
-                          target: .trip)
-            fire(.criticalInfo)
         case .trio:
             fire(.critical)
             fire(.high)
@@ -891,17 +874,16 @@ public struct V2Flow: View {
         case "notif-pair":     // two important at once → one dialog, swipe between them
             router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.pair) }
-        case "notif-trio":     // three at once, paged through on its own (as a swipe would), then the last answered
+        case "notif-trio":     // one critical up; while it shows, two more land and it becomes the summary
             router.setPage(.home)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.trio) }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { withAnimation(V2Motion.surface) { notes.takeoverPage = 1 } }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.6) { withAnimation(V2Motion.surface) { notes.takeoverPage = 2 } }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4.8) { notes.closeTakeover() }
-        case "notif-mixed":    // three of very different lengths, paged through on its own
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.critical) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { fire(.high); fire(.criticalInfo) }
+        case "notif-viewall":  // summary → "View all": the inbox on Unread, nothing marked read
             router.setPage(.home)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.mixed) }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { withAnimation(V2Motion.surface) { notes.takeoverPage = 1 } }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) { withAnimation(V2Motion.surface) { notes.takeoverPage = 2 } }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.pair) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+                notes.closeSummary(); inboxFilter.status = .unread; openInbox()
+            }
         case "notif-tray":     router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { fire(.tray) }
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)
