@@ -423,7 +423,7 @@ private struct V2BannerSlotBody: View {
 /// Tone lives in the icon chip only — no eyebrow, never in the buttons.
 ///
 /// Two or more at once: the same dialog as a summary — "3 urgent notifications", "Open notifications"
-/// (the inbox, Unread tab) over "Not now". The chip takes the most severe one's tone. A single dialog that
+/// (the inbox, Unread tab) over "Dismiss" (leaves them unread). The chip takes the most severe one's tone. A single dialog that
 /// a second one joins dissolves into the summary in place (decided 2026-10-19, after a swipeable
 /// carousel and a pager both read badly with alerts of different lengths).
 struct V2NotificationTakeover: View {
@@ -462,7 +462,7 @@ struct V2NotificationTakeover: View {
 
             Group {
                 if isSummary {
-                    actions(primary: "Open notifications", primaryAction: onViewAll, secondary: "Not now", secondaryAction: onLater)
+                    actions(primary: "Open notifications", primaryAction: onViewAll, secondary: "Dismiss", secondaryAction: onLater)
                 } else if let note = notes.first {
                     actions(primary: note.target.openLabel,
                             primaryAction: note.target == .none ? onDismiss : onOpen,
