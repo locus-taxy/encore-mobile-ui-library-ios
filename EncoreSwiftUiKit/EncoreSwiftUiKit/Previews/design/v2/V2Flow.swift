@@ -852,6 +852,11 @@ public struct V2Flow: View {
         case "workspace": session = .workspace
         // DP-2956 inbox states.
         case "inbox":          router.setPage(.inbox)
+        case "badge-many":     // 120 unread → the bell reads 99+
+            for i in 0..<120 {
+                notes.receive(.low, .notification, subject: "Message from your hub", body: "Update \(i + 1)", surface: false)
+            }
+            router.setPage(.home)
         case "inbox-offline":  notes.offline = true; router.setPage(.inbox)
         case "inbox-empty":    notes.clear(); router.setPage(.inbox)
         case "inbox-filter":   router.setPage(.inbox); showsInboxFilter = true

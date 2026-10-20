@@ -704,7 +704,7 @@ struct V2PushPanel: View {
 
     /// Every demo state worth visiting for DP-2959 / DP-2956, grouped. "" = the full app from splash.
     static let states: [(group: String, items: [(key: String, title: String)])] = [
-        ("App", [("", "Full app from splash"), ("home", "Home"), ("clockedin", "Home, clocked in")]),
+        ("App", [("", "Full app from splash"), ("home", "Home"), ("clockedin", "Home, clocked in"), ("badge-many", "Home, 120 unread (99+)")]),
         ("Inbox", [("inbox", "All"), ("inbox-unread", "Unread tab"),
                    ("inbox-caughtup", "Unread tab, nothing unread"), ("inbox-filter", "Filter sheet"),
                    ("inbox-nomatch", "Filter applied, no match"), ("inbox-select", "Selecting, some unread"),

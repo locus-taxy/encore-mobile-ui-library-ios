@@ -350,8 +350,11 @@ struct V2InboxPage: View {
 
     /// The scan list's counted tabs for status. No separate mark-all: Select all → Mark read does it.
     private var tabs: some View {
-        V2Tabs(tabs: [V2Tab(id: "all", label: "All", count: faceted.count),
-                      V2Tab(id: "unread", label: "Unread", count: faceted.filter { !$0.read }.count)],
+        // Only Unread carries a count (what's waiting); All has none — a total only grows and asks
+        // nothing of the rider (decided 2026-10-20). No "(0)" when nothing is unread.
+        let unread = faceted.filter { !$0.read }.count
+        return V2Tabs(tabs: [V2Tab(id: "all", label: "All", count: nil),
+                             V2Tab(id: "unread", label: "Unread", count: unread > 0 ? unread : nil)],
                selection: Binding(get: { filter.status.rawValue },
                                   set: { id in withAnimation(V2Motion.standard) {
                                       onStatus(V2InboxFilter.Status(rawValue: id) ?? .all)
@@ -707,7 +710,10 @@ extension EnvironmentValues {
 struct V2CountBadge: View {
     let count: Int
     var body: some View {
-        Text(count > 9 ? "9+" : "\(count)")
+        // 99+ (decided 2026-10-20): the convention (iOS, Gmail, WhatsApp), and 10 vs 60 waiting are
+        // different signals. The count is unread — things waiting for you — never a total; it drops as
+        // each is opened, dismissed or marked, not when the list is merely opened.
+        Text(count > 99 ? "99+" : "\(count)")
             .font(.custom(V2Font.label2.fontName, size: 10))
             .foregroundColor(HFColor.onPrimary)
             .padding(.horizontal, 3)
@@ -725,8 +731,10 @@ struct V2BellButton: View {
             EncoreIcon(iconName: "LNotificationsOutlined", size: V2Icon.bar)
                 .foregroundColor(V2Token.actionActive)
                 .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
-                .overlay(alignment: .topTrailing) {
-                    if unread > 0 { V2CountBadge(count: unread).offset(x: -6, y: 8) }
+                // Anchored by its LEFT edge (where a one-digit badge's left edge sits), so "12" or
+                // "99+" grows to the right, off the bell, rather than over it.
+                .overlay(alignment: .topLeading) {
+                    if unread > 0 { V2CountBadge(count: unread).offset(x: 22, y: 8) }
                 }
         }
         .buttonStyle(.plain)

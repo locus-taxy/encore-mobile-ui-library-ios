@@ -19,8 +19,9 @@ import SwiftUI
 struct V2Tab: Identifiable, Equatable {
     let id: String
     var label: String
-    var count: Int
-    var title: String { "\(label) (\(count))" }
+    /// nil = no count shown (the inbox's All: a running total means nothing to act on).
+    var count: Int?
+    var title: String { count.map { "\(label) (\($0))" } ?? label }
 }
 
 /// Underline is drawn as an OVERLAY on the label, not as a sibling: a sibling `Rectangle` is
