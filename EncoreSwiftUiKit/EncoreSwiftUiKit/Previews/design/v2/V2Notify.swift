@@ -12,8 +12,8 @@ import UIKit
 //   CRITICAL, HIGH → takeover: centred dialog over a scrim (Figma's blocking-dialog pattern) until
 //                    dismissed or tapped through. Two or more at once become one summary dialog that
 //                    sends the rider to the inbox.
-//   MEDIUM         → top banner (Figma's dismissible banner, info): slides down, goes on its own,
-//                    tappable.
+//   MEDIUM         → top banner (Figma's dismissible banner, info): slides down and stays until the
+//                    rider closes it (✕) or taps through; several become one summary banner.
 //   LOW            → nothing in the app; it waits in the inbox (DP-2956).
 //
 // Placement rule the boards already imply: bottom toast = feedback on what YOU just did; top banner =
@@ -48,11 +48,12 @@ enum V2Severity: String, CaseIterable {
         }
     }
 
-    /// Tone colour — the semantic MUI mains, the same ones the status banners use.
+    /// Tone colour — the semantic MUI mains, the same ones the status banners use. Critical and high
+    /// look the same to the rider (one red): both mean "deal with this now". The platform keeps them
+    /// apart for ordering (decided 2026-10-20; the brief leaves it to design).
     var tone: Color {
         switch self {
-        case .critical: return Color.encore("Error/Main")      // #B50000
-        case .high:     return HFColor.warning                   // #E65301
+        case .critical, .high: return Color.encore("Error/Main")  // #B50000
         case .medium:   return Color.encore("Info/Main")       // #0188CC
         case .low:      return HFColor.textSecondary
         }
@@ -81,9 +82,8 @@ enum V2Severity: String, CaseIterable {
 
     var icon: String {
         switch self {
-        case .critical: return "LError"
-        case .high:     return "LWarning"
-        case .medium, .low: return "LInfo"
+        case .critical, .high: return "LError"
+        case .medium, .low:    return "LInfo"
         }
     }
 }
@@ -139,8 +139,15 @@ final class V2NotificationCenter: ObservableObject {
     /// more → the summary. A new one joins the summary (its count goes up), never a second dialog.
     @Published private(set) var takeovers: [Int] = []
     var takeover: Int? { takeovers.count == 1 ? takeovers.first : nil }
-    /// The medium banner on screen.
-    @Published private(set) var banner: Int? = nil
+    /// The medium banners waiting to be answered, oldest first. One → its own banner; two or more → the
+    /// summary banner. They stay until the rider answers them (✕ or tap) — never on a timer (decided
+    /// 2026-10-20; the brief says "goes on its own after a few seconds").
+    @Published private(set) var banners: [Int] = []
+    var banner: Int? { banners.count == 1 ? banners.first : nil }
+    /// Banners wait out of sight while a takeover is up or the camera is open, then come back.
+    var bannerShowing: Bool { !banners.isEmpty && takeovers.isEmpty && !holdsBanners }
+    /// Notices the rider closed on the page they are about (context notices, below).
+    @Published private(set) var noticeClosed: Set<Int> = []
     /// The inbox is online-only (Story 5.4.5 AC-8). Prototype toggle from the push panel.
     @Published var offline = false {
         didSet {
@@ -161,17 +168,10 @@ final class V2NotificationCenter: ObservableObject {
     /// Either network strip is showing — fixed-height sheets give it room.
     var showsNetworkAlert: Bool { offline || reconnected }
 
-    /// A medium that lands while a takeover is up waits for it to clear rather than sliding in under
-    /// the scrim, where it would expire unseen. Only the newest waits — banners are moment-in-time.
-    private var heldBanner: Int? = nil
-    private var bannerTimer: DispatchWorkItem? = nil
     /// The camera is open. A scan is a workflow: a medium waits for the rider to come back out to the
     /// Scan HUs page and slides in there, rather than landing on the viewfinder.
-    private var holdsBanners = false
+    @Published private(set) var holdsBanners = false
     private var nextId = 1
-
-    /// How long a medium banner stays before it goes on its own.
-    static let bannerDwell: TimeInterval = 4
 
     var unread: Int { entries.filter { !$0.read }.count }
     func entry(_ id: Int?) -> V2Notification? { id.flatMap { i in entries.first { $0.id == i } } }
@@ -203,7 +203,7 @@ final class V2NotificationCenter: ObservableObject {
             case .takeover:
                 takeovers.append(id)
             case .banner:
-                if takeovers.isEmpty && !holdsBanners { showBanner(id) } else { heldBanner = id }
+                banners.append(id)
             case .silent:
                 break
             }
@@ -220,68 +220,48 @@ final class V2NotificationCenter: ObservableObject {
         markRead([id])
         let closed = entry(id)
         withAnimation(V2Motion.surface) { takeovers = [] }
-        releaseHeldBanner()
         return closed
     }
 
-    /// The summary, answered ("View all" or "Later"). Nothing turns read — the rider hasn't read them;
-    /// they stay unread in the inbox and in the bell's count.
-    func closeSummary() {
+    /// The summary, answered. "Dismiss" marks them all read (the brief: dismissing marks read);
+    /// "Open notifications" leaves them unread for the inbox.
+    func closeSummary(read: Bool) {
+        if read { markRead(takeovers) }
         withAnimation(V2Motion.surface) { takeovers = [] }
-        releaseHeldBanner()
     }
 
-    /// Camera opened / closed. A banner already up when the camera opens goes back to waiting.
+    /// Camera opened / closed. Banners already up go out of sight and come back on Scan HUs.
     func holdBanners(_ on: Bool) {
         guard on != holdsBanners else { return }
-        holdsBanners = on
-        if on, let id = banner {
-            bannerTimer?.cancel()
-            heldBanner = id
-            withAnimation(V2Motion.reflow) { banner = nil }
-        } else if !on {
-            releaseHeldBanner()
-        }
-    }
-
-    private func releaseHeldBanner() {
-        guard takeovers.isEmpty, !holdsBanners, let held = heldBanner else { return }
-        heldBanner = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-            withAnimation(V2Motion.reflow) { self?.showBanner(held) }
-        }
+        withAnimation(V2Motion.reflow) { holdsBanners = on }
     }
 
     // MARK: Banner
 
-    private func showBanner(_ id: Int) {
-        bannerTimer?.cancel()
-        banner = id
-        let work = DispatchWorkItem { [weak self] in
-            guard self?.banner == id else { return }
-            withAnimation(V2Motion.reflow) { self?.banner = nil }
-        }
-        bannerTimer = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.bannerDwell, execute: work)
-    }
-
-    /// Tap: opens what it's about, and the entry turns read.
+    /// Tap through one banner: opens what it's about, and the entry turns read.
     @discardableResult
     func tapBanner() -> V2Notification? {
         guard let id = banner else { return nil }
         markRead([id])
-        bannerTimer?.cancel()
-        withAnimation(V2Motion.reflow) { banner = nil }
+        withAnimation(V2Motion.reflow) { banners = [] }
         return entry(id)
     }
 
-    /// ✕ or flicked away. The brief only reads the entry on tap-through or dismiss of an important
-    /// one; a banner that leaves on its own stays unread in the inbox. An explicit ✕ is a dismiss.
+    /// The summary banner's "Open notifications": off to the inbox, where they stay unread.
+    func openBanners() {
+        withAnimation(V2Motion.reflow) { banners = [] }
+    }
+
+    /// ✕ or flicked away: a dismiss, so every entry it stood for turns read (the brief).
     func dismissBanner() {
-        guard let id = banner else { return }
-        markRead([id])
-        bannerTimer?.cancel()
-        withAnimation(V2Motion.reflow) { banner = nil }
+        markRead(banners)
+        withAnimation(V2Motion.reflow) { banners = [] }
+    }
+
+    // MARK: Context notices
+
+    func closeNotice(_ id: Int) {
+        withAnimation(V2Motion.reflow) { _ = noticeClosed.insert(id) }
     }
 
     // MARK: Read state
@@ -323,8 +303,8 @@ struct V2NotificationLayer: View {
                                                if let n = center.closeTakeover(), n.target != .none { onOpen(n) }
                                            },
                                            onDismiss: { center.closeTakeover() },
-                                           onViewAll: { center.closeSummary(); onViewAll() },
-                                           onLater: { center.closeSummary() })
+                                           onViewAll: { center.closeSummary(read: false); onViewAll() },
+                                           onLater: { center.closeSummary(read: true) })
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                         .padding(.horizontal, Spacing.spacing16)
                 }
@@ -378,6 +358,8 @@ struct V2NetworkAlert: View {
 struct V2BannerContext {
     let center: V2NotificationCenter
     var onOpen: (V2Notification) -> Void
+    /// The inbox, on its Unread tab (summary banner, a notice's "+n more").
+    var onViewAll: () -> Void = {}
 }
 
 private struct V2BannerContextKey: EnvironmentKey { static let defaultValue: V2BannerContext? = nil }
@@ -394,26 +376,42 @@ extension EnvironmentValues {
 struct V2BannerSlot: View {
     @Environment(\.v2Banner) private var context
     var body: some View {
-        if let context { V2BannerSlotBody(center: context.center, onOpen: context.onOpen) }
+        if let context { V2BannerSlotBody(center: context.center, onOpen: context.onOpen, onViewAll: context.onViewAll) }
     }
 }
 
 private struct V2BannerSlotBody: View {
     @ObservedObject var center: V2NotificationCenter
     var onOpen: (V2Notification) -> Void
+    var onViewAll: () -> Void
     var body: some View {
         VStack(spacing: 0) {
-            if let n = center.entry(center.banner) {
-                V2NotificationBanner(note: n,
-                                     onTap: { if let n = center.tapBanner() { onOpen(n) } },
-                                     onDismiss: { center.dismissBanner() })
+            if center.bannerShowing {
+                Group {
+                    if center.banners.count > 1 {
+                        V2NotificationBanner(icon: V2Severity.medium.icon, tone: V2Severity.medium.tone,
+                                             title: "\(center.banners.count) new notifications",
+                                             message: "Open to see what needs your attention",
+                                             link: "Open notifications",
+                                             onLink: { center.openBanners(); onViewAll() },
+                                             onDismiss: { center.dismissBanner() })
+                    } else if let n = center.entry(center.banner) {
+                        V2NotificationBanner(icon: n.severity.icon, tone: n.severity.tone,
+                                             title: n.subject, message: n.body,
+                                             link: n.target == .none ? nil : n.target.openLabel,
+                                             onLink: { if let n = center.tapBanner() { onOpen(n) } },
+                                             onDismiss: { center.dismissBanner() })
+                    }
+                }
+                .id(center.banners.count > 1)
                     // Slides out from under the bar as its slot opens; the page below follows (reflow).
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .frame(maxWidth: .infinity)
         .clipped()
-        .animation(V2Motion.reflow, value: center.banner)
+        .animation(V2Motion.reflow, value: center.bannerShowing)
+        .animation(V2Motion.standard, value: center.banners.count > 1)
     }
 }
 
@@ -423,7 +421,7 @@ private struct V2BannerSlotBody: View {
 /// Tone lives in the icon chip only — no eyebrow, never in the buttons.
 ///
 /// Two or more at once: the same dialog as a summary — "3 urgent notifications", "Open notifications"
-/// (the inbox, Unread tab) over "Dismiss" (leaves them unread). The chip takes the most severe one's tone. A single dialog that
+/// (the inbox, Unread tab) over "Dismiss" (marks them read, as a single one's Dismiss does). The chip takes the most severe one's tone. A single dialog that
 /// a second one joins dissolves into the summary in place (decided 2026-10-19, after a swipeable
 /// carousel and a pager both read badly with alerts of different lengths).
 struct V2NotificationTakeover: View {
@@ -466,7 +464,7 @@ struct V2NotificationTakeover: View {
                 } else if let note = notes.first {
                     actions(primary: note.target.openLabel,
                             primaryAction: note.target == .none ? onDismiss : onOpen,
-                            secondary: note.target == .none ? nil : "Mark as read", secondaryAction: onDismiss)
+                            secondary: note.target == .none ? nil : "Dismiss", secondaryAction: onDismiss)
                 }
             }
             .id(isSummary)
@@ -537,60 +535,64 @@ struct V2NotificationTakeover: View {
 /// Medium — Home's in-page banner (Auth + Home + Profile: "Pre shift end", "Approaching-end reminder"):
 /// full width directly under the app bar, info fill, 20 filled icon centred, white 14/20 text (subject
 /// Medium, message Regular, up to two lines), ✕ in a 48 at the right. The full-bleed strip under the
-/// status bar is the network alert's, not this. Trailing slot follows "Sync pending": an action link
-/// ("View shift") REPLACES the ✕ — the boards never show both.
-/// It overlays rather than pushing content (Figma's push down) because it lands on any screen, mid-task,
-/// and leaves on its own; reflowing the page under the rider's thumb would be worse. Slides down and
-/// back up (annotation: "slides down top-to-bottom … and goes out in the reverse pattern").
+/// status bar is the network alert's, not this.
+///
+/// Stays until answered (decided 2026-10-20), so it ALWAYS has the ✕. When there is somewhere to go, the
+/// `<Alert>` text action ("View stop", "Open notifications") sits on its own line under the message —
+/// Figma's "Sync pending" puts the action IN the ✕'s place; both together is new (figma-discrepancies.md).
+/// Tapping the body does what the action does. Flick up = ✕.
 struct V2NotificationBanner: View {
-    let note: V2Notification
-    var onTap: () -> Void
+    var icon: String
+    var tone: Color
+    var title: String
+    var message: String
+    var link: String?
+    var onLink: () -> Void
     var onDismiss: () -> Void
 
     @State private var drag: CGFloat = 0
 
     var body: some View {
         HStack(alignment: .center, spacing: Spacing.spacing12) {
-            EncoreIcon(iconName: note.severity.icon, size: 20)
+            EncoreIcon(iconName: icon, size: 20)
                 .foregroundColor(HFColor.onPrimary)
             VStack(alignment: .leading, spacing: 0) {
-                Text(note.subject)
+                Text(title)
                     .v2Label(V2Font.label1)
-                Text(note.body)
+                Text(message)
                     .v2Text(V2Font.body1)
                     .opacity(0.9)
                     .lineLimit(2)
+                if let link {
+                    // `<Alert>` action (Session pre-expiry "Continue"): text button, SemiBold 14/24,
+                    // underlined, white.
+                    Button(action: onLink) {
+                        Text(link)
+                            .v2Label(V2Font.buttonMedium)
+                            .underline()
+                            .frame(minHeight: 32, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .foregroundColor(HFColor.onPrimary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            if note.target != .none {
-                // `<Alert>` action (Session pre-expiry "Continue"): a text <Button>, SemiBold 14/24,
-                // underlined, white, ≥ 64 × 48, px12.
-                Button(action: onTap) {
-                    Text(note.target.openLabel)
-                        .v2Label(V2Font.buttonMedium)
-                        .underline()
-                        .foregroundColor(HFColor.onPrimary)
-                        .padding(.horizontal, Spacing.spacing12)
-                        .frame(minWidth: 64, minHeight: V2Metrics.touchTarget)
-                }
-                .buttonStyle(.plain)
-            } else {
-                Button(action: onDismiss) {
-                    EncoreIcon(iconName: "LCross", size: 24)
-                        .foregroundColor(HFColor.onPrimary)
-                        .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
-                }
-                .buttonStyle(.plain)
+            Button(action: onDismiss) {
+                EncoreIcon(iconName: "LCross", size: 24)
+                    .foregroundColor(HFColor.onPrimary)
+                    .frame(width: V2Metrics.touchTarget, height: V2Metrics.touchTarget)
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Dismiss")
         }
         .padding(.leading, Spacing.spacing16)
         .padding(.trailing, Spacing.spacing4)
         .padding(.vertical, Spacing.spacing8)
         .frame(minHeight: V2Metrics.touchTarget)
-        .background(note.severity.tone)
+        .background(tone)
         .contentShape(Rectangle())
-        .onTapGesture(perform: onTap)
+        .onTapGesture { if link != nil { onLink() } }
         .offset(y: min(0, drag))
         .gesture(DragGesture(minimumDistance: 8)
             .onChanged { drag = $0.translation.height }
@@ -598,7 +600,58 @@ struct V2NotificationBanner: View {
                 if v.translation.height < -24 { onDismiss() }
                 withAnimation(V2Motion.standard) { drag = 0 }
             })
-        .accessibilityAddTraits(.isButton)
+    }
+}
+
+// MARK: Context notice — on the page a notification is about
+
+/// Lands the rider on a stop / task / trip / Home and says WHY they might be here: today's notifications
+/// about this page, whether they came through the alert's button or found the page themselves. Figma's
+/// inline card alert (frame 45's instruction banner, family 4): tinted, under the page header, part of
+/// the content. Red for critical / high, blue otherwise. The newest shows; "+n more" goes to the inbox.
+/// ✕ hides it on this page; it doesn't change read state (the brief: only tapping through, dismissing,
+/// a row or a mark action do).
+struct V2NotificationNotice: View {
+    /// Which targets count as this page (a stop page also takes its tasks' notifications).
+    let about: (V2NotificationTarget) -> Bool
+    /// Space around it when it shows — none when there's nothing to say, so the page is unchanged.
+    var insets = EdgeInsets()
+    @Environment(\.v2Banner) private var context
+    var body: some View {
+        if let context {
+            V2NoticeBody(center: context.center, about: about, insets: insets, onViewAll: context.onViewAll)
+        }
+    }
+}
+
+private struct V2NoticeBody: View {
+    @ObservedObject var center: V2NotificationCenter
+    let about: (V2NotificationTarget) -> Bool
+    var insets: EdgeInsets
+    var onViewAll: () -> Void
+
+    private var matches: [V2Notification] {
+        center.entries.filter {
+            // Not while its own banner or dialog is still up — it would say the same thing twice.
+            about($0.target) && !$0.targetGone && !center.noticeClosed.contains($0.id)
+                && !center.banners.contains($0.id) && !center.takeovers.contains($0.id)
+                && Calendar.current.isDateInToday($0.createdAt)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if let n = matches.first {
+                V2InstructionBanner(title: n.subject, text: n.body,
+                                    tone: n.severity.tier == .takeover ? .error : .info,
+                                    link: matches.count > 1 ? ("+\(matches.count - 1) more", onViewAll) : nil,
+                                    onClose: { center.closeNotice(n.id) })
+                    .padding(insets)
+                    .id(n.id)
+                    .transition(V2Motion.dissolve)
+            }
+        }
+        .animation(V2Motion.reflow, value: matches.first?.id)
     }
 }
 
@@ -622,7 +675,7 @@ extension UIWindow {
 
 /// The kinds of push the panel can fire — written against the seeded trip so targets are real.
 enum V2PushSample: String, CaseIterable, Identifiable {
-    case critical, high, medium, low, gone, pair, trio, connection, criticalInfo, mediumInfo, tray
+    case critical, high, medium, low, gone, pair, trio, mediumPair, connection, criticalInfo, mediumInfo, tray
     var id: String { rawValue }
 
     var title: String {
@@ -630,6 +683,7 @@ enum V2PushSample: String, CaseIterable, Identifiable {
         case .critical: return "Critical · task cancelled"
         case .high:     return "High · stop window changed"
         case .medium:   return "Medium · shift ending"
+        case .mediumPair: return "Two medium at once"
         case .low:      return "Low · hub message"
         case .gone:     return "High · trip reassigned (target gone)"
         case .pair:     return "Two important at once"
@@ -659,7 +713,7 @@ struct V2PushPanel: View {
                    ("inbox-offline", "No connection"), ("inbox-empty", "Empty"),
                    ("inbox-filter-type", "Filter sheet, Type"), ("inbox-collapsed", "Day section collapsed"),
                    ("inbox-paging", "Loading more")]),
-        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → Open notifications"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
+        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → Open notifications"), ("notif-banners", "Two medium → summary banner"), ("notif-notice", "Dismissed, then open the stop → notice"), ("notif-viewtask", "Takeover → View task (notice on the task)"), ("notif-open", "Inbox row → its stop"),
                            ("notif-gone", "Row whose trip is gone → toast"), ("notif-tray", "Opened from the phone's tray")]),
         ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
     ]

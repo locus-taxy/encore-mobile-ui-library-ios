@@ -79,7 +79,8 @@ public struct V2Flow: View {
         // The camera holds medium banners; they land on the Scan HUs page once the rider is back out.
         .onChange(of: router.scanner != nil) { notes.holdBanners($0) }
         .environment(\.v2InboxEntry, V2InboxEntry(unread: notes.unread, open: { openInbox() }))
-        .environment(\.v2Banner, V2BannerContext(center: notes, onOpen: { openNotification($0) }))
+        .environment(\.v2Banner, V2BannerContext(center: notes, onOpen: { openNotification($0) },
+                                                  onViewAll: { inboxFilter.status = .unread; openInbox() }))
         .onReceive(NotificationCenter.default.publisher(for: .v2DeviceShaken)) { _ in
             guard session == .signedIn else { return }
             V2Motion.txSurface { showsPushPanel = true }
@@ -346,6 +347,9 @@ public struct V2Flow: View {
         case .pair:
             fire(.critical)
             fire(.high)
+        case .mediumPair:
+            fire(.medium)
+            fire(.mediumInfo)
         case .trio:
             fire(.critical)
             fire(.high)
@@ -882,8 +886,16 @@ public struct V2Flow: View {
             router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.pair) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
-                notes.closeSummary(); inboxFilter.status = .unread; openInbox()
+                notes.closeSummary(read: false); inboxFilter.status = .unread; openInbox()
             }
+        case "notif-banners":  // two mediums → one summary banner under the app bar
+            router.setPage(.home)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.mediumPair) }
+        case "notif-notice":   // critical dismissed unopened; later the rider opens stop 3 → the notice says why
+            router.setPage(.trip)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.critical) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { notes.closeTakeover() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) { V2Motion.txSurface { router.push(.stop(3)) } }
         case "notif-tray":     router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { fire(.tray) }
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)

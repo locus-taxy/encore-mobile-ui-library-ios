@@ -335,6 +335,9 @@ struct V2HomePage: View {
                      trailingInset: Spacing.spacing16, onAvatar: onAvatar)
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.spacing8) {
+                    // DP-2959 context notice — notifications about the shift (Home is the shift's page).
+                    V2NotificationNotice(about: { $0 == .shift },
+                                         insets: EdgeInsets(top: 0, leading: 0, bottom: Spacing.spacing8, trailing: 0))
                     Text("Your shift")
                         .v2Label(V2Font.sheetHeadline)
                         .foregroundColor(HFColor.textPrimary)
