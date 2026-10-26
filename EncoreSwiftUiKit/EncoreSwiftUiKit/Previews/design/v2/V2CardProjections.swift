@@ -151,7 +151,19 @@ extension V2Stop {
             address: V2Address(headline: title, subtext: address, verified: verified),
             subtext: window,
             progress: progressSlot,
+            // The ended stop says why, in the header's existing label–value slot (as the cancelled
+            // task's card does) — the data comes with the stop, not from a notification.
+            reason: statusReasonSlot,
             actions: actions)
+    }
+
+    var statusReasonSlot: V2ReasonSlot? {
+        guard let statusReason else { return nil }
+        switch status {
+        case .skipped: return V2ReasonSlot(label: "Skip Reason", value: statusReason)
+        case .failed:  return V2ReasonSlot(label: "Failure Reason", value: statusReason)
+        default:       return nil
+        }
     }
 
     /// Only surfaces once work has begun — before that the header states the plan, not the tally.
@@ -221,6 +233,9 @@ extension V2Task {
                 V2ChipSlot("status") { V2TaskStatusChip(status: status) }
             ],
             address: V2Address(headline: contactName ?? fallbackTitle, subtext: contactSub ?? ""),
+            // Same label–value pair the task's card on the stop page shows.
+            reason: status == .cancelled && clubbed == nil
+                ? cancellationReason.map { V2ReasonSlot(label: "Cancellation Reason", value: $0) } : nil,
             actions: status.isTerminal ? [] : actions)
     }
 }
