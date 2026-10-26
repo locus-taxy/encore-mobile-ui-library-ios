@@ -130,10 +130,6 @@ struct V2Notification: Identifiable, Equatable {
     var target: V2NotificationTarget = .none
     /// The target no longer exists or is no longer this worker's (reassigned). The entry stays.
     var targetGone: Bool = false
-    /// The notification announces a STATUS change of its target (cancelled, failed, skipped). The
-    /// item's own chip + reason already say so, so no context notice repeats it (decided 2026-10-26).
-    /// The platform would derive this from the event behind the push.
-    var statusChange: Bool = false
 }
 
 /// Holds the inbox entries and decides what is on screen. Surfaces only render what it says.
@@ -150,8 +146,9 @@ final class V2NotificationCenter: ObservableObject {
     var banner: Int? { banners.count == 1 ? banners.first : nil }
     /// Banners wait out of sight while a takeover is up or the camera is open, then come back.
     var bannerShowing: Bool { !banners.isEmpty && takeovers.isEmpty && !holdsBanners }
-    /// Notices the rider closed on the page they are about (context notices, below).
-    @Published private(set) var noticeClosed: Set<Int> = []
+    /// The inbox is on screen: a medium arrives only as its row there — a banner above the list would
+    /// say the same thing twice (decided 2026-10-26). Urgent ones still take over.
+    @Published private(set) var inboxOpen = false
     /// The inbox is online-only (Story 5.4.5 AC-8). Prototype toggle from the push panel.
     @Published var offline = false {
         didSet {
@@ -192,14 +189,13 @@ final class V2NotificationCenter: ObservableObject {
     @discardableResult
     func receive(_ severity: V2Severity, _ kind: V2NotificationKind, subject: String, body: String,
                  target: V2NotificationTarget = .none, targetGone: Bool = false,
-                 statusChange: Bool = false, surface: Bool = true) -> Int {
+                 surface: Bool = true) -> Int {
         let id = nextId
         nextId += 1
         // An open inbox makes room for it rather than cutting it in.
         withAnimation(V2Motion.reflow) {
             entries.insert(V2Notification(id: id, severity: severity, kind: kind, subject: subject, body: body,
-                                          target: target, targetGone: targetGone,
-                                          statusChange: statusChange), at: 0)
+                                          target: target, targetGone: targetGone), at: 0)
         }
         // Arrived while the app was closed: the phone showed it; in the app it is only an entry.
         guard surface else { return id }
@@ -208,7 +204,7 @@ final class V2NotificationCenter: ObservableObject {
             case .takeover:
                 takeovers.append(id)
             case .banner:
-                banners.append(id)
+                if !inboxOpen { banners.append(id) }
             case .silent:
                 break
             }
@@ -263,10 +259,11 @@ final class V2NotificationCenter: ObservableObject {
         withAnimation(V2Motion.reflow) { banners = [] }
     }
 
-    // MARK: Context notices
-
-    func closeNotice(_ id: Int) {
-        withAnimation(V2Motion.reflow) { _ = noticeClosed.insert(id) }
+    /// Inbox opened / closed. Opening it takes any banner down: its row is right there (still unread).
+    func setInboxOpen(_ open: Bool) {
+        guard open != inboxOpen else { return }
+        inboxOpen = open
+        if open, !banners.isEmpty { withAnimation(V2Motion.reflow) { banners = [] } }
     }
 
     // MARK: Read state
@@ -542,7 +539,7 @@ struct V2NotificationTakeover: View {
 /// Medium, message Regular, up to two lines), ✕ in a 48 at the right. The full-bleed strip under the
 /// status bar is the network alert's, not this.
 ///
-/// Stays until answered (decided 2026-10-20), so it ALWAYS has the ✕. When there is somewhere to go, the
+/// Stays until answered (decided 2026-10-20), so it ALWAYS has the ✕. Never on the inbox itself. When there is somewhere to go, the
 /// `<Alert>` text action ("View stop", "Open notifications") sits on its own line under the message —
 /// Figma's "Sync pending" puts the action IN the ✕'s place; both together is new (figma-discrepancies.md).
 /// Tapping the body does what the action does. Flick up = ✕.
@@ -608,61 +605,6 @@ struct V2NotificationBanner: View {
     }
 }
 
-// MARK: Context notice — on the page a notification is about
-
-/// Lands the rider on a stop / task / trip / Home and says WHY they might be here: today's notifications
-/// about THIS page — its own level only (a task's notification sits on the task page; the stop shows
-/// that task's state on its card, not a notice) — whether they came through the alert or found the page.
-/// Only for changes that aren't a status: a cancelled / failed / skipped item says so in its own chip +
-/// reason, so status-change notifications never make a notice (decided 2026-10-26). Figma's
-/// inline card alert (frame 45's instruction banner, family 4): tinted, under the page header, part of
-/// the content. Red for critical / high, blue otherwise. The newest shows; "+n more" goes to the inbox.
-/// ✕ hides it on this page; it doesn't change read state (the brief: only tapping through, dismissing,
-/// a row or a mark action do).
-struct V2NotificationNotice: View {
-    /// Which targets count as this page (a stop page also takes its tasks' notifications).
-    let about: (V2NotificationTarget) -> Bool
-    /// Space around it when it shows — none when there's nothing to say, so the page is unchanged.
-    var insets = EdgeInsets()
-    @Environment(\.v2Banner) private var context
-    var body: some View {
-        if let context {
-            V2NoticeBody(center: context.center, about: about, insets: insets, onViewAll: context.onViewAll)
-        }
-    }
-}
-
-private struct V2NoticeBody: View {
-    @ObservedObject var center: V2NotificationCenter
-    let about: (V2NotificationTarget) -> Bool
-    var insets: EdgeInsets
-    var onViewAll: () -> Void
-
-    private var matches: [V2Notification] {
-        center.entries.filter {
-            // Not while its own banner or dialog is still up — it would say the same thing twice.
-            about($0.target) && !$0.targetGone && !$0.statusChange && !center.noticeClosed.contains($0.id)
-                && !center.banners.contains($0.id) && !center.takeovers.contains($0.id)
-                && Calendar.current.isDateInToday($0.createdAt)
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            if let n = matches.first {
-                V2InstructionBanner(title: n.subject, text: n.body,
-                                    tone: n.severity.tier == .takeover ? .error : .info,
-                                    link: matches.count > 1 ? ("+\(matches.count - 1) more", onViewAll) : nil,
-                                    onClose: { center.closeNotice(n.id) })
-                    .padding(insets)
-                    .id(n.id)
-                    .transition(V2Motion.dissolve)
-            }
-        }
-        .animation(V2Motion.reflow, value: matches.first?.id)
-    }
-}
-
 // MARK: - Prototype push trigger
 //
 // Stands in for the platform. Shake the simulator (Device › Shake, ⌃⌘Z) for the push panel, or launch
@@ -723,7 +665,7 @@ struct V2PushPanel: View {
                    ("inbox-offline", "No connection"), ("inbox-empty", "Empty"),
                    ("inbox-filter-type", "Filter sheet, Type"), ("inbox-collapsed", "Day section collapsed"),
                    ("inbox-paging", "Loading more")]),
-        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → Open notifications"), ("notif-banners", "Two medium → summary banner"), ("notif-notice", "Cancelled, dismissed, then open stop 3"), ("notif-cascade", "Last task cancelled → stop Skipped"), ("notif-skip", "Stop skipped → its tasks Cancelled"), ("notif-viewtask", "Takeover → View task (task shows Cancelled)"), ("notif-open", "Inbox row → its stop"),
+        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → Open notifications"), ("notif-banners", "Two medium → summary banner"), ("notif-notice", "Cancelled, dismissed, then open stop 3"), ("notif-inbox-medium", "Inbox open, medium arrives → row only"), ("notif-cascade", "Last task cancelled → stop Skipped"), ("notif-skip", "Stop skipped → its tasks Cancelled"), ("notif-viewtask", "Takeover → View task"), ("notif-open", "Inbox row → its stop"),
                            ("notif-gone", "Row whose trip is gone → toast"), ("notif-tray", "Opened from the phone's tray")]),
         ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
     ]

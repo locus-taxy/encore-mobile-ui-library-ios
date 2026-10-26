@@ -78,6 +78,9 @@ public struct V2Flow: View {
         .onAppear(perform: scheduleLaunchPushes)
         // The camera holds medium banners; they land on the Scan HUs page once the rider is back out.
         .onChange(of: router.scanner != nil) { notes.holdBanners($0) }
+        // On the inbox a medium is just its row arriving (no banner over the list).
+        .onChange(of: router.page == .inbox) { notes.setInboxOpen($0) }
+        .onAppear { DispatchQueue.main.async { notes.setInboxOpen(router.page == .inbox) } }
         .environment(\.v2InboxEntry, V2InboxEntry(unread: notes.unread, open: { openInbox() }))
         .environment(\.v2Banner, V2BannerContext(center: notes, onOpen: { openNotification($0) },
                                                   onViewAll: { inboxFilter.status = .unread; openInbox() }))
@@ -326,7 +329,7 @@ public struct V2Flow: View {
                           subject: "Task cancelled at stop 3",
                           body: "Order \(cancelled?.orderRef ?? "") for \(cancelled?.contactName ?? "the customer") "
                               + "was cancelled by dispatch. Don't hand it over.",
-                          target: .task(stop: 3, task: 31), statusChange: true)
+                          target: .task(stop: 3, task: 31))
         case .high:
             notes.receive(.high, .notification,
                           subject: "Delivery window changed at stop 4",
@@ -359,13 +362,13 @@ public struct V2Flow: View {
             notes.receive(.high, .alert,
                           subject: "Pickup cancelled at stop 3",
                           body: "The pickup from Rohit Mehta was cancelled by dispatch. Nothing is left at stop 3, so it's skipped.",
-                          target: .task(stop: 3, task: 32), statusChange: true)
+                          target: .task(stop: 3, task: 32))
         case .stopSkipped:
             engine.skipStop(4, reason: "Stop skipped by dispatch")
             notes.receive(.high, .alert,
                           subject: "Stop 4 skipped",
                           body: "Dispatch skipped Costa Coffee. Its deliveries are cancelled; keep the parcels and bring them back to the hub.",
-                          target: .stop(4), statusChange: true)
+                          target: .stop(4))
         case .trio:
             fire(.critical)
             fire(.high)
@@ -927,6 +930,10 @@ public struct V2Flow: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.stopSkipped) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { notes.closeTakeover() }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) { V2Motion.txSurface { router.push(.stop(4)) } }
+        case "notif-inbox-medium": // inbox open; a medium lands as its row on top — no banner
+            router.setPage(.inbox)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { notes.setInboxOpen(true) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { fire(.medium) }
         case "notif-tray":     router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { fire(.tray) }
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)

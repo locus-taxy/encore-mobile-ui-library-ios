@@ -261,13 +261,9 @@ struct V2TripPage: View {
     private static let space = "v2TripScroll"
 
     private var header: some View {
-        VStack(spacing: 0) {
-            V2CardView(model: trip.headerCard(collapsed: collapsed,
-                                              onMap: {},
-                                              onDetails: onViewDetails))
-            // DP-2959 context notice — notifications about the trip itself.
-            V2NotificationNotice(about: { $0 == .trip }, insets: V2StopSheet.noticeInsets)
-        }
+        V2CardView(model: trip.headerCard(collapsed: collapsed,
+                                          onMap: {},
+                                          onDetails: onViewDetails))
             .background(
                 // Collapsed, the header floats over the scrolling list, so it casts a shadow.
                 Rectangle()
@@ -387,26 +383,17 @@ struct V2StopSheet: View {
         }
     }
 
-    /// The block-below-the-header slot (16 sides, 12 bottom), as the task's instruction banner.
-    static let noticeInsets = EdgeInsets(top: 0, leading: V2Space.headerInset,
-                                         bottom: V2Space.headerInsetBottom, trailing: V2Space.headerInset)
-
     /// "01:02m left" — the undo window counting down (frame 21).
     private var undoCaption: String {
         String(format: "%02d:%02dm left", stop.undoSecondsLeft / 60, stop.undoSecondsLeft % 60)
     }
 
     private var header: some View {
-        VStack(spacing: 0) {
-            V2CardView(model: stop.headerCard(dispatched: tripStarted || stop.status != .pending,
-                                              onNavigate: {},
-                                              exceptionLabel: exceptionLabel,
-                                              onException: onExceptionAction))
-            // DP-2959 context notice — notifications about this stop itself. A task's sit on the task
-            // page; here that task's card carries its state.
-            V2NotificationNotice(about: { $0 == .stop(stop.id) }, insets: Self.noticeInsets)
-        }
-        .background(HFColor.surface)
+        V2CardView(model: stop.headerCard(dispatched: tripStarted || stop.status != .pending,
+                                          onNavigate: {},
+                                          exceptionLabel: exceptionLabel,
+                                          onException: onExceptionAction))
+            .background(HFColor.surface)
     }
 
     /// A clubbed stop draws ONE card for every task, so the search/filter affordance counts what is
@@ -528,8 +515,6 @@ struct V2TaskDetailSheet: View {
                     .padding(.horizontal, V2Space.headerInset)
                     .padding(.bottom, V2Space.headerInsetBottom)
             }
-            // DP-2959 context notice: the same block-below-the-header slot as the instruction.
-            V2NotificationNotice(about: { $0 == .task(stop: stop.id, task: task.id) }, insets: V2StopSheet.noticeInsets)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(HFColor.surface)
@@ -636,72 +621,27 @@ struct V2TaskDetailSheet: View {
 
 /// Delivery instruction on a task (frame 46): info-tinted row, leading ⓘ, single line.
 struct V2InstructionBanner: View {
-    /// Frame 45: 48 tall — 8 inset around a 32pt icon box holding a 20pt glyph; body1 14/20; r4 with a
-    /// 0.5 border over the tone at 8%. The notification notice (DP-2959) adds a Medium 14 title, an
-    /// optional link line and a ✕; error tone per the inline error alert (#FFB6AB border, r4).
-    enum Tone { case info, error }
-    var title: String? = nil
     let text: String
-    var tone: Tone = .info
-    var link: (label: String, action: () -> Void)? = nil
-    var onClose: (() -> Void)? = nil
-
-    init(title: String? = nil, text: String, tone: Tone = .info,
-         link: (label: String, action: () -> Void)? = nil, onClose: (() -> Void)? = nil) {
-        self.title = title; self.text = text; self.tone = tone; self.link = link; self.onClose = onClose
-    }
-
-    private var border: Color {
-        tone == .info ? Color(.sRGB, red: 189/255, green: 226/255, blue: 255/255, opacity: 1)  // #BDE2FF
-                      : Color(.sRGB, red: 255/255, green: 182/255, blue: 171/255, opacity: 1)  // #FFB6AB
-    }
-    private var main: Color { tone == .info ? Color.encore("Info/Main") : Color.encore("Error/Main") }
-    private var glyph: Color { tone == .info ? HFColor.infoText : Color.encore("Error/Main") }
+    /// Frame 45: 48 tall — 8 inset around a 32pt icon box holding a 20pt Info glyph; body1 14/20;
+    /// r4 with a 0.5 info-light border over info at 8%.
+    private static let border = Color(.sRGB, red: 189/255, green: 226/255, blue: 255/255, opacity: 1) // #BDE2FF
 
     var body: some View {
-        HStack(alignment: title == nil ? .center : .top, spacing: Spacing.spacing4) {
-            EncoreIcon(iconName: tone == .info ? "LInfo" : "LError", size: V2Icon.banner)
-                .foregroundColor(glyph)
-                .frame(width: 32, height: title == nil ? 32 : 20)
-            VStack(alignment: .leading, spacing: 0) {
-                if let title {
-                    Text(title)
-                        .v2Label(V2Font.label1)
-                        .foregroundColor(HFColor.textPrimary)
-                }
-                Text(text)
-                    .v2Text(V2Font.body1)
-                    .foregroundColor(HFColor.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let link {
-                    Button(action: link.action) {
-                        Text(link.label)
-                            .v2Label(V2Font.buttonMedium)
-                            .underline()
-                            .foregroundColor(glyph)
-                            .frame(minHeight: 28, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+        HStack(alignment: .center, spacing: Spacing.spacing4) {
+            EncoreIcon(iconName: "LInfo", size: V2Icon.banner)
+                .foregroundColor(HFColor.infoText)
+                .frame(width: 32, height: 32)
+            Text(text)
+                .v2Text(V2Font.body1)
+                .foregroundColor(HFColor.textPrimary)
             Spacer(minLength: 0)
-            if let onClose {
-                Button(action: onClose) {
-                    EncoreIcon(iconName: "LCross", size: 20)
-                        .foregroundColor(V2Token.actionActive)
-                        .frame(width: 32, height: 20)
-                        .contentShape(Rectangle().inset(by: -12))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Close")
-            }
         }
         .padding(.horizontal, Spacing.spacing8)
         .padding(.vertical, Spacing.spacing8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(main.opacity(0.08))
+        .background(HFColor.infoBg)
         .clipShape(RoundedRectangle(cornerRadius: 4))
-        .overlay(RoundedRectangle(cornerRadius: 4).stroke(border, lineWidth: V2Space.hairline))
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Self.border, lineWidth: V2Space.hairline))
     }
 }
 
