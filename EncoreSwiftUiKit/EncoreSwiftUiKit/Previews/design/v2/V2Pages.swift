@@ -402,13 +402,9 @@ struct V2StopSheet: View {
                                               onNavigate: {},
                                               exceptionLabel: exceptionLabel,
                                               onException: onExceptionAction))
-            // DP-2959 context notice — this stop's and its tasks' notifications, below the header.
-            V2NotificationNotice(about: { target in
-                switch target {
-                case .stop(let s), .task(let s, _): return s == stop.id
-                default: return false
-                }
-            }, insets: Self.noticeInsets)
+            // DP-2959 context notice — notifications about this stop itself. A task's sit on the task
+            // page; here that task's card carries its state.
+            V2NotificationNotice(about: { $0 == .stop(stop.id) }, insets: Self.noticeInsets)
         }
         .background(HFColor.surface)
     }

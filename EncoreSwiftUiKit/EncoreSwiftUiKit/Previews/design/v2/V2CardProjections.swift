@@ -221,6 +221,10 @@ extension V2Task {
                 V2ChipSlot("status") { V2TaskStatusChip(status: status) }
             ],
             address: V2Address(headline: contactName ?? fallbackTitle, subtext: contactSub ?? ""),
+            // The item carries its own state: a cancelled task says why in its header too, as its row
+            // on the stop page does (DP-2959 — no notice repeats it).
+            reason: status == .cancelled && clubbed == nil
+                ? cancellationReason.map { V2ReasonSlot(label: "Cancellation Reason", value: $0) } : nil,
             actions: status.isTerminal ? [] : actions)
     }
 }

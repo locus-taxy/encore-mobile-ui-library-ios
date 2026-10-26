@@ -130,6 +130,10 @@ struct V2Notification: Identifiable, Equatable {
     var target: V2NotificationTarget = .none
     /// The target no longer exists or is no longer this worker's (reassigned). The entry stays.
     var targetGone: Bool = false
+    /// The notification announces a STATUS change of its target (cancelled, failed, skipped). The
+    /// item's own chip + reason already say so, so no context notice repeats it (decided 2026-10-26).
+    /// The platform would derive this from the event behind the push.
+    var statusChange: Bool = false
 }
 
 /// Holds the inbox entries and decides what is on screen. Surfaces only render what it says.
@@ -188,13 +192,14 @@ final class V2NotificationCenter: ObservableObject {
     @discardableResult
     func receive(_ severity: V2Severity, _ kind: V2NotificationKind, subject: String, body: String,
                  target: V2NotificationTarget = .none, targetGone: Bool = false,
-                 surface: Bool = true) -> Int {
+                 statusChange: Bool = false, surface: Bool = true) -> Int {
         let id = nextId
         nextId += 1
         // An open inbox makes room for it rather than cutting it in.
         withAnimation(V2Motion.reflow) {
             entries.insert(V2Notification(id: id, severity: severity, kind: kind, subject: subject, body: body,
-                                          target: target, targetGone: targetGone), at: 0)
+                                          target: target, targetGone: targetGone,
+                                          statusChange: statusChange), at: 0)
         }
         // Arrived while the app was closed: the phone showed it; in the app it is only an entry.
         guard surface else { return id }
@@ -606,7 +611,10 @@ struct V2NotificationBanner: View {
 // MARK: Context notice — on the page a notification is about
 
 /// Lands the rider on a stop / task / trip / Home and says WHY they might be here: today's notifications
-/// about this page, whether they came through the alert's button or found the page themselves. Figma's
+/// about THIS page — its own level only (a task's notification sits on the task page; the stop shows
+/// that task's state on its card, not a notice) — whether they came through the alert or found the page.
+/// Only for changes that aren't a status: a cancelled / failed / skipped item says so in its own chip +
+/// reason, so status-change notifications never make a notice (decided 2026-10-26). Figma's
 /// inline card alert (frame 45's instruction banner, family 4): tinted, under the page header, part of
 /// the content. Red for critical / high, blue otherwise. The newest shows; "+n more" goes to the inbox.
 /// ✕ hides it on this page; it doesn't change read state (the brief: only tapping through, dismissing,
@@ -633,7 +641,7 @@ private struct V2NoticeBody: View {
     private var matches: [V2Notification] {
         center.entries.filter {
             // Not while its own banner or dialog is still up — it would say the same thing twice.
-            about($0.target) && !$0.targetGone && !center.noticeClosed.contains($0.id)
+            about($0.target) && !$0.targetGone && !$0.statusChange && !center.noticeClosed.contains($0.id)
                 && !center.banners.contains($0.id) && !center.takeovers.contains($0.id)
                 && Calendar.current.isDateInToday($0.createdAt)
         }
@@ -675,7 +683,7 @@ extension UIWindow {
 
 /// The kinds of push the panel can fire — written against the seeded trip so targets are real.
 enum V2PushSample: String, CaseIterable, Identifiable {
-    case critical, high, medium, low, gone, pair, trio, mediumPair, connection, criticalInfo, mediumInfo, tray
+    case critical, high, medium, low, gone, pair, trio, mediumPair, lastTask, stopSkipped, connection, criticalInfo, mediumInfo, tray
     var id: String { rawValue }
 
     var title: String {
@@ -684,6 +692,8 @@ enum V2PushSample: String, CaseIterable, Identifiable {
         case .high:     return "High · stop window changed"
         case .medium:   return "Medium · shift ending"
         case .mediumPair: return "Two medium at once"
+        case .lastTask:   return "Last task at stop 3 cancelled (stop → Skipped)"
+        case .stopSkipped: return "Dispatch skipped stop 4 (tasks → Cancelled)"
         case .low:      return "Low · hub message"
         case .gone:     return "High · trip reassigned (target gone)"
         case .pair:     return "Two important at once"
@@ -713,7 +723,7 @@ struct V2PushPanel: View {
                    ("inbox-offline", "No connection"), ("inbox-empty", "Empty"),
                    ("inbox-filter-type", "Filter sheet, Type"), ("inbox-collapsed", "Day section collapsed"),
                    ("inbox-paging", "Loading more")]),
-        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → Open notifications"), ("notif-banners", "Two medium → summary banner"), ("notif-notice", "Dismissed, then open the stop → notice"), ("notif-viewtask", "Takeover → View task (notice on the task)"), ("notif-open", "Inbox row → its stop"),
+        ("Acting on one", [("notif-pair", "Two important at once → summary"), ("notif-trio", "One, then two more join → summary"), ("notif-viewall", "Summary → Open notifications"), ("notif-banners", "Two medium → summary banner"), ("notif-notice", "Cancelled, dismissed, then open stop 3"), ("notif-cascade", "Last task cancelled → stop Skipped"), ("notif-skip", "Stop skipped → its tasks Cancelled"), ("notif-viewtask", "Takeover → View task (task shows Cancelled)"), ("notif-open", "Inbox row → its stop"),
                            ("notif-gone", "Row whose trip is gone → toast"), ("notif-tray", "Opened from the phone's tray")]),
         ("Workflow (for pushes on top)", [("stop", "Stop sheet"), ("scan", "Scan HUs"), ("scanner", "Scanner (camera)")]),
     ]

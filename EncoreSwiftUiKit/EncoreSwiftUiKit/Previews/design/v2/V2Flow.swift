@@ -320,11 +320,13 @@ public struct V2Flow: View {
         let cancelled = trip.stops.first { $0.id == 3 }?.tasks.first { $0.id == 31 }
         switch sample {
         case .critical:
+            // The platform changes the task first; the push announces it.
+            engine.cancelTask(3, 31, reason: "Cancelled by dispatch")
             notes.receive(.critical, .alert,
                           subject: "Task cancelled at stop 3",
                           body: "Order \(cancelled?.orderRef ?? "") for \(cancelled?.contactName ?? "the customer") "
                               + "was cancelled by dispatch. Don't hand it over.",
-                          target: .task(stop: 3, task: 31))
+                          target: .task(stop: 3, task: 31), statusChange: true)
         case .high:
             notes.receive(.high, .notification,
                           subject: "Delivery window changed at stop 4",
@@ -350,6 +352,20 @@ public struct V2Flow: View {
         case .mediumPair:
             fire(.medium)
             fire(.mediumInfo)
+        case .lastTask:
+            // Task 31 went earlier (quietly, here); cancelling 32 leaves nothing open → stop 3 SKIPPED.
+            engine.cancelTask(3, 31, reason: "Cancelled by dispatch")
+            engine.cancelTask(3, 32, reason: "Cancelled by dispatch")
+            notes.receive(.high, .alert,
+                          subject: "Pickup cancelled at stop 3",
+                          body: "The pickup from Rohit Mehta was cancelled by dispatch. Nothing is left at stop 3, so it's skipped.",
+                          target: .task(stop: 3, task: 32), statusChange: true)
+        case .stopSkipped:
+            engine.skipStop(4, reason: "Stop skipped by dispatch")
+            notes.receive(.high, .alert,
+                          subject: "Stop 4 skipped",
+                          body: "Dispatch skipped Costa Coffee. Its deliveries are cancelled; keep the parcels and bring them back to the hub.",
+                          target: .stop(4), statusChange: true)
         case .trio:
             fire(.critical)
             fire(.high)
@@ -901,6 +917,16 @@ public struct V2Flow: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.critical) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { notes.closeTakeover() }
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) { V2Motion.txSurface { router.push(.stop(3)) } }
+        case "notif-cascade":  // last open task at stop 3 cancelled → stop 3 derives SKIPPED; open it
+            router.setPage(.trip)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.lastTask) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { notes.closeTakeover() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) { V2Motion.txSurface { router.push(.stop(3)) } }
+        case "notif-skip":     // dispatch skips stop 4 → its card says Skipped; open it: every task Cancelled
+            router.setPage(.trip)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { fire(.stopSkipped) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { notes.closeTakeover() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) { V2Motion.txSurface { router.push(.stop(4)) } }
         case "notif-tray":     router.setPage(.home)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { fire(.tray) }
         case "inbox-unread":   inboxFilter.status = .unread; router.setPage(.inbox)

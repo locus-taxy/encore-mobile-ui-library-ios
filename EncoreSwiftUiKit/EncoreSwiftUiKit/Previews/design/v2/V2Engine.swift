@@ -265,6 +265,32 @@ final class V2Engine: ObservableObject {
         cascade(stopId)
     }
 
+    // MARK: Dispatch changes (what a notification announces)
+
+    /// `CancelMovementTask` by dispatch: the task → CANCELLED with its reason (MT-INV-11), then the stop
+    /// re-derives (all cancelled → SKIPPED; completed + cancelled → COMPLETED; …).
+    func cancelTask(_ stopId: Int, _ taskId: Int, reason: String) {
+        mutate(stopId) { s in
+            guard let i = s.tasks.firstIndex(where: { $0.id == taskId }), !s.tasks[i].status.isTerminal else { return }
+            s.tasks[i].status = .cancelled
+            s.tasks[i].cancellationReason = reason
+        }
+        cascade(stopId)
+    }
+
+    /// `SkipStop` by dispatch: the stop → SKIPPED and every open task → CANCELLED (STOP_SKIPPED).
+    func skipStop(_ stopId: Int, reason: String) {
+        mutate(stopId) { s in
+            for i in s.tasks.indices where !s.tasks[i].status.isTerminal {
+                s.tasks[i].status = .cancelled
+                s.tasks[i].cancellationReason = reason
+            }
+            s.status = .skipped
+            s.sla = s.sla.settled()
+        }
+        reconcileHandbacks()
+    }
+
     // MARK: Stop exceptions
 
     /// `ReportStopFailure` (DEC-126): stop → FAILED with `LOCATION_FAILURE`, and every PENDING child
