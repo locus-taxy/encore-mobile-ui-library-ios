@@ -408,9 +408,6 @@ struct V2Stop: Identifiable {
     /// True for the debrief return leg — planned at trip creation when the trip must return to origin
     /// (`returnToOriginRequired`, IKEA Wave 1), appended at runtime otherwise (DEC-302 3c).
     var isReturnLeg: Bool = false
-    /// Why the stop ended this way — `skipReason` (SKIPPED) or `stopFailureReason` (FAILED). Shown as the
-    /// header's reason pair, as a cancelled task shows its cancellation reason.
-    var statusReason: String? = nil
 
     var eyebrow: String { "STOP \(seq)" }
     var doneTasks: Int { tasks.filter { $0.status.isTerminal }.count }

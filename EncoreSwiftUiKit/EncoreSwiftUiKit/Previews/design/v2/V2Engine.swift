@@ -286,7 +286,6 @@ final class V2Engine: ObservableObject {
                 s.tasks[i].cancellationReason = reason
             }
             s.status = .skipped
-            s.statusReason = reason
             s.sla = s.sla.settled()
         }
         reconcileHandbacks()
@@ -304,7 +303,6 @@ final class V2Engine: ObservableObject {
                 s.tasks[i].cancellationReason = "Location could not be reached"
             }
             s.status = .failed
-            s.statusReason = "Location could not be reached"
             s.sla = s.sla.settled()
         }
         // Stop-level failure is set directly (it is not a task cascade), but hand-backs still derive.
@@ -353,12 +351,6 @@ final class V2Engine: ObservableObject {
         mutate(stopId) { s in
             if let derived = s.derivedTerminal {
                 s.status = derived
-                // All tasks cancelled → SKIPPED by derivation carries no skipReason of its own (Story 1.3.7);
-                // the reason is the tasks' cancellationReason when they share one, else none is shown.
-                if derived == .skipped, s.statusReason == nil {
-                    let reasons = Set(s.tasks.compactMap(\.cancellationReason))
-                    if reasons.count == 1 { s.statusReason = reasons.first }
-                }
                 // The SLA axis outlives the lifecycle one, but a FORECAST does not: a stop that is
                 // done is no longer "at risk" of anything. Settling it here means no surface has to
                 // remember the rule.
