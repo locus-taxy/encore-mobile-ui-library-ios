@@ -160,8 +160,8 @@ extension V2Stop {
     var statusReasonSlot: V2ReasonSlot? {
         guard let statusReason else { return nil }
         switch status {
-        case .skipped: return V2ReasonSlot(label: "Skip Reason", value: statusReason)
-        case .failed:  return V2ReasonSlot(label: "Failure Reason", value: statusReason)
+        case .skipped: return V2ReasonSlot(label: V2ReasonSlot.label, value: statusReason)
+        case .failed:  return V2ReasonSlot(label: V2ReasonSlot.label, value: statusReason)
         default:       return nil
         }
     }
@@ -196,7 +196,7 @@ extension V2Task {
             ],
             headline: husLabel,
             reason: status == .cancelled
-                ? cancellationReason.map { V2ReasonSlot(label: "Cancellation Reason", value: $0) } : nil,
+                ? cancellationReason.map { V2ReasonSlot(label: V2ReasonSlot.label, value: $0) } : nil,
             tags: [V2ChipSlot("identifier") { V2TaskIdentifierChip(kind: kind) }]
                 + tags.map { tag in
                     V2ChipSlot("tag-\(tag)") {
@@ -235,7 +235,7 @@ extension V2Task {
             address: V2Address(headline: contactName ?? fallbackTitle, subtext: contactSub ?? ""),
             // Same label–value pair the task's card on the stop page shows.
             reason: status == .cancelled && clubbed == nil
-                ? cancellationReason.map { V2ReasonSlot(label: "Cancellation Reason", value: $0) } : nil,
+                ? cancellationReason.map { V2ReasonSlot(label: V2ReasonSlot.label, value: $0) } : nil,
             actions: status.isTerminal ? [] : actions)
     }
 }

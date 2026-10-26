@@ -173,6 +173,10 @@ enum V2CardChrome {
 // MARK: Model
 
 struct V2ReasonSlot {
+    /// One static label for every status and entity (cancelled / failed task, skipped / failed stop);
+    /// only the value changes (decided 2026-10-26). The value is the entity's reason code as display
+    /// text — who resolves code → text (BFA / reason registry / card) is open with the dev team.
+    static let label = "Reason"
     let label: String
     let value: String
 }

@@ -353,8 +353,12 @@ final class V2Engine: ObservableObject {
         mutate(stopId) { s in
             if let derived = s.derivedTerminal {
                 s.status = derived
-                // All tasks cancelled → SKIPPED by derivation: the skip's reason is that.
-                if derived == .skipped, s.statusReason == nil { s.statusReason = "All tasks cancelled" }
+                // All tasks cancelled → SKIPPED by derivation carries no skipReason of its own (Story 1.3.7);
+                // the reason is the tasks' cancellationReason when they share one, else none is shown.
+                if derived == .skipped, s.statusReason == nil {
+                    let reasons = Set(s.tasks.compactMap(\.cancellationReason))
+                    if reasons.count == 1 { s.statusReason = reasons.first }
+                }
                 // The SLA axis outlives the lifecycle one, but a FORECAST does not: a stop that is
                 // done is no longer "at risk" of anything. Settling it here means no surface has to
                 // remember the rule.
