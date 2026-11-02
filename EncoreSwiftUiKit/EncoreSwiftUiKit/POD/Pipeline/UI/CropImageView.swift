@@ -6,13 +6,13 @@ import UIKit
 /// crop region, rotate the image 90° clockwise, and confirm or cancel the
 /// crop. On confirm, the corresponding sub-region of the (possibly rotated)
 /// source image is extracted and delivered via `onConfirm`.
-internal struct CropImageView: View {
+struct CropImageView: View {
     let image: UIImage
     let onConfirm: (UIImage) -> Void
     let onCancel: () -> Void
 
     /// Normalized 0..1 crop rect within the displayed image bounds.
-    @State private var cropRect: CGRect = CGRect(x: 0.1, y: 0.1, width: 0.8, height: 0.8)
+    @State private var cropRect: CGRect = .init(x: 0.1, y: 0.1, width: 0.8, height: 0.8)
     /// Rotation applied to the source image, in degrees. Always a multiple of 90.
     @State private var rotationAngle: CGFloat = 0
     /// Cached result of rotatedImage() — recomputed only when rotationAngle changes.
@@ -131,7 +131,9 @@ internal struct CropImageView: View {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
                 let base = dragBaseRect ?? cropRect
-                if dragBaseRect == nil { dragBaseRect = base }
+                if dragBaseRect == nil {
+                    dragBaseRect = base
+                }
 
                 let dx = value.translation.width / displayRect.width
                 let dy = value.translation.height / displayRect.height
@@ -149,7 +151,9 @@ internal struct CropImageView: View {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
                 let base = dragBaseRect ?? cropRect
-                if dragBaseRect == nil { dragBaseRect = base }
+                if dragBaseRect == nil {
+                    dragBaseRect = base
+                }
 
                 let dx = value.translation.width / displayRect.width
                 let dy = value.translation.height / displayRect.height
@@ -183,7 +187,8 @@ internal struct CropImageView: View {
 
         let clamped = pixelRect.intersection(CGRect(x: 0, y: 0, width: width, height: height))
         guard clamped.width > 0, clamped.height > 0,
-              let croppedCG = cgImage.cropping(to: clamped) else {
+              let croppedCG = cgImage.cropping(to: clamped)
+        else {
             return nil
         }
         return UIImage(cgImage: croppedCG, scale: image.scale, orientation: .up)
@@ -302,13 +307,13 @@ private enum Handle: CaseIterable {
 
     func position(in rect: CGRect) -> CGPoint {
         switch self {
-        case .topLeft:     return CGPoint(x: rect.minX, y: rect.minY)
-        case .top:         return CGPoint(x: rect.midX, y: rect.minY)
-        case .topRight:    return CGPoint(x: rect.maxX, y: rect.minY)
-        case .left:        return CGPoint(x: rect.minX, y: rect.midY)
-        case .right:       return CGPoint(x: rect.maxX, y: rect.midY)
-        case .bottomLeft:  return CGPoint(x: rect.minX, y: rect.maxY)
-        case .bottom:      return CGPoint(x: rect.midX, y: rect.maxY)
+        case .topLeft: return CGPoint(x: rect.minX, y: rect.minY)
+        case .top: return CGPoint(x: rect.midX, y: rect.minY)
+        case .topRight: return CGPoint(x: rect.maxX, y: rect.minY)
+        case .left: return CGPoint(x: rect.minX, y: rect.midY)
+        case .right: return CGPoint(x: rect.maxX, y: rect.midY)
+        case .bottomLeft: return CGPoint(x: rect.minX, y: rect.maxY)
+        case .bottom: return CGPoint(x: rect.midX, y: rect.maxY)
         case .bottomRight: return CGPoint(x: rect.maxX, y: rect.maxY)
         }
     }

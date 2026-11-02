@@ -19,14 +19,18 @@ final class RadioGroupTests: XCTestCase {
         XCTAssertEqual(view.secondaryLabel, "details")
         XCTAssertTrue(view.isSelected)
         XCTAssertFalse(view.isDisabled)
-        if case .start = view.labelPlacement {} else { XCTFail("expected .start placement") }
+        if case .start = view.labelPlacement {} else {
+            XCTFail("expected .start placement")
+        }
     }
 
     @MainActor func testRadioView_defaultsForOptionalParams() {
         let view = RadioView(label: "Plain", isSelected: false, onTap: {})
         XCTAssertNil(view.secondaryLabel)
         XCTAssertFalse(view.isDisabled)
-        if case .end = view.labelPlacement {} else { XCTFail("expected default .end placement") }
+        if case .end = view.labelPlacement {} else {
+            XCTFail("expected default .end placement")
+        }
     }
 
     // MARK: - RadioView onTap behaviour

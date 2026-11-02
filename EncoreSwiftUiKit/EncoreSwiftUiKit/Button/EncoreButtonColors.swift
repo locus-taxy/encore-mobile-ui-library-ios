@@ -6,7 +6,9 @@ func encoreButtonBackgroundColor(
     isEnabled: Bool
 ) -> Color {
     guard variant == .contained else { return Color.clear }
-    if !isEnabled { return Color.encore("Action/DisabledBackground") }
+    if !isEnabled {
+        return Color.encore("Action/DisabledBackground")
+    }
     switch color {
     case .primary: return Color.encore("Primary/Main")
     case .error: return Color.encore("Error/Main")
@@ -19,7 +21,9 @@ func encoreButtonContentColor(
     variant: EncoreButtonVariant,
     isEnabled: Bool
 ) -> Color {
-    if !isEnabled { return Color.encore("Action/Disabled") }
+    if !isEnabled {
+        return Color.encore("Action/Disabled")
+    }
     switch variant {
     case .contained:
         switch color {
@@ -40,7 +44,9 @@ func encoreButtonBorderColor(
     color: EncoreButtonColor,
     isEnabled: Bool
 ) -> Color {
-    if !isEnabled { return Color.encore("Action/DisabledBackground") }
+    if !isEnabled {
+        return Color.encore("Action/DisabledBackground")
+    }
     switch color {
     case .primary: return Color.encore("Primary/OutlinedBorder")
     case .error: return Color.encore("Error/OutlinedBorder")

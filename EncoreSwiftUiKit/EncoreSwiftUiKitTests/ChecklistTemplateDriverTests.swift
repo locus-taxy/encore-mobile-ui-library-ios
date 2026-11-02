@@ -50,7 +50,7 @@ final class ChecklistTemplateDriverTests: XCTestCase {
     func testStaleSelectionResetsWhenParentChanges() {
         let driver = ChecklistTemplateDriver(template: makeTemplate(), evaluator: makeEvaluator())
         driver.stateManager.updateValue(key: "reason", value: 0) // "a" → sub [x, y]
-        driver.stateManager.updateValue(key: "sub", value: 0)    // pick x
+        driver.stateManager.updateValue(key: "sub", value: 0) // pick x
         XCTAssertEqual(driver.stateManager.getValue(key: "sub") as? Int, 0)
 
         driver.stateManager.updateValue(key: "reason", value: 1) // "b" → sub [z]; list changed → reset

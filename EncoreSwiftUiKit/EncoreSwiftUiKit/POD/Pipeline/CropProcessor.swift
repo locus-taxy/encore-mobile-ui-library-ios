@@ -1,6 +1,6 @@
 import UIKit
 
-internal final class CropProcessor: ImageProcessor {
+final class CropProcessor: ImageProcessor {
     let presentCrop: (UIImage, CheckedContinuation<UIImage?, Never>) -> Void
 
     init(presentCrop: @escaping (UIImage, CheckedContinuation<UIImage?, Never>) -> Void) {
@@ -10,7 +10,7 @@ internal final class CropProcessor: ImageProcessor {
     func process(
         image: UIImage,
         config: PODImageProcessingConfig,
-        context: PODCaptureData,
+        context _: PODCaptureData,
         metadata: ProcessingMetadata
     ) async throws -> ProcessingStepResult {
         guard config.cropEnabled else {

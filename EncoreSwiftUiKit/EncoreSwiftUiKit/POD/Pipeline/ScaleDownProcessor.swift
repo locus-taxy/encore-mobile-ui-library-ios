@@ -1,10 +1,10 @@
 import UIKit
 
-internal final class ScaleDownProcessor: ImageProcessor {
+final class ScaleDownProcessor: ImageProcessor {
     func process(
         image: UIImage,
         config: PODImageProcessingConfig,
-        context: PODCaptureData,
+        context _: PODCaptureData,
         metadata: ProcessingMetadata
     ) async throws -> ProcessingStepResult {
         guard config.scaleDownEnabled else { return .success(image, metadata) }

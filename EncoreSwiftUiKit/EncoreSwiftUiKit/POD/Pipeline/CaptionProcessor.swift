@@ -1,7 +1,7 @@
 import CoreLocation
 import UIKit
 
-internal final class CaptionProcessor: ImageProcessor {
+final class CaptionProcessor: ImageProcessor {
     func process(
         image: UIImage,
         config: PODImageProcessingConfig,
@@ -29,7 +29,7 @@ internal final class CaptionProcessor: ImageProcessor {
 
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: UIColor.white
+            .foregroundColor: UIColor.white,
         ]
         let attrStr = NSAttributedString(string: captionText, attributes: attrs)
         let textSize = attrStr.size()

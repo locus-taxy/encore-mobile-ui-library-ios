@@ -14,14 +14,18 @@ public enum ChecklistValidator {
     /// Validates a single choice value.
     /// If optional: always valid. If required: must have selectedIndex >= 0.
     public static func validateSingleChoice(_ selectedIndex: Int, isRequired: Bool) -> Bool {
-        if !isRequired { return true }
+        if !isRequired {
+            return true
+        }
         return selectedIndex >= 0
     }
 
     /// Validates a multi choice value.
     /// If optional: always valid. If required: must have at least one selection.
     public static func validateMultiChoice(_ selectedIndices: Set<Int>, isRequired: Bool) -> Bool {
-        if !isRequired { return true }
+        if !isRequired {
+            return true
+        }
         return !selectedIndices.isEmpty
     }
 
@@ -41,42 +45,54 @@ public enum ChecklistValidator {
     /// Validates a rating value.
     /// If optional: always valid. If required: must be > 0.
     public static func validateRating(_ rating: Int, isRequired: Bool) -> Bool {
-        if !isRequired { return true }
+        if !isRequired {
+            return true
+        }
         return rating > 0
     }
 
     /// Validates a date value.
     /// If optional: always valid. If required: must not be empty.
     public static func validateDate(_ dateValue: String, isRequired: Bool) -> Bool {
-        if !isRequired { return true }
+        if !isRequired {
+            return true
+        }
         return !dateValue.isEmpty
     }
 
     /// Validates a time value.
     /// If optional: always valid. If required: must not be empty.
     public static func validateTime(_ timeValue: String, isRequired: Bool) -> Bool {
-        if !isRequired { return true }
+        if !isRequired {
+            return true
+        }
         return !timeValue.isEmpty
     }
 
     /// Validates a date/time value.
     /// If optional: always valid. If required: must not be empty.
     public static func validateDateTime(_ dateTimeValue: String, isRequired: Bool) -> Bool {
-        if !isRequired { return true }
+        if !isRequired {
+            return true
+        }
         return !dateTimeValue.isEmpty
     }
 
     /// Validates an image/photo value.
     /// If optional: always valid. If required: must have at least one image.
     public static func validateImage(_ imageURLs: [URL], isRequired: Bool) -> Bool {
-        if !isRequired { return true }
+        if !isRequired {
+            return true
+        }
         return !imageURLs.isEmpty
     }
 
     /// Validates a signature value.
     /// If optional: always valid. If required: must have signature URL.
     public static func validateSignature(_ signatureURL: URL?, isRequired: Bool) -> Bool {
-        if !isRequired { return true }
+        if !isRequired {
+            return true
+        }
         return signatureURL != nil
     }
 
@@ -85,13 +101,17 @@ public enum ChecklistValidator {
     /// If required: must not be empty AND must match regex (if provided).
     public static func validateTextField(_ textValue: String, isRequired: Bool, regexPattern: String?) -> Bool {
         if !isRequired {
-            if textValue.isEmpty { return true }
+            if textValue.isEmpty {
+                return true
+            }
             if let pattern = regexPattern {
                 return textValue.range(of: pattern, options: .regularExpression) != nil
             }
             return true
         }
-        if textValue.isEmpty { return false }
+        if textValue.isEmpty {
+            return false
+        }
         if let pattern = regexPattern {
             return textValue.range(of: pattern, options: .regularExpression) != nil
         }

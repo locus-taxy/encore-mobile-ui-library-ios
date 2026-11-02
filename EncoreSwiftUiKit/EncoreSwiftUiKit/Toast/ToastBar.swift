@@ -45,7 +45,7 @@ public struct ToastBar: View {
         .padding(.vertical, 4)
         .background(Color.encore("Action/Active"))
         .cornerRadius(8)
-        .shadow(color: Color(red: 17/255, green: 19/255, blue: 24/255).opacity(0.16), radius: 4, x: 0, y: 0)
+        .shadow(color: Color(red: 17 / 255, green: 19 / 255, blue: 24 / 255).opacity(0.16), radius: 4, x: 0, y: 0)
     }
 }
 

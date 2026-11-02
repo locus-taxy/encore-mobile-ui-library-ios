@@ -1,6 +1,6 @@
 import Foundation
 
-internal enum ChecklistItemType {
+enum ChecklistItemType {
     case photo
     case photoGallery
     case multiPhoto

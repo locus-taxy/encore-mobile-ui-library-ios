@@ -28,5 +28,7 @@ public protocol ChecklistExpressionEvaluator: AnyObject {
 }
 
 public extension ChecklistExpressionEvaluator {
-    func evaluateValue(_ expressionJson: String) -> [ChecklistPossibleValue]? { nil }
+    func evaluateValue(_: String) -> [ChecklistPossibleValue]? {
+        nil
+    }
 }

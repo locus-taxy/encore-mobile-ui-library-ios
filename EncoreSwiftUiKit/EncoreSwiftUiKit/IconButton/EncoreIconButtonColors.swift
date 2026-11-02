@@ -4,7 +4,9 @@ func encoreIconButtonIconColor(
     color: EncoreIconButtonColor,
     isEnabled: Bool
 ) -> Color {
-    if !isEnabled { return Color.encore("Action/Disabled") }
+    if !isEnabled {
+        return Color.encore("Action/Disabled")
+    }
     switch color {
     case .defaultColor: return Color.encore("Action/Active")
     case .primary: return Color.encore("Primary/Main")

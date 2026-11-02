@@ -6,9 +6,9 @@ import UIKit
 /// Mirrors Android's `ImageCheckListItem` composable.
 public struct ImageCheckListItem: View {
     let title: String
-    var helperText: String? = nil
-    var itemIndex: Int? = nil
-    var totalItems: Int? = nil
+    var helperText: String?
+    var itemIndex: Int?
+    var totalItems: Int?
     var isCompleted: Bool = false
     let initialImageURLs: [URL]
     let onImageListChanged: ([URL]) -> Void
@@ -149,7 +149,8 @@ public struct ImageCheckListItem: View {
     private func handleSelectedImage(at url: URL) {
         guard processingConfig != nil,
               captureDataProvider != nil,
-              let image = loadImage(from: url) else {
+              let image = loadImage(from: url)
+        else {
             let newURLs = allowMultiple ? imageURLs + [url] : [url]
             imageURLs = newURLs
             onImageListChanged(newURLs)
@@ -220,10 +221,15 @@ public struct ImageCheckListItem: View {
 
 /// Closure-backed `PODValidationAction` used by checklist items to wire
 /// retry / continue-anyway from the validation sheet back to local state.
-internal final class CallbackValidationAction: PODValidationAction {
+final class CallbackValidationAction: PODValidationAction {
     var onRetry: () -> Void = {}
     var onContinueAnyway: () -> Void = {}
 
-    func retry() { onRetry() }
-    func continueAnyway() { onContinueAnyway() }
+    func retry() {
+        onRetry()
+    }
+
+    func continueAnyway() {
+        onContinueAnyway()
+    }
 }

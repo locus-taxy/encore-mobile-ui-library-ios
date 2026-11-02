@@ -6,9 +6,9 @@ import UIKit
 /// Mirrors Android's `SignatureCheckListItem` composable.
 public struct SignatureCheckListItem: View {
     let title: String
-    var helperText: String? = nil
-    var itemIndex: Int? = nil
-    var totalItems: Int? = nil
+    var helperText: String?
+    var itemIndex: Int?
+    var totalItems: Int?
     var isCompleted: Bool = false
     let initialSignatureURL: URL?
     let onSignatureSelected: (URL?) -> Void
@@ -112,7 +112,8 @@ public struct SignatureCheckListItem: View {
         }
         guard processingConfig != nil,
               captureDataProvider != nil,
-              let image = loadImage(from: url) else {
+              let image = loadImage(from: url)
+        else {
             signatureURL = url
             onSignatureSelected(url)
             return

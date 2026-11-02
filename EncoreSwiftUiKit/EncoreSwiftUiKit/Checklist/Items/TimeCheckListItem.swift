@@ -5,13 +5,13 @@ import SwiftUI
 /// Mirrors Android's `TimeCheckListItem` composable.
 public struct TimeCheckListItem: View {
     let title: String
-    var helperText: String? = nil
-    var itemIndex: Int? = nil
-    var totalItems: Int? = nil
+    var helperText: String?
+    var itemIndex: Int?
+    var totalItems: Int?
     var isCompleted: Bool = false
     let initialTimeValue: String
     let onTimeSelected: (Int, Int) -> Void
-    var onClear: (() -> Void)? = nil
+    var onClear: (() -> Void)?
     let isRequired: Bool
     let timeFormat: String
 

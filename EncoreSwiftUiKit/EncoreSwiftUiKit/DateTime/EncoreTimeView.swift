@@ -44,7 +44,9 @@ public struct EncoreTimeView: View {
         self.timeHint = timeHint
     }
 
-    private var hasValue: Bool { !timeValue.isEmpty }
+    private var hasValue: Bool {
+        !timeValue.isEmpty
+    }
 
     public var body: some View {
         HStack(spacing: 8) {

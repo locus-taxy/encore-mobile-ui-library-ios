@@ -96,8 +96,12 @@ final class PODImagePipeline {
 
     private func buildPostValidationProcessors() -> [any ImageProcessor] {
         var list: [any ImageProcessor] = []
-        if config.scaleDownEnabled { list.append(ScaleDownProcessor()) }
-        if config.captionEnabled { list.append(CaptionProcessor()) }
+        if config.scaleDownEnabled {
+            list.append(ScaleDownProcessor())
+        }
+        if config.captionEnabled {
+            list.append(CaptionProcessor())
+        }
         list.append(ExifProcessor())
         return list
     }
@@ -111,15 +115,27 @@ final class PODImagePipeline {
             signatureConfig.quality = .low
             signatureConfig.scaleDownEnabled = true
             var list: [any ImageProcessor] = [ScaleDownProcessor()]
-            if signatureConfig.exifEnabled { list.append(ExifProcessor()) }
+            if signatureConfig.exifEnabled {
+                list.append(ExifProcessor())
+            }
             return (list, signatureConfig)
         default:
             var list: [any ImageProcessor] = []
-            if config.cropEnabled { list.append(CropProcessor(presentCrop: presentCrop)) }
-            if config.blurDetectionEnabled { list.append(BlurDetectionProcessor()) }
-            if config.textExtractionEnabled { list.append(TextExtractionProcessor()) }
-            if config.scaleDownEnabled { list.append(ScaleDownProcessor()) }
-            if config.captionEnabled { list.append(CaptionProcessor()) }
+            if config.cropEnabled {
+                list.append(CropProcessor(presentCrop: presentCrop))
+            }
+            if config.blurDetectionEnabled {
+                list.append(BlurDetectionProcessor())
+            }
+            if config.textExtractionEnabled {
+                list.append(TextExtractionProcessor())
+            }
+            if config.scaleDownEnabled {
+                list.append(ScaleDownProcessor())
+            }
+            if config.captionEnabled {
+                list.append(CaptionProcessor())
+            }
             list.append(ExifProcessor())
             return (list, config)
         }
