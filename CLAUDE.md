@@ -90,3 +90,11 @@ open EncoreSwiftUiKit.xcodeproj
 swift build
 swift test
 ```
+
+---
+
+## Design prototype: in-app notifications (branch `feat/DP-2959-DP-2956-in-app-notifications`)
+
+The V2 Rider App design prototype lives in `EncoreSwiftUiKit/EncoreSwiftUiKit/Previews/design/v2/`.
+For the in-app notification work (DP-2959 tiering, DP-2956 inbox) — rules, files, how to run the demo
+states and the backend gaps — read `EncoreSwiftUiKit/EncoreSwiftUiKit/Previews/design/v2/CLAUDE.md`.
