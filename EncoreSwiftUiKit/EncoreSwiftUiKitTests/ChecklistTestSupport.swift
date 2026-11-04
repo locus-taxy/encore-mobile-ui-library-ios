@@ -8,12 +8,22 @@ final class StubEvaluator: ChecklistExpressionEvaluator {
     var boolFor: (([String: String], String) -> Bool?)?
     var valueFor: (([String: String], String) -> [ChecklistPossibleValue]?)?
 
-    func putArgument(name: String, valueJson: String) { args[name] = valueJson }
-    func evaluateBoolean(_ expressionJson: String) -> Bool? { boolFor?(args, expressionJson) }
-    func evaluateValue(_ expressionJson: String) -> [ChecklistPossibleValue]? { valueFor?(args, expressionJson) }
+    func putArgument(name: String, valueJson: String) {
+        args[name] = valueJson
+    }
+
+    func evaluateBoolean(_ expressionJson: String) -> Bool? {
+        boolFor?(args, expressionJson)
+    }
+
+    func evaluateValue(_ expressionJson: String) -> [ChecklistPossibleValue]? {
+        valueFor?(args, expressionJson)
+    }
 }
 
-func pv(_ key: String) -> ChecklistPossibleValue { ChecklistPossibleValue(key: key, displayText: key) }
+func pv(_ key: String) -> ChecklistPossibleValue {
+    ChecklistPossibleValue(key: key, displayText: key)
+}
 
 func singleChoiceItem(_ key: String, _ optionKeys: [String]) -> ChecklistItem {
     ChecklistItem(key: key, item: key, format: .singleChoice, allowedValues: optionKeys.map(pv))

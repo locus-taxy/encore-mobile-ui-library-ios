@@ -1,5 +1,5 @@
-@testable import EncoreSwiftUiKit
 import CoreLocation
+@testable import EncoreSwiftUiKit
 import UIKit
 import XCTest
 
@@ -53,7 +53,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success(let out, _) = result else { XCTFail("Expected success"); return }
+        guard case let .success(out, _) = result else { XCTFail("Expected success")
+            return
+        }
         XCTAssertLessThanOrEqual(out.size.width, 1280)
         XCTAssertLessThanOrEqual(out.size.height, 960)
     }
@@ -68,7 +70,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success(let out, _) = result else { XCTFail(); return }
+        guard case let .success(out, _) = result else { XCTFail()
+            return
+        }
         XCTAssertEqual(out.size, CGSize(width: 100, height: 100))
     }
 
@@ -82,7 +86,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success(let out, _) = result else { XCTFail(); return }
+        guard case let .success(out, _) = result else { XCTFail()
+            return
+        }
         XCTAssertEqual(out.size, image.size)
     }
 
@@ -98,7 +104,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success(let out, _) = result else { XCTFail(); return }
+        guard case let .success(out, _) = result else { XCTFail()
+            return
+        }
         XCTAssertEqual(out.size, image.size)
     }
 
@@ -119,7 +127,7 @@ final class PODImagePipelineTests: XCTestCase {
         let lng = 67.890
         let locationStr = "Location:\(lat),\(lng)"
         XCTAssertTrue(locationStr.hasPrefix("Location:"))
-        XCTAssertFalse(locationStr.hasPrefix("Location: "))  // no space before coordinate
+        XCTAssertFalse(locationStr.hasPrefix("Location: ")) // no space before coordinate
     }
 
     // MARK: - ExifProcessor
@@ -134,10 +142,12 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success(_, let meta) = result else { XCTFail(); return }
+        guard case let .success(_, meta) = result else { XCTFail()
+            return
+        }
         XCTAssertNotNil(meta.savedURL)
-        XCTAssertTrue(meta.savedURL!.path.contains("pod_images"))
-        XCTAssertEqual(meta.savedURL!.pathExtension.lowercased(), "jpg")
+        XCTAssertTrue(try XCTUnwrap(meta.savedURL?.path.contains("pod_images")))
+        XCTAssertEqual(meta.savedURL?.pathExtension.lowercased(), "jpg")
     }
 
     func testExif_savedFileIsJPEG() async throws {
@@ -150,7 +160,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success(_, let meta) = result, let url = meta.savedURL else { XCTFail(); return }
+        guard case let .success(_, meta) = result, let url = meta.savedURL else { XCTFail()
+            return
+        }
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
         let data = try Data(contentsOf: url)
         XCTAssertGreaterThan(data.count, 0)
@@ -169,8 +181,10 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success(_, let meta) = result else { XCTFail(); return }
-        XCTAssertNotNil(meta.savedURL)  // savedURL always set even when EXIF is disabled
+        guard case let .success(_, meta) = result else { XCTFail()
+            return
+        }
+        XCTAssertNotNil(meta.savedURL) // savedURL always set even when EXIF is disabled
     }
 
     func testExif_setsMetadataSavedURL() async throws {
@@ -185,7 +199,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: metadata
         )
-        guard case .success(_, let meta) = result else { XCTFail(); return }
+        guard case let .success(_, meta) = result else { XCTFail()
+            return
+        }
         XCTAssertNotNil(meta.savedURL)
     }
 
@@ -201,7 +217,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success = result else { XCTFail("Expected success when disabled"); return }
+        guard case .success = result else { XCTFail("Expected success when disabled")
+            return
+        }
     }
 
     // MARK: - TextExtractionProcessor
@@ -216,7 +234,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success = result else { XCTFail("Expected success when disabled"); return }
+        guard case .success = result else { XCTFail("Expected success when disabled")
+            return
+        }
     }
 
     func testTextExtraction_emptyRequiredTexts_skips() async throws {
@@ -229,7 +249,9 @@ final class PODImagePipelineTests: XCTestCase {
             context: makeCaptureData(),
             metadata: ProcessingMetadata()
         )
-        guard case .success = result else { XCTFail("Expected success with empty requiredTexts"); return }
+        guard case .success = result else { XCTFail("Expected success with empty requiredTexts")
+            return
+        }
     }
 
     // MARK: - PODImagePipeline chain building
@@ -252,7 +274,7 @@ final class PODImagePipelineTests: XCTestCase {
         XCTAssertNotNil(pipeline)
     }
 
-    func testPipeline_photoChain_respectsDisabledFlags() async throws {
+    func testPipeline_photoChain_respectsDisabledFlags() async {
         // With all flags except exif disabled, only ExifProcessor should run and produce a savedURL → onComplete fires.
         let image = makeTestImage()
         let config = makeConfig(crop: false, blur: false, text: false, scaleDown: false, caption: false, exif: true)
@@ -264,13 +286,13 @@ final class PODImagePipelineTests: XCTestCase {
             completionExpectation.fulfill()
         }
         pipeline.execute(image: image, presentCrop: { _, continuation in
-            continuation.resume(returning: nil)  // should not be called
+            continuation.resume(returning: nil) // should not be called
         })
         await fulfillment(of: [completionExpectation], timeout: 10.0)
         XCTAssertNotNil(completionURL)
     }
 
-    func testPipeline_validationError_firesCallback() async throws {
+    func testPipeline_validationError_firesCallback() async {
         // A solid-red uniform image has zero Laplacian variance, well below the blur threshold (100.0).
         let image = makeTestImage()
         let config = makeConfig(blur: true, scaleDown: false, exif: false)

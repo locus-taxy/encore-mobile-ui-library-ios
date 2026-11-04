@@ -9,7 +9,9 @@ public struct ChecklistTemplate: Equatable {
     }
 
     /// Every item across all groups, in template order.
-    public var allItems: [ChecklistItem] { groups.flatMap { $0.items } }
+    public var allItems: [ChecklistItem] {
+        groups.flatMap { $0.items }
+    }
 }
 
 /// One checklist group: gated by an optional `show` expression, declaring the child groups it
@@ -22,7 +24,9 @@ public struct ChecklistGroup: Equatable, Identifiable {
     public let childGroups: [String]
     public let items: [ChecklistItem]
 
-    public var id: String { groupId }
+    public var id: String {
+        groupId
+    }
 
     public init(groupId: String, show: String?, childGroups: [String], items: [ChecklistItem]) {
         self.groupId = groupId

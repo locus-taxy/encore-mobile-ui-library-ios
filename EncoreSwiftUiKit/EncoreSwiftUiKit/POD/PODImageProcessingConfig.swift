@@ -2,15 +2,15 @@ import CoreGraphics
 import Foundation
 
 public enum ImageQuality {
-    case high   // 2400 × 1800
+    case high // 2400 × 1800
     case medium // 1600 × 1200
-    case low    //  816 ×  612
+    case low //  816 ×  612
 
     var targetSize: CGSize {
         switch self {
-        case .high:   return CGSize(width: 2400, height: 1800)
+        case .high: return CGSize(width: 2400, height: 1800)
         case .medium: return CGSize(width: 1600, height: 1200)
-        case .low:    return CGSize(width: 816,  height: 612)
+        case .low: return CGSize(width: 816, height: 612)
         }
     }
 }

@@ -50,9 +50,15 @@ public struct PinView: View {
 
     private var validationState: PinValidationState? {
         guard let expectedPin = expectedPin else { return nil }
-        if pinValue.isEmpty { return nil }
-        if pinValue == expectedPin { return .valid }
-        if pinValue.count == expectedPin.count { return .invalid }
+        if pinValue.isEmpty {
+            return nil
+        }
+        if pinValue == expectedPin {
+            return .valid
+        }
+        if pinValue.count == expectedPin.count {
+            return .invalid
+        }
         return nil
     }
 
@@ -99,20 +105,20 @@ public struct PinView: View {
 
     // MARK: - Capture field
 
-    // Design note — the 4-box look is rendered by `pinSlot` cells with ONE
-    // transparent `TextField` overlaid on top capturing all input. Keeping a
-    // single coherent value string means SMS one-time-code autofill + paste work
-    // natively and there's no inter-field focus choreography.
-    //
-    // PARKED ENHANCEMENT (preferred, pure SwiftUI) — replace the single overlay
-    // with 4 separate one-character `TextField`s (one per box) for a real per-box
-    // caret and direct tap-to-box focus. Deferred because it needs explicit
-    // handling for:
-    //   • backspace on an already-empty box (SwiftUI fires no `onChange`, so
-    //     focus-retreat needs a zero-width-space sentinel or equivalent),
-    //   • SMS autofill / paste delivering the whole code into one box,
-    //   • `@FocusState` auto-advance / retreat across the boxes.
-    // Until then, the single-field-behind-slots approach stays.
+    /// Design note — the 4-box look is rendered by `pinSlot` cells with ONE
+    /// transparent `TextField` overlaid on top capturing all input. Keeping a
+    /// single coherent value string means SMS one-time-code autofill + paste work
+    /// natively and there's no inter-field focus choreography.
+    ///
+    /// PARKED ENHANCEMENT (preferred, pure SwiftUI) — replace the single overlay
+    /// with 4 separate one-character `TextField`s (one per box) for a real per-box
+    /// caret and direct tap-to-box focus. Deferred because it needs explicit
+    /// handling for:
+    ///   • backspace on an already-empty box (SwiftUI fires no `onChange`, so
+    ///     focus-retreat needs a zero-width-space sentinel or equivalent),
+    ///   • SMS autofill / paste delivering the whole code into one box,
+    ///   • `@FocusState` auto-advance / retreat across the boxes.
+    /// Until then, the single-field-behind-slots approach stays.
     private var captureField: some View {
         TextField("", text: $input)
             .keyboardType(.numberPad)
@@ -125,17 +131,25 @@ public struct PinView: View {
                 // Filter to digits, cap at itemCount. Every edit (incl. backspace)
                 // flows through here, so entered digits can always be changed.
                 let filtered = String(newValue.filter(\.isNumber).prefix(itemCount))
-                if filtered != newValue { input = filtered }
-                if filtered != pinValue { onPinChange(filtered) }
+                if filtered != newValue {
+                    input = filtered
+                }
+                if filtered != pinValue {
+                    onPinChange(filtered)
+                }
                 // Auto-dismiss once the code is complete. The checklist's bottom
                 // submit bar occupies the keyboard-accessory slot, so a Done
                 // toolbar can't show; swipe-to-dismiss (ChecklistView's
                 // `.scrollDismissesKeyboard`) covers the partial-entry case.
-                if filtered.count == itemCount { isFocused = false }
+                if filtered.count == itemCount {
+                    isFocused = false
+                }
             }
             .onChange(of: pinValue) { newValue in
                 // Reflect external changes (draft restore / clear).
-                if newValue != input { input = newValue }
+                if newValue != input {
+                    input = newValue
+                }
             }
     }
 
@@ -175,7 +189,7 @@ public struct PinView: View {
             (
                 Text("Didn't receive OTP? ", bundle: BundleToken.bundle)
                     .foregroundColor(Color.encore("Text/Secondary"))
-                + Text("Resend in \(countdown)", bundle: BundleToken.bundle)
+                    + Text("Resend in \(countdown)", bundle: BundleToken.bundle)
                     .underline()
                     .foregroundColor(Color.encore("Divider"))
             )
@@ -185,7 +199,7 @@ public struct PinView: View {
             (
                 Text("Didn't receive OTP? ", bundle: BundleToken.bundle)
                     .foregroundColor(Color.encore("Text/Secondary"))
-                + Text("Resend", bundle: BundleToken.bundle)
+                    + Text("Resend", bundle: BundleToken.bundle)
                     .underline()
                     .foregroundColor(Color.encore("Primary/Main"))
             )

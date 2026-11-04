@@ -40,6 +40,7 @@ public struct ImagePickerView: View {
     }
 
     // MARK: - Grid layout constants
+
     private let cellSize: CGFloat = 80
     private let gridSpacing: CGFloat = 16
     private let gridColumns = Array(repeating: GridItem(.fixed(80), spacing: 16), count: 3)
@@ -108,7 +109,6 @@ public struct ImagePickerView: View {
         }
     }
 
-    @ViewBuilder
     private func thumbnailCell(url: URL, index: Int) -> some View {
         ZStack {
             // Background behind image while loading
@@ -245,14 +245,16 @@ struct CameraPickerRepresentable: UIViewRepresentable {
         DispatchQueue.main.async {
             guard let scene = UIApplication.shared.connectedScenes
                 .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
-                  let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
+                let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController
             else { return }
             guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
                 context.coordinator.onCancel()
                 return
             }
             var top = root
-            while let presented = top.presentedViewController { top = presented }
+            while let presented = top.presentedViewController {
+                top = presented
+            }
             let picker = UIImagePickerController()
             picker.sourceType = .camera
             picker.delegate = context.coordinator

@@ -28,9 +28,9 @@ public struct ChecklistHeader: View {
     var isRequired: Bool = false
     var showRequiredIndicator: Bool = true
     var requiredText: String = "Required"
-    var helperText: String? = nil
-    var itemIndex: Int? = nil
-    var totalItems: Int? = nil
+    var helperText: String?
+    var itemIndex: Int?
+    var totalItems: Int?
     var isCompleted: Bool = false
 
     public init(

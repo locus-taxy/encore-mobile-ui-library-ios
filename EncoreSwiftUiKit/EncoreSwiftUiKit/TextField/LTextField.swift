@@ -281,15 +281,25 @@ public struct LTextField: View {
     }
 
     private func pinBoxBorderColor(isActive: Bool) -> Color {
-        if isDisabled { return .clear }
-        if validationState == .error { return Color.encore("Error/Main") }
-        if isActive { return Color.encore("Primary/Main") }
+        if isDisabled {
+            return .clear
+        }
+        if validationState == .error {
+            return Color.encore("Error/Main")
+        }
+        if isActive {
+            return Color.encore("Primary/Main")
+        }
         return Color.encore("Input/OutlinedEnabledBorder")
     }
 
     private func pinBoxBorderWidth(isActive: Bool) -> CGFloat {
-        if isDisabled { return 0 }
-        if validationState == .error { return 1 }
+        if isDisabled {
+            return 0
+        }
+        if validationState == .error {
+            return 1
+        }
         return isActive ? 2 : 1
     }
 
@@ -322,7 +332,9 @@ public struct LTextField: View {
             get: { value },
             set: { newValue in
                 let filtered = filter(newValue)
-                if isReadOnly { return }
+                if isReadOnly {
+                    return
+                }
                 if filtered != value {
                     onValueChange(filtered)
                 }
@@ -334,7 +346,9 @@ public struct LTextField: View {
         Binding(
             get: { value },
             set: { newValue in
-                if isReadOnly { return }
+                if isReadOnly {
+                    return
+                }
                 if newValue != value {
                     onValueChange(newValue)
                 }
@@ -391,7 +405,9 @@ public struct LTextField: View {
     }
 
     private var labelColor: Color {
-        if isDisabled { return Color.encore("Text/Disabled") }
+        if isDisabled {
+            return Color.encore("Text/Disabled")
+        }
         switch validationState {
         case .success: return Color.encore("Success/Main")
         case .error: return Color.encore("Error/Main")
@@ -406,8 +422,12 @@ public struct LTextField: View {
     }
 
     private var borderColor: Color {
-        if isDisabled { return .clear }
-        if isReadOnly { return Color.encore("Input/OutlinedEnabledBorder") }
+        if isDisabled {
+            return .clear
+        }
+        if isReadOnly {
+            return Color.encore("Input/OutlinedEnabledBorder")
+        }
         switch validationState {
         case .success: return Color.encore("Success/Main")
         case .error: return Color.encore("Error/Main")
@@ -418,7 +438,9 @@ public struct LTextField: View {
     }
 
     private var borderWidth: CGFloat {
-        if isDisabled { return 0 }
+        if isDisabled {
+            return 0
+        }
         switch validationState {
         case .validating: return 2
         case .normal: return isFocused ? 2 : 1
@@ -427,8 +449,12 @@ public struct LTextField: View {
     }
 
     private var backgroundFill: Color {
-        if isDisabled { return Color.encore("Action/DisabledBackground") }
-        if isReadOnly { return Color.encore("Input/OutlinedReadOnlyFill") }
+        if isDisabled {
+            return Color.encore("Action/DisabledBackground")
+        }
+        if isReadOnly {
+            return Color.encore("Input/OutlinedReadOnlyFill")
+        }
         return .clear
     }
 

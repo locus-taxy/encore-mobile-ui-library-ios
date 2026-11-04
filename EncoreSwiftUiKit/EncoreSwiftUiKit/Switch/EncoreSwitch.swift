@@ -48,12 +48,16 @@ public struct EncoreSwitchStyle: ToggleStyle {
     }
 
     private func slideColor(isOn: Bool) -> Color {
-        if isDisabled { return Color.encore("Action/DisabledBackground") }
+        if isDisabled {
+            return Color.encore("Action/DisabledBackground")
+        }
         return isOn ? Color.encore("Primary/Main") : Color.encore("Switch/SlideFill")
     }
 
     private func slideOpacity(isOn: Bool) -> Double {
-        if isDisabled { return 1.0 }
+        if isDisabled {
+            return 1.0
+        }
         return isOn ? 0.5 : 0.38
     }
 }

@@ -1,6 +1,6 @@
 import UIKit
 
-internal protocol ImageProcessor {
+protocol ImageProcessor {
     func process(
         image: UIImage,
         config: PODImageProcessingConfig,

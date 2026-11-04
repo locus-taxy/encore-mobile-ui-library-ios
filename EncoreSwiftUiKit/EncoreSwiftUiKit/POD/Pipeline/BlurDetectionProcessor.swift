@@ -1,13 +1,13 @@
 import UIKit
 
-internal final class BlurDetectionProcessor: ImageProcessor {
+final class BlurDetectionProcessor: ImageProcessor {
     private static let blurThreshold: Double = 100.0
     private static let downsampleWidth: CGFloat = 500
 
     func process(
         image: UIImage,
         config: PODImageProcessingConfig,
-        context: PODCaptureData,
+        context _: PODCaptureData,
         metadata: ProcessingMetadata
     ) async throws -> ProcessingStepResult {
         guard config.blurDetectionEnabled else { return .success(image, metadata) }
@@ -54,24 +54,24 @@ internal final class BlurDetectionProcessor: ImageProcessor {
 
         // Grayscale conversion (matches Android: 0.299R + 0.587G + 0.114B)
         var gray = [Double](repeating: 0, count: width * height)
-        for i in 0..<(width * height) {
+        for i in 0 ..< (width * height) {
             gray[i] = 0.299 * Double(pixelData[i * 4])
-                    + 0.587 * Double(pixelData[i * 4 + 1])
-                    + 0.114 * Double(pixelData[i * 4 + 2])
+                + 0.587 * Double(pixelData[i * 4 + 1])
+                + 0.114 * Double(pixelData[i * 4 + 2])
         }
 
         // Laplacian variance — unclamped doubles, border pixels skipped
         var sum = 0.0
         var sumSq = 0.0
         var count = 0
-        for y in 1..<(height - 1) {
-            for x in 1..<(width - 1) {
+        for y in 1 ..< (height - 1) {
+            for x in 1 ..< (width - 1) {
                 let lap = gray[(y - 1) * width + x]
-                       + gray[(y + 1) * width + x]
-                       + gray[y * width + (x - 1)]
-                       + gray[y * width + (x + 1)]
-                       - 4.0 * gray[y * width + x]
-                sum   += lap
+                    + gray[(y + 1) * width + x]
+                    + gray[y * width + (x - 1)]
+                    + gray[y * width + (x + 1)]
+                    - 4.0 * gray[y * width + x]
+                sum += lap
                 sumSq += lap * lap
                 count += 1
             }

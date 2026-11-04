@@ -5,7 +5,7 @@ public protocol PODValidationAction {
     func continueAnyway()
 }
 
-internal final class PODValidationActionImpl: PODValidationAction {
+final class PODValidationActionImpl: PODValidationAction {
     func retry() {
         // Wired in T006
     }

@@ -2,7 +2,7 @@ import CoreLocation
 import ImageIO
 import UIKit
 
-internal final class ExifProcessor: ImageProcessor {
+final class ExifProcessor: ImageProcessor {
     func process(
         image: UIImage,
         config: PODImageProcessingConfig,
@@ -12,12 +12,13 @@ internal final class ExifProcessor: ImageProcessor {
         let data = NSMutableData()
         let jpegUTI = "public.jpeg" as CFString
         guard let dest = CGImageDestinationCreateWithData(data, jpegUTI, 1, nil),
-              let cgImage = image.cgImage else {
+              let cgImage = image.cgImage
+        else {
             throw PODProcessorError.exportFailed
         }
 
         var props: [String: Any] = [
-            kCGImageDestinationLossyCompressionQuality as String: 0.9
+            kCGImageDestinationLossyCompressionQuality as String: 0.9,
         ]
         if config.exifEnabled, let coord = context.location {
             props[kCGImagePropertyGPSDictionary as String] = makeGPSDictionary(coord: coord, timestamp: context.timestamp)
@@ -52,7 +53,7 @@ internal final class ExifProcessor: ImageProcessor {
             kCGImagePropertyGPSLongitude as String: abs(coord.longitude),
             kCGImagePropertyGPSLongitudeRef as String: lngRef,
             kCGImagePropertyGPSTimeStamp as String: timePart,
-            kCGImagePropertyGPSDateStamp as String: datePart
+            kCGImagePropertyGPSDateStamp as String: datePart,
         ]
     }
 }

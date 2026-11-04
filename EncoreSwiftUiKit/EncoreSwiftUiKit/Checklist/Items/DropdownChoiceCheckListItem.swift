@@ -6,9 +6,9 @@ import SwiftUI
 /// open + selection state. Works for both single- and multi-choice via `mode`.
 public struct DropdownChoiceCheckListItem: View {
     let title: String
-    var helperText: String? = nil
-    var itemIndex: Int? = nil
-    var totalItems: Int? = nil
+    var helperText: String?
+    var itemIndex: Int?
+    var totalItems: Int?
     var isCompleted: Bool = false
     let options: [String]
     let mode: EncoreDropdownMode

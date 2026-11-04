@@ -5,9 +5,9 @@ import SwiftUI
 /// Mirrors Android's `TextFieldCheckListItem` composable.
 public struct TextFieldCheckListItem: View {
     let title: String
-    var helperText: String? = nil
-    var itemIndex: Int? = nil
-    var totalItems: Int? = nil
+    var helperText: String?
+    var itemIndex: Int?
+    var totalItems: Int?
     var isCompleted: Bool = false
     let initialValue: String
     let onValueChange: (String) -> Void

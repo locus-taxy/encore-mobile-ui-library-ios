@@ -1,6 +1,6 @@
 import Foundation
 
-internal enum PODProcessorError: Error {
+enum PODProcessorError: Error {
     case exportFailed
     case bufferCreationFailed
 }

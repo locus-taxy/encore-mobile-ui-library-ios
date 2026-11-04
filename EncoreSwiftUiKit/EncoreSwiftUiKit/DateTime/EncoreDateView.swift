@@ -53,13 +53,21 @@ public struct EncoreDateView: View {
 
     private var relativeDay: RelativeDay? {
         guard let date = parsedDate else { return nil }
-        if Calendar.current.isDateInToday(date) { return .today }
-        if Calendar.current.isDateInYesterday(date) { return .yesterday }
-        if Calendar.current.isDateInTomorrow(date) { return .tomorrow }
+        if Calendar.current.isDateInToday(date) {
+            return .today
+        }
+        if Calendar.current.isDateInYesterday(date) {
+            return .yesterday
+        }
+        if Calendar.current.isDateInTomorrow(date) {
+            return .tomorrow
+        }
         return nil
     }
 
-    private var hasValue: Bool { !dateValue.isEmpty }
+    private var hasValue: Bool {
+        !dateValue.isEmpty
+    }
 
     private var displayText: String {
         guard hasValue else { return dateHint }

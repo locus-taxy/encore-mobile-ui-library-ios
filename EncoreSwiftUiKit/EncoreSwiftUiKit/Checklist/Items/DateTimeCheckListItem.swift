@@ -5,9 +5,9 @@ import SwiftUI
 /// Mirrors Android's `DateTimeCheckListItem` composable.
 public struct DateTimeCheckListItem: View {
     let title: String
-    var helperText: String? = nil
-    var itemIndex: Int? = nil
-    var totalItems: Int? = nil
+    var helperText: String?
+    var itemIndex: Int?
+    var totalItems: Int?
     var isCompleted: Bool = false
     let initialDateValue: String
     let initialTimeValue: String

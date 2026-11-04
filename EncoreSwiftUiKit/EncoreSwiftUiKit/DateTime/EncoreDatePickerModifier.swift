@@ -174,7 +174,8 @@ public struct EncoreDatePickerModifier: ViewModifier {
             VStack(spacing: 0) {
                 EncoreButton(label: String(localized: "Apply", bundle: BundleToken.bundle),
                              endIconName: nil,
-                             size: .large) {
+                             size: .large)
+                {
                     onDateSelected(selectedDate)
                     closeSheet()
                 }

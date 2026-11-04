@@ -1,6 +1,6 @@
 import Foundation
 
-internal enum ValidationErrorType {
+enum ValidationErrorType {
     case blurDetected
     case textMismatch(missingTexts: [String])
 }

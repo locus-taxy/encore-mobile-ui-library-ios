@@ -1,11 +1,11 @@
 import UIKit
 import Vision
 
-internal final class TextExtractionProcessor: ImageProcessor {
+final class TextExtractionProcessor: ImageProcessor {
     func process(
         image: UIImage,
         config: PODImageProcessingConfig,
-        context: PODCaptureData,
+        context _: PODCaptureData,
         metadata: ProcessingMetadata
     ) async throws -> ProcessingStepResult {
         guard config.textExtractionEnabled, !config.requiredTexts.isEmpty else {

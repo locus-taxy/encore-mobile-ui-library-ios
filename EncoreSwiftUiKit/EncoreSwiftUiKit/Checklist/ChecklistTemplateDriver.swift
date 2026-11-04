@@ -69,16 +69,26 @@ final class ChecklistTemplateDriver: ObservableObject {
 
     // MARK: - Submission (read by the view)
 
-    func submissionMap() -> [String: ChecklistItemValue] { stateManager.buildSubmissionMap() }
-    func canSubmit() -> Bool { stateManager.areAllRequiredItemsValid() }
-    func firstInvalidRequiredItemID() -> ChecklistItem.ID? { stateManager.firstInvalidRequiredItemID() }
+    func submissionMap() -> [String: ChecklistItemValue] {
+        stateManager.buildSubmissionMap()
+    }
+
+    func canSubmit() -> Bool {
+        stateManager.areAllRequiredItemsValid()
+    }
+
+    func firstInvalidRequiredItemID() -> ChecklistItem.ID? {
+        stateManager.firstInvalidRequiredItemID()
+    }
 
     // MARK: - Change handling
 
     private func handleKeyChange(_ key: String) {
         // Always forward to the app for draft persistence, even for nested resets.
         onValueChanged?(stateManager.currentValues())
-        if isProcessing { return } // reset re-entrancy — orchestration already running
+        if isProcessing {
+            return
+        } // reset re-entrancy — orchestration already running
         guard let (group, item) = locate(key), item.isVisibilityController else { return }
 
         isProcessing = true
@@ -99,7 +109,8 @@ final class ChecklistTemplateDriver: ObservableObject {
         while refreshed != resolvedOptions, guardCount > 0 {
             guardCount -= 1
             for stale in DynamicOptionsResolution.staleSelectionKeys(resolvedOptions, refreshed)
-            where stateManager.getValue(key: stale.itemKey) != nil {
+                where stateManager.getValue(key: stale.itemKey) != nil
+            {
                 stateManager.updateValue(key: stale.itemKey, value: nil) // reset (re-entrant, guarded)
                 if let staleItem = itemByKey(stale.itemKey), staleItem.isVisibilityController {
                     engine.onControllerInput(groupId: stale.groupId, itemKey: stale.itemKey, valueJson: "null")
@@ -128,7 +139,9 @@ final class ChecklistTemplateDriver: ObservableObject {
                 let options = DynamicOptionsResolution.effectiveOptions(item, resolvedOptions[giKey])
                 if options.isEmpty {
                     // Fail open (§3.5): drop the item and report it once.
-                    if firedUnresolved.insert(giKey).inserted { onDynamicOptionsUnresolved(item.key) }
+                    if firedUnresolved.insert(giKey).inserted {
+                        onDynamicOptionsUnresolved(item.key)
+                    }
                     continue
                 }
                 rows.append(item.withAllowedValues(options))
@@ -145,7 +158,9 @@ final class ChecklistTemplateDriver: ObservableObject {
         for group in template.groups {
             for item in group.items {
                 let isDynamic = item.format == .singleChoiceDynamic
-                if dynamicOnly != isDynamic { continue }
+                if dynamicOnly != isDynamic {
+                    continue
+                }
                 guard item.isVisibilityController, let restored = stateManager.getValue(key: item.key) else { continue }
 
                 if isDynamic {
@@ -165,7 +180,9 @@ final class ChecklistTemplateDriver: ObservableObject {
 
     private func locate(_ key: String) -> (ChecklistGroup, ChecklistItem)? {
         for group in template.groups {
-            if let item = group.items.first(where: { $0.key == key }) { return (group, item) }
+            if let item = group.items.first(where: { $0.key == key }) {
+                return (group, item)
+            }
         }
         return nil
     }

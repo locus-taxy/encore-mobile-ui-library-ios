@@ -22,7 +22,9 @@ struct RadioIcon: View {
     }
 
     private var iconColor: Color {
-        if isDisabled { return Color.encore("Action/Disabled") }
+        if isDisabled {
+            return Color.encore("Action/Disabled")
+        }
         return isSelected ? Color.encore("Primary/Main") : Color.encore("Action/Active")
     }
 }
@@ -58,7 +60,9 @@ public struct RadioView: View {
         layout
             .contentShape(Rectangle())
             .onTapGesture {
-                if !isDisabled { onTap() }
+                if !isDisabled {
+                    onTap()
+                }
             }
     }
 

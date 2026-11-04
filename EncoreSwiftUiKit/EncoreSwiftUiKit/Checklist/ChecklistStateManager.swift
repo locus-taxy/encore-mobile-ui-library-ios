@@ -35,7 +35,9 @@ public class ChecklistStateManager: ObservableObject {
         self.onValueChange = onValueChange
         for item in items {
             let seeded = initialValues[item.key]
-            if let seeded { stateMap[item.key] = seeded }
+            if let seeded {
+                stateMap[item.key] = seeded
+            }
             validationMap[item.key] = validateItem(key: item.key, value: seeded)
         }
     }

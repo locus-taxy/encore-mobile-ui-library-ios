@@ -25,7 +25,9 @@ public struct EncoreDropdownField: View {
         self.isOpen = isOpen
     }
 
-    private var hasValue: Bool { !(summary ?? "").isEmpty }
+    private var hasValue: Bool {
+        !(summary ?? "").isEmpty
+    }
 
     public var body: some View {
         HStack(spacing: 8) {
@@ -199,7 +201,9 @@ public struct EncoreDropdownModifier: ViewModifier {
     private func optionRow(_ i: Int) -> some View {
         let selected = draft.contains(i)
         return HStack(spacing: 12) {
-            if mode == .multi { checkbox(isChecked: selected) }
+            if mode == .multi {
+                checkbox(isChecked: selected)
+            }
             Text(options[i])
                 .typography(Typography.Menu.itemDefault)
                 .foregroundColor(Color.encore("Text/Primary"))
@@ -231,7 +235,11 @@ public struct EncoreDropdownModifier: ViewModifier {
         .frame(height: rowHeight)
         .contentShape(Rectangle())
         .onTapGesture {
-            if allSelected { draft.removeAll() } else { draft = Set(options.indices) }
+            if allSelected {
+                draft.removeAll()
+            } else {
+                draft = Set(options.indices)
+            }
         }
     }
 
@@ -268,7 +276,9 @@ public struct EncoreDropdownModifier: ViewModifier {
 
     // MARK: Selection
 
-    private var allSelected: Bool { !options.isEmpty && draft.count == options.count }
+    private var allSelected: Bool {
+        !options.isEmpty && draft.count == options.count
+    }
 
     private func toggle(_ i: Int) {
         if mode == .single {

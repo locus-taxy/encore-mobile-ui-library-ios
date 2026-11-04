@@ -49,7 +49,7 @@ final class ChecklistStateManagerTests: XCTestCase {
         ChecklistItem(key: key, item: key, optional: optional, format: format)
     }
 
-    // .textField — false when empty/unset, true after non-empty value
+    /// .textField — false when empty/unset, true after non-empty value
     func testIsAnswered_textField_falseWhenEmpty() {
         let sm = ChecklistStateManager(items: [item("note", format: .textField)])
         XCTAssertFalse(sm.isAnswered(key: "note"))
@@ -61,7 +61,7 @@ final class ChecklistStateManagerTests: XCTestCase {
         XCTAssertTrue(sm.isAnswered(key: "note"))
     }
 
-    // isAnswered is independent of isValid for optional empty textField
+    /// isAnswered is independent of isValid for optional empty textField
     func testIsAnswered_optionalTextField_isValidTrueButIsAnsweredFalse() {
         let sm = ChecklistStateManager(items: [item("note", format: .textField, optional: true)])
         // Optional empty text field: isValid = true (no requirement), isAnswered = false (no content)
@@ -69,7 +69,7 @@ final class ChecklistStateManagerTests: XCTestCase {
         XCTAssertFalse(sm.isAnswered(key: "note"))
     }
 
-    // .boolean — false when unset or false, true only when explicitly set to true
+    /// .boolean — false when unset or false, true only when explicitly set to true
     func testIsAnswered_boolean_falseWhenUnset() {
         let sm = ChecklistStateManager(items: [item("ack", format: .boolean)])
         XCTAssertFalse(sm.isAnswered(key: "ack"))
@@ -87,7 +87,7 @@ final class ChecklistStateManagerTests: XCTestCase {
         XCTAssertTrue(sm.isAnswered(key: "ack"))
     }
 
-    // isValid for boolean is always true (regardless of check state), isAnswered differs
+    /// isValid for boolean is always true (regardless of check state), isAnswered differs
     func testIsAnswered_boolean_isValidAlwaysTrueButIsAnsweredDependsOnValue() {
         let sm = ChecklistStateManager(items: [item("ack", format: .boolean)])
         // Unset: isValid = true (validateBoolean always returns true), isAnswered = false
@@ -95,7 +95,7 @@ final class ChecklistStateManagerTests: XCTestCase {
         XCTAssertFalse(sm.isAnswered(key: "ack"))
     }
 
-    // .singleChoice — false at -1/nil, true after a real selection
+    /// .singleChoice — false at -1/nil, true after a real selection
     func testIsAnswered_singleChoice_falseAtDefaultMinusOne() {
         let sm = ChecklistStateManager(items: [item("color", format: .singleChoice)])
         XCTAssertFalse(sm.isAnswered(key: "color"))
@@ -113,7 +113,7 @@ final class ChecklistStateManagerTests: XCTestCase {
         XCTAssertTrue(sm.isAnswered(key: "color"))
     }
 
-    // .multiChoice — false when empty set, true when non-empty
+    /// .multiChoice — false when empty set, true when non-empty
     func testIsAnswered_multiChoice_falseWhenEmpty() {
         let sm = ChecklistStateManager(items: [item("tags", format: .multiChoice)])
         XCTAssertFalse(sm.isAnswered(key: "tags"))
@@ -125,7 +125,7 @@ final class ChecklistStateManagerTests: XCTestCase {
         XCTAssertTrue(sm.isAnswered(key: "tags"))
     }
 
-    // Unknown key returns false
+    /// Unknown key returns false
     func testIsAnswered_unknownKeyReturnsFalse() {
         let sm = ChecklistStateManager(items: [item("x", format: .textField)])
         XCTAssertFalse(sm.isAnswered(key: "nonexistent"))

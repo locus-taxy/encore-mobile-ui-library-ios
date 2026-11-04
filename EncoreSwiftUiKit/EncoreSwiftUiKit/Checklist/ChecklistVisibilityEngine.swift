@@ -57,7 +57,9 @@ final class ChecklistVisibilityEngine {
         return template.groups.filter { flipped.contains($0.groupId) }
     }
 
-    func isVisible(_ groupId: String) -> Bool { visibility[groupId] == true }
+    func isVisible(_ groupId: String) -> Bool {
+        visibility[groupId] == true
+    }
 
     /// Currently visible groups, in template order.
     func visibleGroups() -> [ChecklistGroup] {
@@ -65,7 +67,9 @@ final class ChecklistVisibilityEngine {
     }
 
     /// Items counted for validation and submission — visible groups only (§3.4).
-    func visibleItems() -> [ChecklistItem] { visibleGroups().flatMap { $0.items } }
+    func visibleItems() -> [ChecklistItem] {
+        visibleGroups().flatMap { $0.items }
+    }
 
     // MARK: - Private
 
@@ -76,13 +80,17 @@ final class ChecklistVisibilityEngine {
         visited: inout Set<String>
     ) {
         for childId in parent.childGroups {
-            if visited.contains(childId) { continue } // malformed cycle — stop, don't recurse forever
+            if visited.contains(childId) {
+                continue
+            } // malformed cycle — stop, don't recurse forever
             visited.insert(childId)
             guard let child = groupsById[childId] else { continue }
             let wasVisible = visibility[childId] == true
             let nowVisible = parentVisible && evaluate(child)
             visibility[childId] = nowVisible
-            if nowVisible != wasVisible { flipped.insert(childId) }
+            if nowVisible != wasVisible {
+                flipped.insert(childId)
+            }
             // Descendants follow: a re-shown child's own children re-materialize from their retained
             // controller answers; a hidden child takes its subtree down.
             reevaluateChildren(child, parentVisible: nowVisible, flipped: &flipped, visited: &visited)
@@ -91,17 +99,23 @@ final class ChecklistVisibilityEngine {
 
     private func hideDescendants(_ parent: ChecklistGroup, visited: inout Set<String>) {
         for childId in parent.childGroups {
-            if visited.contains(childId) { continue }
+            if visited.contains(childId) {
+                continue
+            }
             visited.insert(childId)
             visibility[childId] = false
-            if let child = groupsById[childId] { hideDescendants(child, visited: &visited) }
+            if let child = groupsById[childId] {
+                hideDescendants(child, visited: &visited)
+            }
         }
     }
 
     private func evaluate(_ group: ChecklistGroup, reportFailure: Bool = true) -> Bool {
         guard let show = group.show else { return true }
         let result = evaluator.evaluateBoolean(show)
-        if result == nil, reportFailure { onEvaluationFailed(group.groupId) }
+        if result == nil, reportFailure {
+            onEvaluationFailed(group.groupId)
+        }
         return result ?? false
     }
 }

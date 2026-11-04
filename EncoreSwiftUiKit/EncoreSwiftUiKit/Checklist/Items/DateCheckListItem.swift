@@ -5,13 +5,13 @@ import SwiftUI
 /// Mirrors Android's `DateCheckListItem` composable.
 public struct DateCheckListItem: View {
     let title: String
-    var helperText: String? = nil
-    var itemIndex: Int? = nil
-    var totalItems: Int? = nil
+    var helperText: String?
+    var itemIndex: Int?
+    var totalItems: Int?
     var isCompleted: Bool = false
     let initialDateValue: String
     let onDateSelected: (Date) -> Void
-    var onClear: (() -> Void)? = nil
+    var onClear: (() -> Void)?
     let isRequired: Bool
     let dateFormat: String
 
