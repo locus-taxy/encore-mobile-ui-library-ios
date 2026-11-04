@@ -351,10 +351,10 @@ struct V2InboxPage: View {
     /// The scan list's counted tabs for status. No separate mark-all: Select all → Mark read does it.
     private var tabs: some View {
         // Only Unread carries a count (what's waiting); All has none — a total only grows and asks
-        // nothing of the rider (decided 2026-10-20). No "(0)" when nothing is unread.
+        // nothing of the rider (decided 2026-10-20). Unread shows "(0)" when nothing is unread (2026-11-04).
         let unread = faceted.filter { !$0.read }.count
         return V2Tabs(tabs: [V2Tab(id: "all", label: "All", count: nil),
-                             V2Tab(id: "unread", label: "Unread", count: unread > 0 ? unread : nil)],
+                             V2Tab(id: "unread", label: "Unread", count: unread)],
                selection: Binding(get: { filter.status.rawValue },
                                   set: { id in withAnimation(V2Motion.standard) {
                                       onStatus(V2InboxFilter.Status(rawValue: id) ?? .all)
