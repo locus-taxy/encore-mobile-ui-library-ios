@@ -67,6 +67,9 @@ struct V2Pair: Identifiable {
 struct V2GridSlot {
     var columns: Int = 2
     var pairs: [V2Pair]
+    /// Free-text content (customer answers, DP-9789): value and caption wrap instead of truncating —
+    /// a cut-off customer note is a lost instruction.
+    var wraps: Bool = false
 }
 
 /// Pill action in the card's action row (node 3989:27406).
@@ -518,7 +521,7 @@ struct V2GridView: View {
         VStack(alignment: .leading, spacing: V2Space.gridGap) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 HStack(alignment: .top, spacing: V2Space.gridGap) {
-                    ForEach(row) { V2PairView(pair: $0) }
+                    ForEach(row) { V2PairView(pair: $0, wraps: slot.wraps) }
                     ForEach(0..<(n - row.count), id: \.self) { _ in
                         Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
                     }
@@ -528,27 +531,43 @@ struct V2GridView: View {
     }
 }
 
-/// Label / Value / optional Caption — node 2835:228335. Label and value sit flush (no gap); the
-/// caption hangs 2 below.
+/// Label Value Pair — node 2835:228320 (updated again 16 Nov 2026). Label Medium 12/18 (label2)
+/// text/secondary, one line, ellipsis; 2 below it the `Value` block: value Medium 12/18 (label2) and, flush under it, the
+/// optional caption Regular 12/18 — both text/primary. The caption belongs to the value (it is the
+/// value's note), so it is nested with it rather than hanging off the pair.
 struct V2PairView: View {
     let pair: V2Pair
     /// Value in label1 14/20 instead of label2 12/18 — the scan footer counter and the scanner grid
     /// (frames 29, 50) carry the prominent value.
     var prominent: Bool = false
+    /// Value and caption wrap instead of truncating (free text: customer answers, DP-9789). The label
+    /// stays one line per the component.
+    var wraps: Bool = false
+
+    private func line(_ text: String, _ style: V2TextStyle) -> some View {
+        Group {
+            if wraps {
+                Text(text).v2Text(style).fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(text).v2Label(style)
+            }
+        }
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: V2Space.pairLabelGap) {
             Text(pair.label)
-                .v2Label(V2Font.body2)
+                .v2Label(V2Font.label2)
                 .foregroundColor(HFColor.textSecondary)
-            Text(pair.value)
-                .v2Label(prominent ? V2Font.label1 : V2Font.label2)
-                .foregroundColor(HFColor.textPrimary)
-            if let caption = pair.caption {
-                Text(caption)
-                    .v2Label(V2Font.body2)
-                    .foregroundColor(HFColor.textSecondary)
-                    .padding(.top, V2Space.pairCaptionGap)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            VStack(alignment: .leading, spacing: V2Space.pairCaptionGap) {
+                line(pair.value, prominent ? V2Font.label1 : V2Font.label2)
+                    .foregroundColor(HFColor.textPrimary)
+                if let caption = pair.caption {
+                    line(caption, V2Font.body2)
+                        .foregroundColor(HFColor.textPrimary)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

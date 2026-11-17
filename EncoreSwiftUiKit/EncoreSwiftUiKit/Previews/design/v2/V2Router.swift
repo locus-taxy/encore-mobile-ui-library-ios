@@ -81,6 +81,8 @@ enum V2Route: Equatable {
     case scanner(stop: Int, task: Int)
     /// Modals that sit over whatever is showing.
     case exceptionSheet(stop: Int)
+    /// DP-9789 — the info slot's full sheet (variant B). `task` nil = the stop's own info.
+    case infoSheet(stop: Int, task: Int?)
     case tripDetails
     case tripSummary
     case clockIn
@@ -109,7 +111,8 @@ struct V2Router {
     var stopId: Int? {
         for route in stack.reversed() {
             switch route {
-            case .stop(let s), .task(let s, _), .exceptionSheet(let s), .scanner(let s, _): return s
+            case .stop(let s), .task(let s, _), .exceptionSheet(let s), .scanner(let s, _),
+                 .infoSheet(let s, _): return s
             case .workflow(let w):
                 if let s = w.stopId { return s }
             default: continue
@@ -140,6 +143,11 @@ struct V2Router {
 
     var exceptionStopId: Int? {
         if case .exceptionSheet(let s) = current { return s }
+        return nil
+    }
+
+    var infoSheet: (stop: Int, task: Int?)? {
+        if case .infoSheet(let s, let t) = current { return (s, t) }
         return nil
     }
 
@@ -184,7 +192,7 @@ struct V2Router {
     /// underneath it.
     mutating func dismissModal() {
         switch current {
-        case .exceptionSheet, .tripDetails, .tripSummary, .clockIn, .clockOut, .logOut:
+        case .exceptionSheet, .infoSheet, .tripDetails, .tripSummary, .clockIn, .clockOut, .logOut:
             stack.removeLast()
         default:
             break
@@ -202,8 +210,10 @@ struct V2Router {
             switch route {
             case .home, .tripList, .trip, .profile, .tripDetails, .tripSummary, .clockIn, .clockOut, .logOut:
                 return true
-            case .stop(let s), .exceptionSheet(let s):
+            case .stop(let s), .exceptionSheet(let s), .infoSheet(let s, nil):
                 return trip.stops.contains { $0.id == s }
+            case .infoSheet(let s, let t?):
+                return trip.stops.first { $0.id == s }?.tasks.contains { $0.id == t } ?? false
             case .scanner(let s, let t):
                 return trip.stops.first { $0.id == s }?.tasks.contains { $0.id == t } ?? false
             case .task(let s, let t):

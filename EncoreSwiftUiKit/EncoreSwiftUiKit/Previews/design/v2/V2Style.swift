@@ -199,6 +199,8 @@ enum V2Space {
     static let gridGap: CGFloat = 16
     /// Label/value pair → its caption (node 2835:228335: value ends 36, caption at 38).
     static let pairCaptionGap: CGFloat = 0
+    /// Label → value block inside a Label Value Pair (node 2835:228320: `gap-[2px]`).
+    static let pairLabelGap: CGFloat = 2
     /// `View details` section insets — 12 above the heading, 16 below the grid (node 10956:665730).
     static let detailsSectionTop: CGFloat = 12
     static let detailsSectionBottom: CGFloat = 16

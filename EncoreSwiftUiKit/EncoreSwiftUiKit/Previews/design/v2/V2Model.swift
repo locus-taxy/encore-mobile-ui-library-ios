@@ -366,6 +366,12 @@ struct V2Task: Identifiable {
     var contactName: String? = nil
     var contactSub: String? = nil
     var instruction: String? = nil
+    /// The order's delivery questionnaire, per task (`deliveryInquiries`, DP-9482).
+    var inquiries: [V2Inquiry] = []
+    /// The recipient's authority-to-leave flag — BFA `contactInfo.authorityToLeave` (Boolean). The only
+    /// ATL value the app has before delivery: `resolutionType` is stamped server-side at resolve time
+    /// (SAFE_PLACE / STANDARD, DP-5430), so it can't drive what the driver sees beforehand.
+    var authorityToLeave: Bool = false
     var status: V2TaskStatus = .pending
     /// Blocked until these tasks reach a terminal state (`MovementTask.dependsOnTaskRefs`).
     var dependsOn: [Int] = []
@@ -408,6 +414,8 @@ struct V2Stop: Identifiable {
     /// True for the debrief return leg — planned at trip creation when the trip must return to origin
     /// (`returnToOriginRequired`, IKEA Wave 1), appended at runtime otherwise (DEC-302 3c).
     var isReturnLeg: Bool = false
+    /// Ops' note about the visit (S-D12, `Stop.notes`, ≤1000 chars). Never a customer's instruction.
+    var notes: String? = nil
 
     var eyebrow: String { "STOP \(seq)" }
     var doneTasks: Int { tasks.filter { $0.status.isTerminal }.count }
@@ -516,12 +524,13 @@ enum V2Seed {
 
     /// A task for order `n`: its ref, its tags and its HU count all come from the order book.
     static func task(_ id: Int, order n: Int, _ kind: V2TaskKind, contact: String, sub: String,
-                     instruction: String? = nil, dependsOn: [Int] = [],
-                     custodyAboard: Bool = false) -> V2Task {
+                     instruction: String? = nil, inquiries: [V2Inquiry] = [],
+                     authorityToLeave: Bool = false,
+                     dependsOn: [Int] = [], custodyAboard: Bool = false) -> V2Task {
         let o = order(n)
         return V2Task(id: id, orderRef: o.ref, kind: kind, hus: o.units.count, tags: o.tags,
                       contactName: contact, contactSub: sub, instruction: instruction,
-                      dependsOn: dependsOn, custodyAboard: custodyAboard)
+                      inquiries: inquiries, authorityToLeave: authorityToLeave, dependsOn: dependsOn, custodyAboard: custodyAboard)
     }
 
     static func trip() -> V2Trip {
@@ -559,17 +568,40 @@ enum V2Seed {
                    address: "Mayur Greens, 4th Floor, 87-148, Koramangala, Bengaluru, 560034",
                    window: "09:15 AM - 09:45 AM",
                    tasks: [
+                    // DP-9789 dummy data = DP-9482's stg-uk example (ORD-2026-67205180), as sent:
+                    // PARKING_PERMIT_NEEDED NO + note, STAIR_CASE_SIZE NA (hidden), STAIR_CASE_WIDE_ENOUGH
+                    // YES, FLOOR_NO 3. The instruction is the BFA's `orderInstructions`.
                     task(21, order: 1, .delivery, contact: "Priya Sharma", sub: "23, Floor 4, Building 2",
-                         instruction: "Call on arrival, don't ring the doorbell.", custodyAboard: true),
+                         instruction: "Call on arrival, don't ring the doorbell.",
+                         inquiries: [
+                            V2Inquiry(code: "PARKING_PERMIT_NEEDED", option: "NO",
+                                      value: "Common Parking available at entrance"),
+                            V2Inquiry(code: "STAIR_CASE_SIZE", option: "NA"),
+                            V2Inquiry(code: "STAIR_CASE_WIDE_ENOUGH", option: "YES"),
+                            V2Inquiry(code: "FLOOR_NO", value: "3"),
+                         ],
+                         authorityToLeave: true,
+                         custodyAboard: true),
                     task(22, order: 2, .pickup, contact: "Priya Sharma", sub: "23, Floor 4, Building 2",
+                         inquiries: [V2Inquiry(code: "FLOOR_NO", value: "3")],
                          dependsOn: [21]),
-                   ]),
+                   ],
+                   notes: "Loading bay is round the back of Block B, past the bin store. The buzzer at the main gate is broken — use the side gate on Mayur Lane. Sign in at the security desk on the ground floor; they keep a trolley you can borrow. Vans can't reverse into the bay after 5 pm, park on the street and walk the last 50 m."),
             V2Stop(id: 3, seq: 3, kind: .customer, config: .customer,
                    title: "Majestic Apartments",
                    address: "A-148, 4th Block, Koramangala, Bengaluru, 560034",
                    window: "10:00 AM - 11:00 AM",
                    tasks: [
+                    // DP-9789: the same four codes, no instruction — the answers-only banner.
                     task(31, order: 3, .delivery, contact: "Priya Sharma", sub: "27, Floor 4, Building 2",
+                         inquiries: [
+                            V2Inquiry(code: "PARKING_PERMIT_NEEDED", option: "YES",
+                                      value: "Visitor permit at reception"),
+                            V2Inquiry(code: "STAIR_CASE_SIZE", option: "NA"),
+                            V2Inquiry(code: "STAIR_CASE_WIDE_ENOUGH", option: "NO",
+                                      value: "Narrow turn at the 2nd floor landing"),
+                            V2Inquiry(code: "FLOOR_NO", value: "4"),
+                         ],
                          custodyAboard: true),
                     // Never collected, so nothing is aboard — must NOT generate a handback.
                     task(32, order: 4, .pickup, contact: "Rohit Mehta", sub: "23, Floor 4, Building 2"),
@@ -581,12 +613,14 @@ enum V2Seed {
                    tasks: [
                     task(41, order: 5, .delivery, contact: "Rohit Mehta", sub: "Counter 2, Gate 1",
                          instruction: "Call on arrival, don't ring the doorbell.", custodyAboard: true),
+                    // ATL and nothing else — the banner's ATL-only case.
                     task(42, order: 6, .delivery, contact: "Priya Sharma", sub: "Counter 2, Gate 1",
-                         custodyAboard: true),
+                         authorityToLeave: true, custodyAboard: true),
                     task(43, order: 7, .delivery, contact: "Rohit Mehta", sub: "Counter 2, Gate 1",
                          custodyAboard: true),
                    ],
-                   dwellSecondsLeft: 503),
+                   dwellSecondsLeft: 503,
+                   notes: "Deliveries via the rear door, not the café floor."),
             // The trip returns to origin, so the hub stop is PLANNED (STOP-INV-3), carrying the
             // return DELIVER of what is collected from customers on the way — order 2, picked up at
             // stop 2 (W-2 §4.1, Story 1.4.10). Hand-backs of failed deliveries join it at runtime as

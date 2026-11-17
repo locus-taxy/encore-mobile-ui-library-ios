@@ -22,6 +22,13 @@ struct V2Variant: Hashable {
 
     // Registry — one line per live variant.
     // static let denseCards = V2Variant("denseCards")   // example: tighter task-card rhythm (12 → 8)
+    // DP-9789 — the info slot under a page header (stop note, customer instruction, questionnaire).
+    static let infoInline = V2Variant("infoInline")       // A: every section in full, inline
+    static let infoSheet = V2Variant("infoSheet")         // B: 2-line preview + count → full sheet
+    static let infoCollapse = V2Variant("infoCollapse")   // C: "Details (n)" row, expands in place
+    static let infoOpen = V2Variant("infoOpen")           // C modifier: start expanded (for screenshots)
+    static let infoDummy = V2Variant("infoDummy")   // dummy example: lorem ipsum, 1/2-col pairs
+    static let infoIcon = V2Variant("infoIcon")     // pre-frame-04 banner: icon + one line per item (comparison)
 
     /// Variants switched on for this launch, from `POC_VARIANT`.
     static let active: Set<String> = {

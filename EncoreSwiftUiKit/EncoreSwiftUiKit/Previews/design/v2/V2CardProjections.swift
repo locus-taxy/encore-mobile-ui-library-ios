@@ -185,7 +185,11 @@ extension V2Task {
             headline: husLabel,
             reason: status == .cancelled
                 ? cancellationReason.map { V2ReasonSlot(label: "Cancellation Reason", value: $0) } : nil,
+            // Task type → delivery mode → the rest, so ATL sits in the same place on every card.
             tags: [V2ChipSlot("identifier") { V2TaskIdentifierChip(kind: kind) }]
+                + (!authorityToLeave ? [] : [V2ChipSlot("atl") {
+                    HFPillChip(text: "Authority to leave", bg: HFColor.infoBg, fg: HFColor.infoText, dot: false)
+                }])
                 + tags.map { tag in
                     V2ChipSlot("tag-\(tag)") {
                         HFPillChip(text: tag, bg: HFColor.screen, fg: HFColor.textSecondary, dot: false)

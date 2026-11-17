@@ -170,6 +170,20 @@ public struct V2Flow: View {
             }
         }
         .overlay {
+            // DP-9789 variant B — the info slot's full sheet, over the stop or task page.
+            HFBottomSheet(isPresented: router.infoSheet != nil,
+                          onDismiss: { V2Motion.txSurface { router.dismissModal() } }) {
+                if let info = router.infoSheet,
+                   let st = engine.trip.stops.first(where: { $0.id == info.stop }) {
+                    let tk = info.task.flatMap { t in st.tasks.first { $0.id == t } }
+                    // The sheet carries the title of the banner it opens from.
+                    V2InfoSheet(title: tk?.infoTitle ?? st.infoTitle,
+                                sections: tk?.infoSections ?? st.infoSections,
+                                onClose: { V2Motion.txSurface { router.dismissModal() } })
+                }
+            }
+        }
+        .overlay {
             HFBottomSheet(isPresented: router.showsTripDetails,
                           onDismiss: { V2Motion.txSurface { router.dismissModal() } }) {
                 V2TripDetailsSheet(trip: trip,
@@ -280,7 +294,8 @@ public struct V2Flow: View {
                                       onClose: { V2Motion.txSurface { router.dismissToBase() } },
                                       onPrimary: { taskPrimary(stop, task) },
                                       onMarkFailed: { failTask(stop, task) },
-                                      onGoToRelated: { goToRelated(stop, task) })
+                                      onGoToRelated: { goToRelated(stop, task) },
+                                      onInfo: { V2Motion.txSurface { router.push(.infoSheet(stop: stop.id, task: task.id)) } })
                         .transition(V2Motion.dissolve)
                 } else {
                     V2StopSheet(stop: stop,
@@ -299,7 +314,8 @@ public struct V2Flow: View {
                                     withAnimation(V2Motion.standard) { undoMenuOpen = false }
                                     undoArrival(stop)
                                 },
-                                onDismissMenu: { withAnimation(V2Motion.standard) { undoMenuOpen = false } })
+                                onDismissMenu: { withAnimation(V2Motion.standard) { undoMenuOpen = false } },
+                                onInfo: { V2Motion.txSurface { router.push(.infoSheet(stop: stop.id, task: nil)) } })
                         .transition(V2Motion.dissolve)
                 }
             }
@@ -806,6 +822,33 @@ public struct V2Flow: View {
             engine.startTrip()
             router.setPage(.trip)
             router.push(.stop(2)); router.push(.task(stop: 2, task: 21))
+        // DP-9789 — stop 2 carries a stop note; its delivery task carries the full questionnaire.
+        case "info-stop":
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(2))
+        case "info-task":
+            engine.startTrip(); router.setPage(.trip)
+            router.push(.stop(2)); router.push(.task(stop: 2, task: 21))
+        case "info-tasksheet":
+            engine.startTrip(); router.setPage(.trip)
+            router.push(.stop(2)); router.push(.task(stop: 2, task: 21))
+            router.push(.infoSheet(stop: 2, task: 21))
+        case "info-task-instr":     // instruction only (stop 4, task 41)
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(4)); router.push(.task(stop: 4, task: 41))
+        case "info-task-answers":   // answers only (stop 3, task 31)
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(3)); router.push(.task(stop: 3, task: 31))
+        case "info-task-one":       // one short answer (stop 2, task 22)
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(2)); router.push(.task(stop: 2, task: 22))
+        case "info-task-atl":       // authority to leave and nothing else (stop 4, task 42)
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(4)); router.push(.task(stop: 4, task: 42))
+        case "info-task-none":      // nothing (stop 3, task 32)
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(3)); router.push(.task(stop: 3, task: 32))
+        case "info-stop-none":      // stop with no note (stop 3)
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(3))
+        case "info-stopshort":
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(4))
+        case "info-stopsheet":
+            engine.startTrip(); router.setPage(.trip); router.push(.stop(2))
+            router.push(.infoSheet(stop: 2, task: nil))
         case "arrived":
             engine.startTrip(); engine.startWork(2); engine.markArrival(2)
             router.setPage(.trip); router.push(.stop(2))

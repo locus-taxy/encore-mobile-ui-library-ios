@@ -342,6 +342,7 @@ struct V2StopSheet: View {
     var menuOpen: Bool = false
     var onUndoArrival: () -> Void = {}
     var onDismissMenu: () -> Void = {}
+    var onInfo: () -> Void = {}
 
     var body: some View {
         VStack(spacing: 0) {
@@ -389,11 +390,16 @@ struct V2StopSheet: View {
     }
 
     private var header: some View {
-        V2CardView(model: stop.headerCard(dispatched: tripStarted || stop.status != .pending,
-                                          onNavigate: {},
-                                          exceptionLabel: exceptionLabel,
-                                          onException: onExceptionAction))
-            .background(HFColor.surface)
+        VStack(spacing: 0) {
+            V2CardView(model: stop.headerCard(dispatched: tripStarted || stop.status != .pending,
+                                              onNavigate: {},
+                                              exceptionLabel: exceptionLabel,
+                                              onException: onExceptionAction))
+            // DP-9789: the stop's own note shares the task page's info slot.
+            V2InfoSlot(title: stop.infoTitle, sections: stop.infoSections, onViewAll: onInfo)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(HFColor.surface)
     }
 
     /// A clubbed stop draws ONE card for every task, so the search/filter affordance counts what is
@@ -474,6 +480,7 @@ struct V2TaskDetailSheet: View {
     var onPrimary: () -> Void = {}
     var onMarkFailed: () -> Void = {}
     var onGoToRelated: () -> Void = {}
+    var onInfo: () -> Void = {}
 
     var body: some View {
         VStack(spacing: 0) {
@@ -510,11 +517,9 @@ struct V2TaskDetailSheet: View {
                                               dwellBlocked: dwellBlocked,
                                               onCall: {},
                                               onMarkFailed: onMarkFailed))
-            if let instruction = task.instruction {
-                V2InstructionBanner(text: instruction)
-                    .padding(.horizontal, V2Space.headerInset)
-                    .padding(.bottom, V2Space.headerInsetBottom)
-            }
+            // DP-9789: one info slot for everything the driver should know (V2Info.swift).
+            V2InfoSlot(title: task.infoTitle, sections: task.infoSections,
+                       baseline: task.instruction, onViewAll: onInfo)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(HFColor.surface)
@@ -619,29 +624,147 @@ struct V2TaskDetailSheet: View {
     }
 }
 
-/// Delivery instruction on a task (frame 46): info-tinted row, leading ⓘ, single line.
+/// Info banner under a page header — `<Alert> | Banner` (frame 46; DP-9789 adds title + link).
+/// Colours are the info banner's: info fill, #BDE2FF 0.5 border, info-coloured ⓘ, r4. Text and spacing
+/// follow the medium notification alert (`V2NotificationBanner`), minus its ✕: 20 icon centred, 12 gap;
+/// title Medium 14/20 → message Regular 14/20 (two lines) → link SemiBold 14/24 underlined on its own
+/// line, min 32 tall; 16 sides, 8 top/bottom. Title and link are optional, so the one-line instruction
+/// banner is the same component with neither.
 struct V2InstructionBanner: View {
+    var title: String? = nil
     let text: String
-    /// Frame 45: 48 tall — 8 inset around a 32pt icon box holding a 20pt Info glyph; body1 14/20;
-    /// r4 with a 0.5 info-light border over info at 8%.
+    /// A second, one-line message (DP-9789: the answer summary under the instruction). With it the
+    /// message takes one line; without it, two.
+    var detail: String? = nil
+    var link: String? = nil
+    /// Frame 04 (Figma 14631:403134) drops the icon: the tint already says "info", and the 32pt it
+    /// freed goes to the text column.
+    var showsIcon: Bool = true
+    /// Whole-item cuts of the message, longest first. When set, the banner shows the longest one that
+    /// fits in two lines, so the cut lands between items and never mid-word ("Parking permit nee…").
+    /// The last resort is the first item clamped with an ellipsis.
+    var fits: [String]? = nil
+    /// With `fits`: the link shows only when the 2-line cut hid something, or when this is true
+    /// (content the banner never shows, e.g. a caption under an answer). A link that opens text
+    /// already on screen is a wasted tap.
+    var linkEvenIfAllShown: Bool = false
+    var onLink: () -> Void = {}
+
+    @State private var fullHeight: CGFloat = 0
+    private var cut: Bool { fullHeight > 52 }
+    private var shownLink: String? {
+        guard fits != nil else { return link }
+        return (cut || linkEvenIfAllShown) ? link : nil
+    }
+
     private static let border = Color(.sRGB, red: 189/255, green: 226/255, blue: 255/255, opacity: 1) // #BDE2FF
 
     var body: some View {
-        HStack(alignment: .center, spacing: Spacing.spacing4) {
-            EncoreIcon(iconName: "LInfo", size: V2Icon.banner)
-                .foregroundColor(HFColor.infoText)
-                .frame(width: 32, height: 32)
-            Text(text)
-                .v2Text(V2Font.body1)
-                .foregroundColor(HFColor.textPrimary)
-            Spacer(minLength: 0)
+        HStack(alignment: .center, spacing: Spacing.spacing12) {
+            if showsIcon {
+                EncoreIcon(iconName: "LInfo", size: V2Icon.banner)
+                    .foregroundColor(HFColor.infoText)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                if let title {
+                    Text(title)
+                        .v2Label(V2Font.label1)
+                }
+                if let fits, !fits.isEmpty {
+                    // Same message type and two-line cap as the medium alert. A Body1 line renders
+                    // ~20.7pt, so anything under 2.5 lines' height is two lines.
+                    V2FirstFit(maxHeight: 52) {
+                        ForEach(fits, id: \.self) { t in
+                            Text(t).v2Text(V2Font.body1)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Text(fits.last ?? text).v2Text(V2Font.body1).lineLimit(2)
+                    }
+                    // Measures the uncut message once, to know whether the cut hid anything.
+                    .background(
+                        Text(fits.first ?? text).v2Text(V2Font.body1)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .hidden()
+                            .background(GeometryReader { g in
+                                Color.clear.preference(key: V2HeightKey.self, value: g.size.height)
+                            }), alignment: .topLeading)
+                    .onPreferenceChange(V2HeightKey.self) { fullHeight = $0 }
+                } else {
+                    Text(text)
+                        .v2Text(V2Font.body1)
+                        .lineLimit(detail == nil ? 2 : 1)
+                        .truncationMode(.tail)
+                        .multilineTextAlignment(.leading)
+                }
+                if let detail {
+                    Text(detail)
+                        .v2Text(V2Font.body1)
+                        .lineLimit(1)
+                }
+                if let link = shownLink {
+                    // Its own 24 line, 4 below the message. No 32 min-height: the whole banner is the
+                    // target, and the padding a min-height adds made the gap above the link and the
+                    // bottom inset read larger than the rest (16 Nov review).
+                    Text(link)
+                        .v2Label(V2Font.buttonMedium)
+                        .underline()
+                        .padding(.top, Spacing.spacing4)
+                }
+            }
+            .foregroundColor(HFColor.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // Never compressed by a parent proposing less height — the stop header did, clipping the
+            // title off the top. The banner takes the height its text needs.
+            .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, Spacing.spacing8)
-        .padding(.vertical, Spacing.spacing8)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, Spacing.spacing16)
+        // 12 when there is a title (a multi-line block needs even breathing room top and bottom);
+        // the one-line banner keeps its 8 inside the 48 minimum, unchanged from frame 46.
+        .padding(.vertical, title == nil ? Spacing.spacing8 : Spacing.spacing12)
+        .frame(maxWidth: .infinity, minHeight: V2Metrics.touchTarget, alignment: .leading)
         .background(HFColor.infoBg)
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .overlay(RoundedRectangle(cornerRadius: 4).stroke(Self.border, lineWidth: V2Space.hairline))
+        // The whole banner does what the link does (as the medium alert's body does).
+        .contentShape(Rectangle())
+        .onTapGesture { if shownLink != nil { onLink() } }
+    }
+}
+
+private struct V2HeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+/// Shows the first subview whose height at the offered width is within `maxHeight`, and takes only
+/// that subview's size (ViewThatFits reserved the whole cap even for one line). The last subview is the
+/// fallback and is always shown if nothing earlier fits. The rest are parked off-canvas.
+struct V2FirstFit: Layout {
+    var maxHeight: CGFloat
+
+    private func pick(_ proposal: ProposedViewSize, _ subviews: Subviews) -> (index: Int, size: CGSize) {
+        let free = ProposedViewSize(width: proposal.width, height: nil)
+        for (i, v) in subviews.enumerated() {
+            let size = v.sizeThatFits(free)
+            if size.height <= maxHeight || i == subviews.count - 1 { return (i, size) }
+        }
+        return (0, .zero)
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let p = pick(proposal, subviews)
+        return CGSize(width: proposal.width ?? p.size.width, height: p.size.height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let chosen = pick(proposal, subviews).index
+        for (i, v) in subviews.enumerated() {
+            if i == chosen {
+                v.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: nil))
+            } else {
+                v.place(at: CGPoint(x: -100_000, y: -100_000), proposal: .zero)
+            }
+        }
     }
 }
 
