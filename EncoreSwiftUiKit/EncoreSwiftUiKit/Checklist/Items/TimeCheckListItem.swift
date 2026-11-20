@@ -73,7 +73,7 @@ public struct TimeCheckListItem: View {
             )
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialTimeValue) { newValue in
+        .onChange(of: initialTimeValue) { _, newValue in
             timeValue = newValue
         }
     }

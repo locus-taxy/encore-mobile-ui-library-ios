@@ -127,7 +127,7 @@ public struct PinView: View {
             .foregroundColor(.clear) // digits render in the slots, not here
             .tint(.clear) // hide the caret
             .contentShape(Rectangle())
-            .onChange(of: input) { newValue in
+            .onChange(of: input) { _, newValue in
                 // Filter to digits, cap at itemCount. Every edit (incl. backspace)
                 // flows through here, so entered digits can always be changed.
                 let filtered = String(newValue.filter(\.isNumber).prefix(itemCount))
@@ -145,7 +145,7 @@ public struct PinView: View {
                     isFocused = false
                 }
             }
-            .onChange(of: pinValue) { newValue in
+            .onChange(of: pinValue) { _, newValue in
                 // Reflect external changes (draft restore / clear).
                 if newValue != input {
                     input = newValue

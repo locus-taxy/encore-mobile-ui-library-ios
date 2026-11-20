@@ -65,7 +65,7 @@ public struct RatingCheckListItem: View {
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialRating) { newValue in
+        .onChange(of: initialRating) { _, newValue in
             rating = newValue
         }
     }

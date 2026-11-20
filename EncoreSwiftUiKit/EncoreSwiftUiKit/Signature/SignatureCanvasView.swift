@@ -159,7 +159,7 @@ struct SignatureDrawingCanvas: View {
                             }
                     )
                     .onAppear { canvasSize = geo.size }
-                    .onChange(of: geo.size) { canvasSize = $0 }
+                    .onChange(of: geo.size) { _, newValue in canvasSize = newValue }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 300)

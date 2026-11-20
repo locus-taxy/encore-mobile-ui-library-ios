@@ -42,7 +42,7 @@ struct CropImageView: View {
         .onAppear {
             cachedRotatedImage = rotatedImage()
         }
-        .onChange(of: rotationAngle) { _ in
+        .onChange(of: rotationAngle) {
             cachedRotatedImage = rotatedImage()
         }
     }

@@ -45,7 +45,7 @@ public struct TextFieldView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(borderColor, lineWidth: validationState == .error ? 1.5 : 0)
                 )
-                .onChange(of: value) { newValue in
+                .onChange(of: value) { _, newValue in
                     onValueChange(newValue)
                 }
         }

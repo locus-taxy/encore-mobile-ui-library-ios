@@ -7,7 +7,7 @@ let package = Package(
     name: "EncoreSwiftUiKit",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v16)
+        .iOS("18.0")
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.

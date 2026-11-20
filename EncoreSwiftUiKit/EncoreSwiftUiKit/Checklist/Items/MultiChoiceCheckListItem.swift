@@ -65,7 +65,7 @@ public struct MultiChoiceCheckListItem: View {
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialSelectedIndices) { newValue in
+        .onChange(of: initialSelectedIndices) { _, newValue in
             selectedIndices = newValue
         }
     }

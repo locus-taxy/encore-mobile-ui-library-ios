@@ -83,7 +83,7 @@ public struct SignatureCheckListItem: View {
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialSignatureURL) { newValue in
+        .onChange(of: initialSignatureURL) { _, newValue in
             signatureURL = newValue
         }
         .sheet(item: $validationState) { state in

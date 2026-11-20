@@ -181,7 +181,7 @@ extension URL: @retroactive Identifiable {
     }
 }
 
-// MARK: - PHPicker (iOS 14+)
+// MARK: - PHPicker
 
 struct PHPickerRepresentable: UIViewControllerRepresentable {
     let onImagePicked: (URL?) -> Void

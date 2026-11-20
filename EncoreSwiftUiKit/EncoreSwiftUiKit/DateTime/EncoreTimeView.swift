@@ -1,16 +1,5 @@
 import SwiftUI
 
-/// A modifier that applies `.presentationDetents([.medium])` on iOS 16+ and is a no-op on earlier versions.
-private struct TimeMediumDetentModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 16.0, *) {
-            content.presentationDetents([.medium])
-        } else {
-            content
-        }
-    }
-}
-
 /// Reusable time picker view component matching Figma design specifications.
 /// Can be used standalone or within checklist items.
 /// Mirrors Android's `TimeView` composable.
@@ -102,7 +91,7 @@ public struct EncoreTimeView: View {
                     }
                 }
             }
-            .modifier(TimeMediumDetentModifier())
+            .presentationDetents([.medium])
         }
         .onAppear {
             if !timeValue.isEmpty {

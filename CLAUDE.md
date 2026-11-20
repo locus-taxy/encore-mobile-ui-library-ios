@@ -10,7 +10,7 @@ Shared iOS UI component library for the Encore platform. Provides reusable Swift
 
 - **Language:** Swift
 - **UI Framework:** SwiftUI
-- **Min iOS:** 15
+- **Min iOS:** 18.0
 - **Build:** Swift Package Manager (`Package.swift`)
 - **Module name:** `EncoreSwiftUiKit`
 - **Main source:** `EncoreSwiftUiKit/EncoreSwiftUiKit/`

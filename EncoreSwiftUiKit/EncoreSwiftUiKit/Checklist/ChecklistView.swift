@@ -111,7 +111,7 @@ public struct ChecklistView<Header: View>: View {
                 }
             }
         }
-        .onChange(of: items) { newItems in
+        .onChange(of: items) { _, newItems in
             stateManager.updateItems(newItems)
         }
     }

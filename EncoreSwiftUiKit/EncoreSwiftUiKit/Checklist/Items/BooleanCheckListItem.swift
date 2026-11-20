@@ -56,7 +56,7 @@ public struct BooleanCheckListItem: View {
             )
         }
         .padding(EdgeInsets(top: 15, leading: 0, bottom: 15, trailing: 15))
-        .onChange(of: initialChecked) { newValue in
+        .onChange(of: initialChecked) { _, newValue in
             checked = newValue
         }
     }
