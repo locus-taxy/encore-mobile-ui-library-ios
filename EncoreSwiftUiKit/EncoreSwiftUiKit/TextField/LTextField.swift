@@ -170,7 +170,7 @@ public struct LTextField: View {
                     .foregroundColor(textColor)
                     .frame(minHeight: 80)
                     .padding(.horizontal, -4)
-                    .scrollContentBackgroundHidden()
+                    .scrollContentBackground(.hidden)
                     .disabled(isDisabled)
             }
         } else {
@@ -472,19 +472,6 @@ public struct LTextField: View {
         case .error: return "exclamationmark.circle.fill"
         case .normal: return "info.circle.fill" // Figma FormHelperText shows an info icon
         case .validating: return nil
-        }
-    }
-}
-
-// MARK: - iOS 15 compatibility helper for TextEditor background
-
-private extension View {
-    @ViewBuilder
-    func scrollContentBackgroundHidden() -> some View {
-        if #available(iOS 16.0, *) {
-            self.scrollContentBackground(.hidden)
-        } else {
-            self
         }
     }
 }

@@ -38,7 +38,7 @@ public struct EncoreDatePickerModifier: ViewModifier {
                         .animation(.spring(response: 0.35, dampingFraction: 0.9), value: isSheetVisible)
                         .allowsHitTesting(isSheetVisible)
                 }
-                .modifier(EncoreDatePickerClearPresentationBackground())
+                .presentationBackground(.clear)
                 .onAppear {
                     selectedDate = initialDate
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
@@ -46,7 +46,7 @@ public struct EncoreDatePickerModifier: ViewModifier {
                     }
                 }
             }
-            .onChange(of: isPresented) { newValue in
+            .onChange(of: isPresented) { _, newValue in
                 if newValue {
                     var transaction = Transaction()
                     transaction.disablesAnimations = true
@@ -215,35 +215,4 @@ public extension View {
             onDateSelected: onDateSelected
         ))
     }
-}
-
-// MARK: - Transparent presentation background
-
-/// Makes the `fullScreenCover` platter transparent from the first frame.
-///
-/// On iOS 16.4+ `presentationBackground(.clear)` is applied synchronously as
-/// part of the presentation — so there's no opaque frame (the "flash"). Below
-/// 16.4 it falls back to clearing the host view's background, which happens a
-/// frame late.
-private struct EncoreDatePickerClearPresentationBackground: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(.clear)
-        } else {
-            content.background(EncoreDatePickerTransparentBackground())
-        }
-    }
-}
-
-/// Pre-16.4 fallback: clears the presented container's background asynchronously.
-private struct EncoreDatePickerTransparentBackground: UIViewRepresentable {
-    func makeUIView(context _: Context) -> UIView {
-        let view = UIView()
-        DispatchQueue.main.async {
-            view.superview?.superview?.backgroundColor = .clear
-        }
-        return view
-    }
-
-    func updateUIView(_: UIView, context _: Context) {}
 }

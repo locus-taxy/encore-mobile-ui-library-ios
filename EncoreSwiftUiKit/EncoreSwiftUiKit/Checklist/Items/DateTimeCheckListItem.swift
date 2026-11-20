@@ -89,10 +89,10 @@ public struct DateTimeCheckListItem: View {
             )
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialDateValue) { newValue in
+        .onChange(of: initialDateValue) { _, newValue in
             dateValue = newValue
         }
-        .onChange(of: initialTimeValue) { newValue in
+        .onChange(of: initialTimeValue) { _, newValue in
             timeValue = newValue
         }
     }

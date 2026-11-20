@@ -85,7 +85,7 @@ public struct PinCheckListItem: View {
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialPinValue) { newValue in
+        .onChange(of: initialPinValue) { _, newValue in
             pinValue = newValue
         }
     }

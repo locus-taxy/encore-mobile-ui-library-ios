@@ -83,7 +83,7 @@ public struct TextFieldCheckListItem: View {
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialValue) { newValue in
+        .onChange(of: initialValue) { _, newValue in
             textValue = newValue
         }
     }

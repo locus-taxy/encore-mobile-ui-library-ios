@@ -8,7 +8,7 @@ Project: `encore-mobile-ui-library-ios` (`ui-library-ios`)
 
 **Build system:** Swift Package Manager
 **Package name:** `EncoreSwiftUiKit`
-**Min iOS:** 15
+**Min iOS:** 18.0
 
 All source lives under:
 `EncoreSwiftUiKit/EncoreSwiftUiKit/`
@@ -172,6 +172,6 @@ No mocking — tests assert on static design token values.
 | Item | Value |
 |------|-------|
 | Build system | Swift Package Manager |
-| Min iOS | 15 |
+| Min iOS | 18.0 |
 | Swift | 5.9+ |
 | Package name | `EncoreSwiftUiKit` |

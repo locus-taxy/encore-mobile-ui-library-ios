@@ -70,7 +70,7 @@ public struct SingleChoiceCheckListItem: View {
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialSelectedIndex) { newValue in
+        .onChange(of: initialSelectedIndex) { _, newValue in
             selectedIndex = newValue
         }
     }

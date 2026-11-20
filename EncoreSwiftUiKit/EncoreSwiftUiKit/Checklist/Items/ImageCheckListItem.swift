@@ -110,7 +110,7 @@ public struct ImageCheckListItem: View {
             .padding(.top, ChecklistItemConstants.innerTopPadding)
         }
         .padding(ChecklistItemConstants.itemPadding)
-        .onChange(of: initialImageURLs) { newValue in
+        .onChange(of: initialImageURLs) { _, newValue in
             imageURLs = newValue
         }
         .sheet(item: $activeSheet) { sheet in

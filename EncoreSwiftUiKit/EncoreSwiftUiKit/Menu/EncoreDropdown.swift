@@ -84,13 +84,13 @@ public struct EncoreDropdownModifier: ViewModifier {
             .background(anchorReader)
             .fullScreenCover(isPresented: $internalPresented) {
                 overlay
-                    .modifier(DropdownClearPresentationBackground())
+                    .presentationBackground(.clear)
                     .onAppear {
                         draft = selectedIndices
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { visible = true }
                     }
             }
-            .onChange(of: isPresented) { open in
+            .onChange(of: isPresented) { _, open in
                 if open {
                     // Suppress the system slide-up cover transition — the card gets
                     // its own fade/scale instead.
@@ -109,7 +109,7 @@ public struct EncoreDropdownModifier: ViewModifier {
         GeometryReader { proxy in
             Color.clear
                 .onAppear { anchorFrame = proxy.frame(in: .global) }
-                .onChange(of: proxy.frame(in: .global)) { anchorFrame = $0 }
+                .onChange(of: proxy.frame(in: .global)) { _, newValue in anchorFrame = newValue }
         }
     }
 
@@ -298,31 +298,6 @@ public struct EncoreDropdownModifier: ViewModifier {
         onCommit(draft)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { internalPresented = false }
     }
-}
-
-// MARK: - Transparent presentation background
-
-/// Makes the `fullScreenCover` platter transparent so only the anchored card and
-/// its (clear) tap-catcher are visible.
-private struct DropdownClearPresentationBackground: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(.clear)
-        } else {
-            content.background(DropdownTransparentBackground())
-        }
-    }
-}
-
-/// Pre-16.4 fallback: clears the presented container's background.
-private struct DropdownTransparentBackground: UIViewRepresentable {
-    func makeUIView(context _: Context) -> UIView {
-        let view = UIView()
-        DispatchQueue.main.async { view.superview?.superview?.backgroundColor = .clear }
-        return view
-    }
-
-    func updateUIView(_: UIView, context _: Context) {}
 }
 
 // MARK: - Convenience
