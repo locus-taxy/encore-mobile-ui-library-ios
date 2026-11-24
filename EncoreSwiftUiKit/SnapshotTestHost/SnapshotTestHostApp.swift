@@ -1,10 +1,17 @@
+import PreviewGallery
 import SwiftUI
 
 @main
 struct SnapshotTestHostApp: App {
+    init() {
+        SduiDivKitRenderer.install()
+    }
+
     var body: some Scene {
         WindowGroup {
-            Text("SnapshotTestHost")
+            NavigationStack {
+                PreviewGallery()
+            }
         }
     }
 }

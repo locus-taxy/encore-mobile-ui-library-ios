@@ -40,6 +40,10 @@ targets:
     sources: [SnapshotTestHost]
     dependencies:
       - target: EncoreSwiftUiKit
+      - package: DivKit
+        product: DivKit
+      - package: SnapshotPreviews
+        product: PreviewGallery
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.SnapshotTestHost
@@ -81,3 +85,9 @@ packages:
   SnapshotPreviews:
     url: https://github.com/EmergeTools/SnapshotPreviews.git
     version: 0.12.0
+  DivKit:
+    url: https://github.com/divkit/divkit-ios
+    version: 32.35.0
+  VGSL:
+    url: https://github.com/yandex/vgsl.git
+    exactVersion: 7.12.3
