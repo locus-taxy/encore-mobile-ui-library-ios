@@ -1,10 +1,5 @@
 import SwiftUI
 
-@MainActor
-public enum SduiPreviewRendering {
-    public static var renderer: ((_ json: String, _ cardId: String) -> AnyView)?
-}
-
 public struct SduiCardPreview: View {
     private let path: URL
     private let cardId: String
@@ -32,8 +27,8 @@ public struct SduiCardPreview: View {
 
     @ViewBuilder
     private var content: some View {
-        if let json, let render = SduiPreviewRendering.renderer {
-            render(json, cardId)
+        if let json {
+            SduiDivView(json: json, cardId: cardId)
         } else {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.secondary.opacity(0.08))

@@ -7,12 +7,6 @@ import UIKit
 @MainActor
 enum SduiDivKitRenderer {
     static let components = DivKitComponents(divCustomBlockFactory: SduiPreviewBlockFactory())
-
-    static func install() {
-        SduiPreviewRendering.renderer = { json, cardId in
-            AnyView(SduiDivView(json: json, cardId: cardId))
-        }
-    }
 }
 
 struct SduiDivView: UIViewRepresentable {
