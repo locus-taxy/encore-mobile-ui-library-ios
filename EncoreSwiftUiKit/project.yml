@@ -37,34 +37,12 @@ targets:
 
     scheme: {}
 
-  EncoreDesignPreviews:
-    type: framework
-    platform: iOS
-    sources: [EncoreSwiftUiKit/Previews]
-    dependencies:
-      - target: EncoreSwiftUiKit
-      - package: DivKit
-        product: DivKit
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.DesignPreviews
-      configs:
-        debug:
-          SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
-          ONLY_ACTIVE_ARCH: YES
-      groups:
-        - signing
-    scheme: {}
-
   SnapshotTestHost:
     type: application
     platform: iOS
     sources: [SnapshotTestHost]
     dependencies:
       - target: EncoreSwiftUiKit
-      - target: EncoreDesignPreviews
-      - package: SnapshotPreviews
-        product: PreviewGallery
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: sh.locus.encore.SnapshotTestHost
@@ -106,9 +84,3 @@ packages:
   SnapshotPreviews:
     url: https://github.com/EmergeTools/SnapshotPreviews.git
     version: 0.12.0
-  DivKit:
-    url: https://github.com/divkit/divkit-ios
-    version: 32.35.0
-  VGSL:
-    url: https://github.com/yandex/vgsl.git
-    exactVersion: 7.12.3
