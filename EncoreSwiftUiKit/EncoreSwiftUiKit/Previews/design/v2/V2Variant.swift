@@ -27,7 +27,7 @@ struct V2Variant: Hashable {
     static let rcmpBanner = V2Variant("rcmpBanner")   // 1: call banner on top of the failure checklist
     static let rcmpNav    = V2Variant("rcmpNav")      // 2: call icon in the failure checklist's nav bar
     static let rcmpMenu   = V2Variant("rcmpMenu")     // 3: "Facing issues?" → sheet with Call RCMP | Mark as failed
-    static let rcmpNudge  = V2Variant("rcmpNudge")    // 4: Mark failed → Mark failed sheet (Call RCMP | Mark the order as failed → checklist)
+    static let rcmpNudge  = V2Variant("rcmpNudge")    // 4 (final): Mark failed → "Mark order as failed?" → call → "Spoke to support?"
 
     /// Variants switched on for this launch, from `POC_VARIANT`.
     static let active: Set<String> = {

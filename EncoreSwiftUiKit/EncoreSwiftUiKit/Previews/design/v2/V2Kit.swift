@@ -8,7 +8,7 @@ import SwiftUI
 /// A full-width button. Figma `<Button>`: r4; 48 tall in a sheet / footer (`xlarge`), 40 inside a
 /// card (`large`, frame 07's Clock in) — the 40 still sits in a 48 touch target.
 struct V2Button: View {
-    enum Role { case primary, danger, text, success }
+    enum Role { case primary, danger, text, success, outlined }
     enum Size { case regular, compact }
 
     let label: String
@@ -27,13 +27,17 @@ struct V2Button: View {
         case .primary: return HFColor.primary
         case .danger:  return Color.encore("Error/Main")
         case .success: return HFColor.success
-        case .text:    return .clear
+        case .text, .outlined: return .clear
         }
     }
 
     private var ink: Color {
         guard enabled else { return HFColor.textDisabled }
-        return role == .text ? V2Token.actionActive : HFColor.onPrimary
+        switch role {
+        case .text:     return V2Token.actionActive
+        case .outlined: return HFColor.primary
+        default:        return HFColor.onPrimary
+        }
     }
 
     var body: some View {
@@ -55,6 +59,8 @@ struct V2Button: View {
             .frame(height: size == .regular ? V2Metrics.footerButton : 40)
             .background(fill)
             .clipShape(RoundedRectangle(cornerRadius: V2Metrics.footerRadius))
+            .overlay(RoundedRectangle(cornerRadius: V2Metrics.footerRadius)
+                .stroke(role == .outlined ? HFColor.primary.opacity(0.5) : .clear, lineWidth: 1))
             .frame(height: V2Metrics.touchTarget)
             .contentShape(Rectangle())
         }

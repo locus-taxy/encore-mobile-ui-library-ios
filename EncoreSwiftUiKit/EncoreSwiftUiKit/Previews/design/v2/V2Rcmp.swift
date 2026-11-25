@@ -59,58 +59,56 @@ struct V2RcmpMenuSheet: View {
 
 // MARK: Option 4 — call-RCMP step between "Mark failed" and the checklist
 
-/// What RCMP needs to find the order on any call (in-app or speed dial).
-struct V2RcmpBrief: Equatable {
-    let orderRef: String
-    let customer: String
-}
 
-/// Figma 14852:46617 ("Dialog Elements" pattern). Opens on every Mark failed tap. There is no remembered
-/// state: the app never sees the call, so each time the rider gets the same two ways forward.
-///   Call RCMP                 → hands off to the dialer; the sheet stays open for when the rider returns.
-///   Mark the order as failed  → straight to the failure checklist.
+/// Final design (agreed with Himadri). Opens on every Mark failed tap; no remembered state.
+///   Sheet 1 "Mark order as failed?"  Call support → dialer, then sheet 2 on return
+///                                    Mark the order as failed → failure checklist
+///   Sheet 2 "Spoke to support?"      Call support again · Continue delivery · Mark the order as failed
+/// The app can't see the call, so sheet 2 shows on return whether or not it connected.
+enum V2RcmpPhase: Equatable { case prompt, returned }
+
 struct V2RcmpNudgeSheet: View {
-    let brief: V2RcmpBrief?
+    var phase: V2RcmpPhase = .prompt
     var onClose: () -> Void = {}
     var onCall: () -> Void = {}
     var onMarkFailed: () -> Void = {}
+    var onContinue: () -> Void = {}
 
     var body: some View {
-        VStack(spacing: 0) {
-            HFSheetTitle(title: "Mark failed", onClose: onClose)
-            HFSeam()
-            VStack(alignment: .leading, spacing: Spacing.spacing12) {
-                Text("Contact support team before marking the order as failed")
-                    .v2Text(V2Font.body1)
-                    .foregroundColor(HFColor.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let brief {
-                    HStack(alignment: .top, spacing: Spacing.spacing16) {
-                        gridField("Order ID", brief.orderRef)
-                        gridField("Customer", brief.customer)
-                    }
-                }
+        switch phase {
+        case .prompt:
+            sheet(title: "Mark order as failed?",
+                  description: "Contact support before marking the order as failed") {
+                V2Button(label: "Call support", action: onCall)
+                V2Button(label: "Mark the order as failed", role: .text, action: onMarkFailed)
             }
-            .padding(.horizontal, Spacing.spacing16)
-            .padding(.vertical, Spacing.spacing12)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        case .returned:
+            sheet(title: "Spoke to support?",
+                  description: "Continue the delivery, or mark it failed if the issue stands.") {
+                V2Button(label: "Call support again", role: .outlined, action: onCall)
+                V2Button(label: "Continue delivery", action: onContinue)
+                V2Button(label: "Mark the order as failed", role: .text, action: onMarkFailed)
+            }
+        }
+    }
 
+    private func sheet<Actions: View>(title: String, description: String,
+                                      @ViewBuilder actions: () -> Actions) -> some View {
+        VStack(spacing: 0) {
+            HFSheetTitle(title: title, onClose: onClose)
+            HFSeam()
+            Text(description)
+                .v2Text(V2Font.body1)
+                .foregroundColor(HFColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.spacing16)
+                .padding(.vertical, Spacing.spacing12)
             HFSheetFooter(caption: nil) {
-                VStack(spacing: Spacing.spacing4) {
-                    V2Button(label: "Call RCMP", action: onCall)
-                    V2Button(label: "Mark the order as failed", role: .text, action: onMarkFailed)
-                }
+                VStack(spacing: Spacing.spacing8) { actions() }
             }
         }
         .background(HFColor.surface)
-    }
-
-    private func gridField(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.spacing2) {
-            Text(label).v2Label(V2Font.label2).foregroundColor(HFColor.textSecondary)
-            Text(value).v2Label(V2Font.label2).foregroundColor(HFColor.textPrimary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -158,4 +156,5 @@ struct V2RcmpTarget: Equatable { let stop: Int; let task: Int }
 
 struct V2RcmpNudge: Equatable {
     let target: V2RcmpTarget
+    var phase: V2RcmpPhase = .prompt
 }
