@@ -67,27 +67,48 @@ struct V2RcmpMenuSheet: View {
 /// The app can't see the call, so sheet 2 shows on return whether or not it connected.
 enum V2RcmpPhase: Equatable { case prompt, returned }
 
+/// Where the rider started failing from. Same two sheets, copy follows the action they tapped.
+enum V2RcmpContext: Equatable { case task, scan }
+
+/// What support needs to find the order.
+struct V2RcmpBrief: Equatable {
+    let orderRef: String
+    let customer: String
+}
+
 struct V2RcmpNudgeSheet: View {
     var phase: V2RcmpPhase = .prompt
+    var context: V2RcmpContext = .task
+    let brief: V2RcmpBrief?
     var onClose: () -> Void = {}
     var onCall: () -> Void = {}
     var onMarkFailed: () -> Void = {}
     var onContinue: () -> Void = {}
 
+    private var failLabel: String { context == .task ? "Mark the order as failed" : "Raise an exception" }
+
     var body: some View {
-        switch phase {
-        case .prompt:
+        switch (phase, context) {
+        case (.prompt, .task):
             sheet(title: "Mark order as failed?",
                   description: "Contact support before marking the order as failed") {
                 V2Button(label: "Call support", action: onCall)
-                V2Button(label: "Mark the order as failed", role: .text, action: onMarkFailed)
+                V2Button(label: failLabel, role: .text, action: onMarkFailed)
             }
-        case .returned:
+        case (.prompt, .scan):
+            sheet(title: "Raise an exception?",
+                  description: "An HU exception fails the order. Contact support before raising it") {
+                V2Button(label: "Call support", action: onCall)
+                V2Button(label: failLabel, role: .text, action: onMarkFailed)
+            }
+        case (.returned, _):
             sheet(title: "Spoke to support?",
-                  description: "Continue the delivery, or mark it failed if the issue stands.") {
+                  description: context == .task
+                    ? "Continue the delivery, or mark it failed if the issue stands."
+                    : "Continue scanning, or raise the exception if the issue stands.") {
                 V2Button(label: "Call support again", role: .outlined, action: onCall)
-                V2Button(label: "Continue delivery", action: onContinue)
-                V2Button(label: "Mark the order as failed", role: .text, action: onMarkFailed)
+                V2Button(label: context == .task ? "Continue delivery" : "Continue scanning", action: onContinue)
+                V2Button(label: failLabel, role: .text, action: onMarkFailed)
             }
         }
     }
@@ -97,18 +118,34 @@ struct V2RcmpNudgeSheet: View {
         VStack(spacing: 0) {
             HFSheetTitle(title: title, onClose: onClose)
             HFSeam()
-            Text(description)
-                .v2Text(V2Font.body1)
-                .foregroundColor(HFColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Spacing.spacing16)
-                .padding(.vertical, Spacing.spacing12)
+            VStack(alignment: .leading, spacing: Spacing.spacing12) {
+                Text(description)
+                    .v2Text(V2Font.body1)
+                    .foregroundColor(HFColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let brief {
+                    HStack(alignment: .top, spacing: Spacing.spacing16) {
+                        gridField("Order ID", brief.orderRef)
+                        gridField("Customer", brief.customer)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, Spacing.spacing16)
+            .padding(.vertical, Spacing.spacing12)
             HFSheetFooter(caption: nil) {
                 VStack(spacing: Spacing.spacing8) { actions() }
             }
         }
         .background(HFColor.surface)
+    }
+
+    private func gridField(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.spacing2) {
+            Text(label).v2Label(V2Font.label2).foregroundColor(HFColor.textSecondary)
+            Text(value).v2Label(V2Font.label2).foregroundColor(HFColor.textPrimary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -157,4 +194,5 @@ struct V2RcmpTarget: Equatable { let stop: Int; let task: Int }
 struct V2RcmpNudge: Equatable {
     let target: V2RcmpTarget
     var phase: V2RcmpPhase = .prompt
+    var context: V2RcmpContext = .task
 }

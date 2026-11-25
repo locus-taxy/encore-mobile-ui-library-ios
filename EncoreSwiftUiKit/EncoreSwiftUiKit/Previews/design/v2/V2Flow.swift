@@ -191,6 +191,8 @@ public struct V2Flow: View {
             HFBottomSheet(isPresented: rcmpNudge != nil,
                           onDismiss: { V2Motion.txSurface { rcmpNudge = nil } }) {
                 V2RcmpNudgeSheet(phase: rcmpNudge?.phase ?? .prompt,
+                                 context: rcmpNudge?.context ?? .task,
+                                 brief: rcmpNudge.flatMap { rcmpBrief($0.target) },
                                  onClose: { V2Motion.txSurface { rcmpNudge = nil } },
                                  onCall: { callRcmp() },
                                  onMarkFailed: { finishNudge() },
@@ -710,17 +712,26 @@ public struct V2Flow: View {
     }
 
 
+    private func rcmpBrief(_ t: V2RcmpTarget) -> V2RcmpBrief? {
+        guard let task = engine.task(t.stop, t.task) else { return nil }
+        return V2RcmpBrief(orderRef: task.orderRef, customer: task.contactName ?? "Customer")
+    }
+
     private func finishNudge() {
-        guard let t = rcmpNudge?.target else { return }
+        guard let nudge = rcmpNudge else { return }
         V2Motion.txSurface { rcmpNudge = nil }
-        openFailChecklist(t)
+        if nudge.context == .scan {
+            toast.show("Raise an exception", subtitle: "Existing flow: HU photo → exception checklist")
+        } else {
+            openFailChecklist(nudge.target)
+        }
     }
 
 
     private func applyDemo() {
         switch demo {
         // DP-9877 — Priya Sharma's delivery (stop 2, task 21) in progress; then the RCMP surface.
-        case "rcmp-task", "rcmp-sheet", "rcmp-returned", "rcmp-checklist":
+        case "rcmp-task", "rcmp-sheet", "rcmp-returned", "rcmp-checklist", "rcmp-scan", "rcmp-scan-sheet", "rcmp-scan-returned":
             engine.clockIn(); engine.startTrip()
             engine.startWork(1); engine.markArrival(1); engine.startAllTasks(1); engine.completeAllTasks(1)
             engine.startWork(2); engine.markArrival(2); engine.startTask(2, 21)
@@ -732,6 +743,10 @@ public struct V2Flow: View {
                 else { rcmpNudge = V2RcmpNudge(target: t) }
             case "rcmp-returned":
                 rcmpNudge = V2RcmpNudge(target: t, phase: .returned)
+            case "rcmp-scan", "rcmp-scan-sheet", "rcmp-scan-returned":
+                router.push(.workflow(V2Workflow(intent: .scanTask(stop: 2, task: 21))))
+                if demo == "rcmp-scan-sheet" { rcmpNudge = V2RcmpNudge(target: t, context: .scan) }
+                if demo == "rcmp-scan-returned" { rcmpNudge = V2RcmpNudge(target: t, phase: .returned, context: .scan) }
             case "rcmp-checklist":
                 router.push(.workflow(V2Workflow(intent: .failTask(stop: 2, task: 21))))
             default: break
