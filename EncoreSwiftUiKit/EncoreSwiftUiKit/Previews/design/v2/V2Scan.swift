@@ -96,6 +96,29 @@ struct V2ScanSection: Identifiable {
     var units: [V2HU]
 }
 
+private struct V2ScanFailMenu: ViewModifier {
+    @Binding var open: Bool
+    var onFailOrder: (() -> Void)?
+
+    func body(content: Content) -> some View {
+        content.overlay(alignment: .topTrailing) {
+            if open, let onFailOrder {
+                ZStack(alignment: .topTrailing) {
+                    Color.clear.contentShape(Rectangle()).onTapGesture { open = false }
+                    V2PopoverMenu(items: [
+                        V2MenuItem(id: "fail", title: "Mark failed",
+                                   caption: "Fails the whole order",
+                                   captionTint: Color.encore("Error/Main"),
+                                   action: { open = false; onFailOrder() })
+                    ])
+                    .padding(.top, 60)
+                    .padding(.trailing, 56)
+                }
+            }
+        }
+    }
+}
+
 struct V2ScanPage: View {
     let task: V2Task
     var sections: [V2ScanSection] = []
@@ -105,8 +128,12 @@ struct V2ScanPage: View {
     var onNext: () -> Void = {}
     /// Multi-select `Mark scanned` (frame 31) — marks the chosen units without the camera.
     var onMarkScanned: ([String]) -> Void = { _ in }
+    /// DP-9877: order-level fail from the scan list (⋮ → Mark order as failed). Nil hides the menu.
+    var onFailOrder: (() -> Void)? = nil
+    var menuOpenAtLaunch: Bool = false
 
     @State private var tab = "todo"
+    @State private var menuOpen = false
     /// Sections the rider has opened. The first starts open (frame 29).
     @State private var expanded: Set<Int> = []
     @State private var selected: Set<String> = []
@@ -127,6 +154,12 @@ struct V2ScanPage: View {
     }
 
     var body: some View {
+        page
+            .modifier(V2ScanFailMenu(open: $menuOpen, onFailOrder: onFailOrder))
+            .onAppear { if menuOpenAtLaunch { menuOpen = true } }
+    }
+
+    private var page: some View {
         VStack(spacing: 0) {
             if selecting {
                 V2Navbar(back: { selected = [] }, backIcon: "LCross",
@@ -134,7 +167,8 @@ struct V2ScanPage: View {
             } else {
                 V2Navbar(title: "Scan HUs",
                          subtitle: subtitle,
-                         actions: [V2NavAction(id: "kebab", icon: "LOverflowVertical"),
+                         actions: [V2NavAction(id: "kebab", icon: "LOverflowVertical", selected: menuOpen,
+                                               action: { if onFailOrder != nil { withAnimation(.easeOut(duration: 0.15)) { menuOpen.toggle() } } }),
                                    V2NavAction(id: "close", icon: "LCross", action: onClose)])
             }
 

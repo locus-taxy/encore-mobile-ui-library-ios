@@ -357,7 +357,14 @@ public struct V2Flow: View {
                            onClose: { V2Motion.txSurface { router.back() } },
                            onScan: { openScanner(stopId, taskId) },
                            onNext: { completeWorkflow(workflow) },
-                           onMarkScanned: { ids in markScanned(stopId, taskId, ids) })
+                           onMarkScanned: { ids in markScanned(stopId, taskId, ids) },
+                           onFailOrder: V2Variant.isOn(.rcmpNudge) ? {
+                               V2Motion.txSurface {
+                                   rcmpNudge = V2RcmpNudge(target: V2RcmpTarget(stop: stopId, task: taskId),
+                                                           context: .scanOrder)
+                               }
+                           } : nil,
+                           menuOpenAtLaunch: demo == "rcmp-scanorder-menu")
             }
         default:
             // The checklist brings its own bar too — it is a page, not a body inside a cover.
@@ -720,7 +727,7 @@ public struct V2Flow: View {
     private func finishNudge() {
         guard let nudge = rcmpNudge else { return }
         V2Motion.txSurface { rcmpNudge = nil }
-        if nudge.context == .scan {
+        if nudge.context == .scan {  // proposal 1 hands off to the existing HU exception flow
             toast.show("Raise an exception", subtitle: "Existing flow: HU photo → exception checklist")
         } else {
             openFailChecklist(nudge.target)
@@ -731,7 +738,7 @@ public struct V2Flow: View {
     private func applyDemo() {
         switch demo {
         // DP-9877 — Priya Sharma's delivery (stop 2, task 21) in progress; then the RCMP surface.
-        case "rcmp-task", "rcmp-sheet", "rcmp-returned", "rcmp-checklist", "rcmp-scan", "rcmp-scan-sheet", "rcmp-scan-returned":
+        case "rcmp-task", "rcmp-sheet", "rcmp-returned", "rcmp-checklist", "rcmp-scan", "rcmp-scan-sheet", "rcmp-scan-returned", "rcmp-scanorder-menu", "rcmp-scanorder-sheet", "rcmp-scanorder-returned":
             engine.clockIn(); engine.startTrip()
             engine.startWork(1); engine.markArrival(1); engine.startAllTasks(1); engine.completeAllTasks(1)
             engine.startWork(2); engine.markArrival(2); engine.startTask(2, 21)
@@ -743,6 +750,10 @@ public struct V2Flow: View {
                 else { rcmpNudge = V2RcmpNudge(target: t) }
             case "rcmp-returned":
                 rcmpNudge = V2RcmpNudge(target: t, phase: .returned)
+            case "rcmp-scanorder-menu", "rcmp-scanorder-sheet", "rcmp-scanorder-returned":
+                router.push(.workflow(V2Workflow(intent: .scanTask(stop: 2, task: 21))))
+                if demo == "rcmp-scanorder-sheet" { rcmpNudge = V2RcmpNudge(target: t, context: .scanOrder) }
+                if demo == "rcmp-scanorder-returned" { rcmpNudge = V2RcmpNudge(target: t, phase: .returned, context: .scanOrder) }
             case "rcmp-scan", "rcmp-scan-sheet", "rcmp-scan-returned":
                 router.push(.workflow(V2Workflow(intent: .scanTask(stop: 2, task: 21))))
                 if demo == "rcmp-scan-sheet" { rcmpNudge = V2RcmpNudge(target: t, context: .scan) }

@@ -68,7 +68,11 @@ struct V2RcmpMenuSheet: View {
 enum V2RcmpPhase: Equatable { case prompt, returned }
 
 /// Where the rider started failing from. Same two sheets, copy follows the action they tapped.
-enum V2RcmpContext: Equatable { case task, scan }
+enum V2RcmpContext: Equatable {
+    case task       // Delivery task page → Mark failed
+    case scan       // Proposal 1: HU ⋮ → Raise an exception
+    case scanOrder  // Proposal 2: Scan HUs header ⋮ → Mark order as failed
+}
 
 /// What support needs to find the order.
 struct V2RcmpBrief: Equatable {
@@ -85,11 +89,11 @@ struct V2RcmpNudgeSheet: View {
     var onMarkFailed: () -> Void = {}
     var onContinue: () -> Void = {}
 
-    private var failLabel: String { context == .task ? "Mark the order as failed" : "Raise an exception" }
+    private var failLabel: String { context == .scan ? "Raise an exception" : "Mark the order as failed" }
 
     var body: some View {
         switch (phase, context) {
-        case (.prompt, .task):
+        case (.prompt, .task), (.prompt, .scanOrder):
             sheet(title: "Mark order as failed?",
                   description: "Contact support before marking the order as failed") {
                 V2Button(label: "Call support", action: onCall)
@@ -103,13 +107,19 @@ struct V2RcmpNudgeSheet: View {
             }
         case (.returned, _):
             sheet(title: "Spoke to support?",
-                  description: context == .task
-                    ? "Continue the delivery, or mark it failed if the issue stands."
-                    : "Continue scanning, or raise the exception if the issue stands.") {
+                  description: returnedDescription) {
                 V2Button(label: "Call support again", role: .outlined, action: onCall)
                 V2Button(label: context == .task ? "Continue delivery" : "Continue scanning", action: onContinue)
                 V2Button(label: failLabel, role: .text, action: onMarkFailed)
             }
+        }
+    }
+
+    private var returnedDescription: String {
+        switch context {
+        case .task:      return "Continue the delivery, or mark it failed if the issue stands."
+        case .scan:      return "Continue scanning, or raise the exception if the issue stands."
+        case .scanOrder: return "Continue scanning, or mark the order failed if the issue stands."
         }
     }
 
