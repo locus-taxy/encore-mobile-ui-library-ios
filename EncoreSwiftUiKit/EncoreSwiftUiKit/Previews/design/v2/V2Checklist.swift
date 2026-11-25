@@ -69,6 +69,8 @@ struct V2ChecklistItem: Identifiable {
 struct V2ChecklistModel {
     var title: String
     var cta: String
+    /// Prototype callout shown under the nav bar, e.g. when the content is placeholder data.
+    var notice: String? = nil
     var items: [V2ChecklistItem]
 
     /// Only the starred items gate the CTA — that is what the footer caption promises.
@@ -112,7 +114,9 @@ struct V2ChecklistModel {
             ])
 
         case .failTask:
-            return V2ChecklistModel(title: "Report task failure", cta: "Swipe to mark failed", items: [
+            // DP-9877: the failure checklist is client-defined and can't be changed; these items are placeholders.
+            return V2ChecklistModel(title: "Report task failure", cta: "Swipe to mark failed",
+                                    notice: "Dummy data. The failure checklist is defined by the client.", items: [
                 V2ChecklistItem(id: "reason", title: "Why did this task fail",
                                 help: "Pick the reason that matches what happened on ground",
                                 field: .choice(["Customer not available",
@@ -162,11 +166,33 @@ struct V2ChecklistPage: View {
     @State var model: V2ChecklistModel
     var onClose: () -> Void = {}
     var onSubmit: () -> Void = {}
+    /// DP-9877 options 1 / 2 — set only on the task-failure checklist.
+    var onCallRcmp: (() -> Void)? = nil
+
+    private var navActions: [V2NavAction] {
+        var a: [V2NavAction] = []
+        if let onCallRcmp, V2Variant.isOn(.rcmpNav) {
+            a.append(V2NavAction(id: "rcmp", icon: "LCall", action: onCallRcmp))
+        }
+        a.append(V2NavAction(id: "close", icon: "LCross", action: onClose))
+        return a
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            V2Navbar(title: model.title,
-                     actions: [V2NavAction(id: "close", icon: "LCross", action: onClose)])
+            V2Navbar(title: model.title, actions: navActions)
+            if let notice = model.notice {
+                Text(notice)
+                    .v2Text(V2Font.body2)
+                    .foregroundColor(HFColor.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Spacing.spacing16)
+                    .padding(.vertical, Spacing.spacing8)
+                    .background(Color.encore("Warning/Main").opacity(0.12))
+            }
+            if let onCallRcmp, V2Variant.isOn(.rcmpBanner) {
+                V2RcmpBanner(onCall: onCallRcmp)
+            }
 
             ScrollView {
                 VStack(spacing: 0) {   // not lazy: rows must ride the cover's rise

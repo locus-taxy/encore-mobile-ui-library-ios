@@ -28,6 +28,9 @@ public struct V2Flow: View {
     /// "Loading the trip…" interstitial (36, 54, 72, 89, 103) and what lands once it finishes.
     @State private var loading: String? = nil
     @State private var afterLoading: (() -> Void)? = nil
+    /// DP-9877 — the task a Call-RCMP surface is open for (option 3 menu / option 4 step sheet).
+    @State private var rcmpMenuFor: V2RcmpTarget? = nil
+    @State private var rcmpNudge: V2RcmpNudge? = nil
 
     public init(demo: String = "") {
         self.demo = demo
@@ -167,6 +170,30 @@ public struct V2Flow: View {
                 V2ExceptionSheet(options: stop?.exceptions ?? [],
                                  onClose: { V2Motion.txSurface { router.dismissModal() } },
                                  onPick: { handleException($0) })
+            }
+        }
+        .overlay {
+            HFBottomSheet(isPresented: rcmpMenuFor != nil,
+                          onDismiss: { V2Motion.txSurface { rcmpMenuFor = nil } }) {
+                V2RcmpMenuSheet(onClose: { V2Motion.txSurface { rcmpMenuFor = nil } },
+                                onCall: {
+                                    V2Motion.txSurface { rcmpMenuFor = nil }
+                                    callRcmp()
+                                },
+                                onFail: {
+                                    guard let t = rcmpMenuFor else { return }
+                                    V2Motion.txSurface { rcmpMenuFor = nil }
+                                    openFailChecklist(t)
+                                })
+            }
+        }
+        .overlay {
+            HFBottomSheet(isPresented: rcmpNudge != nil,
+                          onDismiss: { V2Motion.txSurface { rcmpNudge = nil } }) {
+                V2RcmpNudgeSheet(brief: rcmpNudge.flatMap { rcmpBrief($0.target) },
+                                 onClose: { V2Motion.txSurface { rcmpNudge = nil } },
+                                 onCall: { callRcmp() },
+                                 onMarkFailed: { finishNudge() })
             }
         }
         .overlay {
@@ -332,7 +359,11 @@ public struct V2Flow: View {
                                 workflow.intent,
                                 stopKind: workflow.stopId.flatMap { engine.stop($0)?.kind }),
                             onClose: { V2Motion.txSurface { router.back() } },
-                            onSubmit: { completeWorkflow(workflow) })
+                            onSubmit: { completeWorkflow(workflow) },
+                            onCallRcmp: {
+                                if case .failTask = workflow.intent { return { callRcmp() } }
+                                return nil
+                            }())
         }
     }
 
@@ -516,9 +547,27 @@ public struct V2Flow: View {
     }
 
     private func failTask(_ stop: V2Stop, _ task: V2Task) {
-        V2Motion.txSurface {
-            router.push(.workflow(V2Workflow(intent: .failTask(stop: stop.id, task: task.id))))
+        let target = V2RcmpTarget(stop: stop.id, task: task.id)
+        if V2Variant.isOn(.rcmpMenu) {
+            V2Motion.txSurface { rcmpMenuFor = target }
+        } else if V2Variant.isOn(.rcmpNudge) {
+            V2Motion.txSurface { rcmpNudge = V2RcmpNudge(target: target) }
+        } else {
+            openFailChecklist(target)
         }
+    }
+
+    private func openFailChecklist(_ t: V2RcmpTarget) {
+        V2Motion.txSurface {
+            router.push(.workflow(V2Workflow(intent: .failTask(stop: t.stop, task: t.task))))
+        }
+    }
+
+    /// Stands in for the dialer: a real build hands `tel:` to the OS. The Mark failed sheet stays open,
+    /// unchanged, for when the rider returns.
+    private func callRcmp() {
+        toast.show("Calling RCMP", subtitle: V2Rcmp.contactPhone)
+        // The sheet stays open: the rider comes back to the same Mark failed sheet after the call.
     }
 
     /// The workflow's own intent says what to resolve, so closing the cover with ✕ discards it —
@@ -652,8 +701,35 @@ public struct V2Flow: View {
         }
     }
 
+    private func rcmpBrief(_ t: V2RcmpTarget) -> V2RcmpBrief? {
+        guard let task = engine.task(t.stop, t.task) else { return nil }
+        return V2RcmpBrief(orderRef: task.orderRef, customer: task.contactName ?? "Customer")
+    }
+
+    private func finishNudge() {
+        guard let t = rcmpNudge?.target else { return }
+        V2Motion.txSurface { rcmpNudge = nil }
+        openFailChecklist(t)
+    }
+
+
     private func applyDemo() {
         switch demo {
+        // DP-9877 — Priya Sharma's delivery (stop 2, task 21) in progress; then the RCMP surface.
+        case "rcmp-task", "rcmp-sheet", "rcmp-checklist":
+            engine.clockIn(); engine.startTrip()
+            engine.startWork(1); engine.markArrival(1); engine.startAllTasks(1); engine.completeAllTasks(1)
+            engine.startWork(2); engine.markArrival(2); engine.startTask(2, 21)
+            router.setPage(.trip); router.push(.stop(2)); router.push(.task(stop: 2, task: 21))
+            let t = V2RcmpTarget(stop: 2, task: 21)
+            switch demo {
+            case "rcmp-sheet":
+                if V2Variant.isOn(.rcmpMenu) { rcmpMenuFor = t }
+                else { rcmpNudge = V2RcmpNudge(target: t) }
+            case "rcmp-checklist":
+                router.push(.workflow(V2Workflow(intent: .failTask(stop: 2, task: 21))))
+            default: break
+            }
         // Shell states.
         case "home":     router.setPage(.home)
         case "clockedin": engine.clockIn(); router.setPage(.home)

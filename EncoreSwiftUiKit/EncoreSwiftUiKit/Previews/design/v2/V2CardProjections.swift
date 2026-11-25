@@ -206,7 +206,9 @@ extension V2Task {
                     onMarkFailed: @escaping () -> Void) -> V2CardModel {
         var actions = [V2CardAction(id: "call", label: "Call", icon: "LCall", action: onCall)]
         if status == .inProgress && clubbed == nil {
-            actions.append(V2CardAction(id: "fail", label: "Mark failed", role: .danger,
+            actions.append(V2CardAction(id: "fail",
+                                        label: V2Variant.isOn(.rcmpMenu) ? "Facing issues?" : "Mark failed",
+                                        role: .danger,
                                         enabled: !dwellBlocked, action: onMarkFailed))
         }
         return V2CardModel(

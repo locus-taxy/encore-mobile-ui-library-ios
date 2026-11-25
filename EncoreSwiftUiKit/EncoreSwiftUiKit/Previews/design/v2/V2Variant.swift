@@ -23,6 +23,12 @@ struct V2Variant: Hashable {
     // Registry — one line per live variant.
     // static let denseCards = V2Variant("denseCards")   // example: tighter task-card rhythm (12 → 8)
 
+    // DP-9877 — where the rider is told to call RCMP on a task failure. Exactly one of 1–4 at a time.
+    static let rcmpBanner = V2Variant("rcmpBanner")   // 1: call banner on top of the failure checklist
+    static let rcmpNav    = V2Variant("rcmpNav")      // 2: call icon in the failure checklist's nav bar
+    static let rcmpMenu   = V2Variant("rcmpMenu")     // 3: "Facing issues?" → sheet with Call RCMP | Mark as failed
+    static let rcmpNudge  = V2Variant("rcmpNudge")    // 4: Mark failed → Mark failed sheet (Call RCMP | Mark the order as failed → checklist)
+
     /// Variants switched on for this launch, from `POC_VARIANT`.
     static let active: Set<String> = {
         let raw = ProcessInfo.processInfo.environment["POC_VARIANT"] ?? ""
