@@ -18,7 +18,10 @@ targets:
   EncoreSwiftUiKit:
     type: framework
     platform: iOS
-    sources: [EncoreSwiftUiKit]
+    sources:
+      - path: EncoreSwiftUiKit
+        excludes:
+          - Previews/**
     settings:
       configs:
         debug:
