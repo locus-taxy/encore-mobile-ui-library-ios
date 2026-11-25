@@ -71,7 +71,7 @@ enum V2RcmpPhase: Equatable { case prompt, returned }
 enum V2RcmpContext: Equatable {
     case task       // Delivery task page → Mark failed
     case scan       // Proposal 1: HU ⋮ → Raise an exception
-    case scanOrder  // Proposal 2: Scan HUs header ⋮ → Mark order as failed
+    case scanOrder  // Proposal 2: after the HU exception checklist, confirm failing the order
 }
 
 /// What support needs to find the order.
