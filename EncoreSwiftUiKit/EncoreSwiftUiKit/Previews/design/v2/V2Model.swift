@@ -613,7 +613,7 @@ enum V2Seed {
                    tasks: [
                     task(41, order: 5, .delivery, contact: "Rohit Mehta", sub: "Counter 2, Gate 1",
                          instruction: "Call on arrival, don't ring the doorbell.", custodyAboard: true),
-                    // ATL and nothing else — the banner's ATL-only case.
+                    // ATL and nothing else — header tag only, no Task notes banner.
                     task(42, order: 6, .delivery, contact: "Priya Sharma", sub: "Counter 2, Gate 1",
                          authorityToLeave: true, custodyAboard: true),
                     task(43, order: 7, .delivery, contact: "Rohit Mehta", sub: "Counter 2, Gate 1",

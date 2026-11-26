@@ -75,13 +75,6 @@ enum V2InquiryText {
     }
 }
 
-enum V2ATL {
-    /// One sentence, no title and no label. The backend sends only a flag, so the copy names what the
-    /// flag means and promises no mode (the BFA decides SAFE_PLACE vs STANDARD at resolve time).
-    /// Sized to fit the banner's one line beside a second line (≤ ~40 characters).
-    static let sentence = "Authority to leave: no handover needed."
-}
-
 /// Dummy example (17 Nov): the slot's anatomy with lorem ipsum — a text block, then
 /// Label Value Pairs at 1 and 2 columns (3 dropped 17 Nov: too clustered). Same for the stop ("Stop instructions") and the task
 /// ("Task notes"); only the title differs. Launch with POC_VARIANT=infoSheet,infoDummy.
@@ -119,13 +112,11 @@ extension V2Task {
 
     var infoSections: [V2InfoSection] {
         var out: [V2InfoSection] = []
-        // To the driver, authority to leave is a task note like any other — first, because it
-        // changes what happens at the door. On the card it is a tag; here it is the note.
+        // Authority to leave is NOT a note here: it is a tag on the card and in the task header
+        // (Figma 10374:390537, updated 26 Nov). Task notes hold the customer's words only.
         if V2Variant.isOn(.infoDummy) { return V2InfoDummy.sections }
-        // Free text in one block: authority to leave first, then the customer's instruction.
-        let notes = [authorityToLeave ? V2ATL.sentence : nil, effectiveInstruction].compactMap { $0 }
-        if !notes.isEmpty {
-            out.append(V2InfoSection(id: "notes", body: .text(notes)))
+        if let note = effectiveInstruction, !note.isEmpty {
+            out.append(V2InfoSection(id: "notes", body: .text([note])))
         }
         // In the order they appear on the order (DP-9482 AC). NA answers are dropped: "not
         // applicable" gives the driver nothing to act on.

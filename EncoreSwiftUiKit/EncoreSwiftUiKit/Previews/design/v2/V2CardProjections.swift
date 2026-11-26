@@ -225,6 +225,11 @@ extension V2Task {
                 V2ChipSlot("status") { V2TaskStatusChip(status: status) }
             ],
             address: V2Address(headline: contactName ?? fallbackTitle, subtext: contactSub ?? ""),
+            // ATL as the same info-tint tag the card carries, under the address (Figma 10374:390537,
+            // updated 26 Nov). It is a property of the order, not a note, so it stays out of Task notes.
+            tags: !authorityToLeave || clubbed != nil ? [] : [V2ChipSlot("atl") {
+                HFPillChip(text: "Authority to leave", bg: HFColor.infoBg, fg: HFColor.infoText, dot: false)
+            }],
             actions: status.isTerminal ? [] : actions)
     }
 }
