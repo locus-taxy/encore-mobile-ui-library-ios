@@ -1,16 +1,23 @@
 import SwiftUI
 
-// MARK: - DP-9877 · Call RCMP on task failure
+// MARK: - DP-9877 · Call support before failing
 //
-// RCMP (support / supervisor / warehouse manager — whoever the client configures) resolves a blocked
+// Support (a supervisor or warehouse manager — whoever the client configures) resolves a blocked
 // delivery with the customer OUTSIDE the app and tells the rider what to do: deliver, or mark failed.
-// The app never records RCMP's decision; it only puts the call in the rider's path. Four shapes are
-// compared as variants (see V2Variant): 1 banner, 2 nav icon, 3 menu sheet, 4 step sheet.
+// The app never records support's decision; it only puts the call in the rider's path.
+//
+// Naming: the pattern says "support". When shipping for IKEA, rename it to "RCMP" in every string
+// (Call RCMP, Spoke to RCMP?, …). Type names keep the Rcmp prefix from the ticket.
+//
+// Option 4 (two sheets) is final. Options 1–3 stay as variants for comparison (see V2Variant).
 
 /// Who the rider is calling. One contact in the prototype; the client config could list several.
+/// `contactPhone == nil` means no number is configured: no sheets, the fail action goes straight on.
 enum V2Rcmp {
-    static let contactName = "RCMP · Support desk"
-    static let contactPhone = "+44 20 7946 0123"
+    static let contactName = "Support desk"
+    static let contactPhone: String? = ProcessInfo.processInfo.environment["POC_NO_SUPPORT"] == nil
+        ? "+44 20 7946 0123" : nil
+    static var isConfigured: Bool { contactPhone != nil }
 }
 
 // MARK: Option 1 — banner on the failure checklist

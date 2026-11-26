@@ -556,7 +556,7 @@ public struct V2Flow: View {
         let target = V2RcmpTarget(stop: stop.id, task: task.id)
         if V2Variant.isOn(.rcmpMenu) {
             V2Motion.txSurface { rcmpMenuFor = target }
-        } else if V2Variant.isOn(.rcmpNudge) {
+        } else if V2Variant.isOn(.rcmpNudge) && V2Rcmp.isConfigured {  // edge case: no number → no sheets
             V2Motion.txSurface { rcmpNudge = V2RcmpNudge(target: target) }
         } else {
             openFailChecklist(target)
@@ -572,7 +572,7 @@ public struct V2Flow: View {
     /// Stands in for the dialer: a real build hands `tel:` to the OS and shows sheet 2 when the app
     /// returns to the foreground.
     private func callRcmp() {
-        toast.show("Calling support", subtitle: V2Rcmp.contactPhone)
+        toast.show("Calling support", subtitle: V2Rcmp.contactPhone ?? "")
         // Stands in for returning from the dialer: the sheet moves to its "returned" step (sheet 2).
         guard rcmpNudge != nil else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
