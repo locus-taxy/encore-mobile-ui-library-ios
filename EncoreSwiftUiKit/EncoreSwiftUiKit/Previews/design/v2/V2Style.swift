@@ -73,6 +73,9 @@ enum V2Font {
     static let chip = V2TextStyle(fontName: medium, size: 12, lineHeight: 12, tracking: 0.16)
     /// `button/small` — action pill label (Map, Navigate, Call…). SemiBold 12/22.
     static let buttonSmall = V2TextStyle(fontName: semibold, size: 12, lineHeight: 22, tracking: 0)
+    /// Inline link inside body copy ("View all (n)" in the info banner). Body1's size and line
+    /// height, SemiBold (the heaviest Inter cut bundled), underlined at the call site.
+    static let bodyLink = V2TextStyle(fontName: semibold, size: 14, lineHeight: 20, tracking: 0)
     /// `button/medium` — tabs, FAB. SemiBold 14/24.
     static let buttonMedium = V2TextStyle(fontName: semibold, size: 14, lineHeight: 24, tracking: 0)
     /// `button/large` — footer button / swipe label. SemiBold 16/24.

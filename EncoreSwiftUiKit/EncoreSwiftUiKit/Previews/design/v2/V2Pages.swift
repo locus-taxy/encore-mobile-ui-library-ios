@@ -627,8 +627,8 @@ struct V2TaskDetailSheet: View {
 /// Info banner under a page header — `<Alert> | Banner` (frame 46; DP-9789 adds title + link).
 /// Colours are the info banner's: info fill, #BDE2FF 0.5 border, info-coloured ⓘ, r4. Text and spacing
 /// follow the medium notification alert (`V2NotificationBanner`), minus its ✕: 20 icon centred, 12 gap;
-/// title Medium 14/20 → message Regular 14/20 (two lines) → link SemiBold 14/24 underlined on its own
-/// line, min 32 tall; 16 sides, 8 top/bottom. Title and link are optional, so the one-line instruction
+/// title Medium 14/20 → message Regular 14/20 (two lines) → link SemiBold 14/20 underlined on its own
+/// line; 16 sides, 8 top/bottom. Title and link are optional, so the one-line instruction
 /// banner is the same component with neither.
 struct V2InstructionBanner: View {
     var title: String? = nil
@@ -702,13 +702,13 @@ struct V2InstructionBanner: View {
                         .lineLimit(1)
                 }
                 if let link = shownLink {
-                    // Its own 24 line, 4 below the message. No 32 min-height: the whole banner is the
-                    // target, and the padding a min-height adds made the gap above the link and the
-                    // bottom inset read larger than the rest (16 Nov review).
+                    // Body size and line height (14/20), SemiBold + underline, on its own line right
+                    // under the message — reads as part of the copy, not a button (26 Nov review: the
+                    // 14/24 button style + 4 gap looked bigger than the body). No 32 min-height: the
+                    // whole banner is the target.
                     Text(link)
-                        .v2Label(V2Font.buttonMedium)
+                        .v2Label(V2Font.bodyLink)
                         .underline()
-                        .padding(.top, Spacing.spacing4)
                 }
             }
             .foregroundColor(HFColor.textPrimary)
