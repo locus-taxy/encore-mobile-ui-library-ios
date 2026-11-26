@@ -71,7 +71,7 @@ enum V2RcmpPhase: Equatable { case prompt, returned }
 enum V2RcmpContext: Equatable {
     case task       // Delivery task page → Mark failed
     case scan       // Proposal 1: HU ⋮ → Raise an exception
-    case scanOrder  // Proposal 2: after the HU exception checklist, confirm failing the order
+    case scanOrder  // Final (Himadri): on Next from Scan HUs when an HU has an exception; once per order
 }
 
 /// What support needs to find the order.
@@ -109,9 +109,17 @@ struct V2RcmpNudgeSheet: View {
             sheet(title: "Spoke to support?",
                   description: returnedDescription) {
                 V2Button(label: "Call support again", role: .outlined, action: onCall)
-                V2Button(label: context == .task ? "Continue delivery" : "Continue scanning", action: onContinue)
+                V2Button(label: continueLabel, action: onContinue)
                 V2Button(label: failLabel, role: .text, action: onMarkFailed)
             }
+        }
+    }
+
+    private var continueLabel: String {
+        switch context {
+        case .task:      return "Continue delivery"
+        case .scan:      return "Continue scanning"
+        case .scanOrder: return "Complete task"
         }
     }
 
@@ -119,7 +127,7 @@ struct V2RcmpNudgeSheet: View {
         switch context {
         case .task:      return "Continue the delivery, or mark it failed if the issue stands."
         case .scan:      return "Continue scanning, or raise the exception if the issue stands."
-        case .scanOrder: return "Continue scanning, or mark the order failed if the issue stands."
+        case .scanOrder: return "Complete the task, or mark the order failed if the issue stands."
         }
     }
 
