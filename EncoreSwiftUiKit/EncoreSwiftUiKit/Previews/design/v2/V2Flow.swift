@@ -196,10 +196,7 @@ public struct V2Flow: View {
                                  onClose: { V2Motion.txSurface { rcmpNudge = nil } },
                                  onCall: { callRcmp() },
                                  onMarkFailed: { finishNudge() },
-                                 onContinue: {
-                                     V2Motion.txSurface { rcmpNudge = nil }
-                                     toast.show("Continue with the delivery")
-                                 })
+                                 onContinue: { continueNudge() })
             }
         }
         .overlay {
@@ -615,7 +612,7 @@ public struct V2Flow: View {
                     router.dismissToBase()
                     router.push(.stop(stopId))
                 }
-                announceStopOutcome(stopId)
+                announceStopOutcome(stopId, taskFailed: true)
             }
 
         case .failStop(let stopId):
@@ -681,7 +678,7 @@ public struct V2Flow: View {
     }
 
     /// The stop's terminal state is derived, so the toast reports whatever the cascade produced.
-    private func announceStopOutcome(_ stopId: Int) {
+    private func announceStopOutcome(_ stopId: Int, taskFailed: Bool = false) {
         guard let s = engine.stop(stopId) else { return }
         switch s.status {
         case .completed: toast.show("Tasks completed")
@@ -689,7 +686,7 @@ public struct V2Flow: View {
             let failed = s.tasks.filter { $0.status == .failed }.count
             toast.show("\(failed) tasks failed and stop marked as partial")
         case .failed:    toast.show("Stop failed and all planned tasks have been cancelled")
-        default:         toast.show("Task completed")
+        default:         toast.show(taskFailed ? "Task failed" : "Task completed")
         }
     }
 
@@ -720,10 +717,45 @@ public struct V2Flow: View {
     private func finishNudge() {
         guard let nudge = rcmpNudge else { return }
         V2Motion.txSurface { rcmpNudge = nil }
-        if nudge.context == .scan {  // proposal 1 hands off to the existing HU exception flow
+        switch nudge.context {
+        case .scan:  // rejected per-HU option: hands off to the existing HU exception flow
             toast.show("Raise an exception", subtitle: "Existing flow: HU photo → exception checklist")
-        } else {
+        case .scanOrder:
+            // Flows 4 and 6: the exception checklist already holds the reason, so no task checklist —
+            // the order fails and the rider lands on the task page showing Failed (07).
+            let t = nudge.target
+            afterTripLoad {
+                V2Motion.txSurface {
+                    commit { engine.failTask(t.stop, t.task) }
+                    router.dismissToBase()
+                    router.push(.stop(t.stop))
+                    router.push(.task(stop: t.stop, task: t.task))
+                }
+                announceStopOutcome(t.stop, taskFailed: true)
+            }
+        case .task:
             openFailChecklist(nudge.target)
+        }
+    }
+
+    /// Sheet 2's primary. Task page (flows 2, 4, 5): Scan HUs opens with the camera already on.
+    /// Scan (flows 5, 7): Complete task goes to the task checklist (06), the success path only.
+    private func continueNudge() {
+        guard let nudge = rcmpNudge else { return }
+        let t = nudge.target
+        V2Motion.txSurface {
+            rcmpNudge = nil
+            switch nudge.context {
+            case .task:
+                scanResult = nil
+                router.push(.workflow(V2Workflow(intent: .scanTask(stop: t.stop, task: t.task))))
+                router.push(.scanner(stop: t.stop, task: t.task))
+            case .scanOrder:
+                router.back()
+                router.push(.workflow(V2Workflow(intent: .completeTask(stop: t.stop, task: t.task))))
+            case .scan:
+                break
+            }
         }
     }
 
@@ -731,7 +763,7 @@ public struct V2Flow: View {
     private func applyDemo() {
         switch demo {
         // DP-9877 — Priya Sharma's delivery (stop 2, task 21) in progress; then the RCMP surface.
-        case "rcmp-task", "rcmp-sheet", "rcmp-returned", "rcmp-checklist", "rcmp-scan", "rcmp-scan-sheet", "rcmp-scan-returned", "rcmp-scanorder-sheet", "rcmp-scanorder-returned":
+        case "rcmp-task", "rcmp-sheet", "rcmp-returned", "rcmp-checklist", "rcmp-scan", "rcmp-scan-sheet", "rcmp-scan-returned", "rcmp-scanorder-sheet", "rcmp-scanorder-returned", "rcmp-continue", "rcmp-scanorder-failed", "rcmp-scanorder-complete":
             engine.clockIn(); engine.startTrip()
             engine.startWork(1); engine.markArrival(1); engine.startAllTasks(1); engine.completeAllTasks(1)
             engine.startWork(2); engine.markArrival(2); engine.startTask(2, 21)
@@ -753,6 +785,14 @@ public struct V2Flow: View {
                 if demo == "rcmp-scan-returned" { rcmpNudge = V2RcmpNudge(target: t, phase: .returned, context: .scan) }
             case "rcmp-checklist":
                 router.push(.workflow(V2Workflow(intent: .failTask(stop: 2, task: 21))))
+            // Outcomes of sheet 2 (flows aligned with Mayank, 27 Nov).
+            case "rcmp-continue":
+                rcmpNudge = V2RcmpNudge(target: t, phase: .returned)
+                continueNudge()
+            case "rcmp-scanorder-failed", "rcmp-scanorder-complete":
+                router.push(.workflow(V2Workflow(intent: .scanTask(stop: 2, task: 21))))
+                rcmpNudge = V2RcmpNudge(target: t, phase: .returned, context: .scanOrder)
+                if demo == "rcmp-scanorder-failed" { finishNudge() } else { continueNudge() }
             default: break
             }
         // Shell states.
